@@ -1,0 +1,48 @@
+<div class="min-h-screen bg-background text-foreground">
+  <!-- Header -->
+  <header class="border-b border-border bg-card">
+    <div class="flex h-16 items-center justify-between px-6">
+      <div class="flex items-center gap-8">
+        <h1 class="text-xl font-semibold">ESIMedia</h1>
+
+        <nav class="flex gap-6">
+          <button (click)="setActiveTab('inicio')"
+            [ngClass]="activeTab === 'inicio' ? 'text-foreground' : 'text-muted-foreground'"
+            class="text-sm font-medium transition-colors hover:text-foreground">
+            Inicio
+          </button>
+          <button (click)="setActiveTab('usuarios')"
+            [ngClass]="activeTab === 'usuarios' ? 'text-foreground' : 'text-muted-foreground'"
+            class="text-sm font-medium transition-colors hover:text-foreground">
+            Usuarios
+          </button>
+          <button (click)="setActiveTab('configuracion')"
+            [ngClass]="activeTab === 'configuracion' ? 'text-foreground' : 'text-muted-foreground'"
+            class="text-sm font-medium transition-colors hover:text-foreground">
+            Configuración
+          </button>
+        </nav>
+      </div>
+
+      <button class="px-3 py-2 rounded-md bg-accent hover:bg-accent/70 transition-colors">
+        Mi cuenta
+      </button>
+    </div>
+  </header>
+
+  <!-- Contenido principal -->
+  <main class="p-6">
+    <div class="mx-auto max-w-6xl">
+      <h2 class="text-2xl font-semibold mb-2">Vista de administración</h2>
+      <p class="text-sm text-muted-foreground mb-6">
+        Aquí irá el contenido principal de la vista de administración.
+      </p>
+
+      <div class="rounded-lg border border-border bg-card p-6">
+        <p class="text-muted-foreground">
+          Selecciona una pestaña para empezar a gestionar.
+        </p>
+      </div>
+    </div>
+  </main>
+</div>
