@@ -27,27 +27,56 @@ export class AdminService {
   }
 
   crearUsuario(userData: any): Observable<any> {
-    console.log('🔗 AdminService: Enviando petición POST');
+    console.log('🔗 AdminService: Detectando tipo de usuario...');
     console.log('📦 Datos:', userData);
+    console.log('👤 Rol detectado:', userData.rol);
 
+    // Decidir qué endpoint usar según el rol
+    if (userData.rol === 'Gestor') {
+      return this.crearGestor(userData);
+    } else {
+      return this.crearAdministrador(userData);
+    }
+  }
+
+  private crearAdministrador(userData: any): Observable<any> {
+    console.log('🔗 AdminService: Creando Administrador');
     const url = `${this.apiUrl}/administradores/crear-simple`;
-    console.log('🌐 URL:', url);
+    console.log('🌐 URL Administrador:', url);
     
     return this.http.post(url, userData).pipe(
-      timeout(10000), // Aumentar timeout ya que sabemos que el servidor responde
+      timeout(10000),
       catchError((error) => {
-        console.error('❌ Error en AdminService:', error);
-        console.error('❌ Tipo de error:', error.name);
-        console.error('❌ Status:', error.status);
-        
-        if (error.name === 'TimeoutError') {
-          return throwError(() => ({
-            message: 'La conexión tardó demasiado tiempo. El usuario puede haberse creado exitosamente.',
-            status: 'timeout'
-          }));
-        }
-        return throwError(() => error);
+        console.error('❌ Error creando Administrador:', error);
+        return this.handleError(error);
       })
     );
+  }
+
+  private crearGestor(userData: any): Observable<any> {
+    console.log('🔗 AdminService: Creando Gestor de Contenido');
+    const url = `${this.apiUrl}/administradores/crear-gestor`;
+    console.log('🌐 URL Gestor:', url);
+    
+    return this.http.post(url, userData).pipe(
+      timeout(10000),
+      catchError((error) => {
+        console.error('❌ Error creando Gestor:', error);
+        return this.handleError(error);
+      })
+    );
+  }
+
+  private handleError(error: any): Observable<never> {
+    console.error('❌ Tipo de error:', error.name);
+    console.error('❌ Status:', error.status);
+    
+    if (error.name === 'TimeoutError') {
+      return throwError(() => ({
+        message: 'La conexión tardó demasiado tiempo. El usuario puede haberse creado exitosamente.',
+        status: 'timeout'
+      }));
+    }
+    return throwError(() => error);
   }
 }

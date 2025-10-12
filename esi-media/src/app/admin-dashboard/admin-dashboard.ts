@@ -22,7 +22,12 @@ export class AdminDashboardComponent implements OnInit {
     repetirContrasenia: '',
     foto: '',
     departamento: '',
-    rol: 'Administrador' as 'Administrador' | 'Gestor'
+    rol: 'Administrador' as 'Administrador' | 'Gestor',
+    // Campos específicos para Gestor
+    alias: '',
+    descripcion: '',
+    especialidad: '',
+    tipoContenido: ''
   };
   errorMessage = '';
   successMessage = '';
@@ -101,10 +106,18 @@ export class AdminDashboardComponent implements OnInit {
     // Limpiar errores anteriores
     this.fieldsWithError = [];
     
-    // Validar campos obligatorios
-    const requiredFields = ['nombre', 'apellidos', 'email', 'contrasenia', 'departamento'];
+    // Validar campos obligatorios según el rol
+    let requiredFields: string[];
+    
+    if (this.newUser.rol === 'Gestor') {
+      requiredFields = ['nombre', 'apellidos', 'email', 'contrasenia', 'alias', 'especialidad', 'tipoContenido'];
+    } else {
+      requiredFields = ['nombre', 'apellidos', 'email', 'contrasenia', 'departamento'];
+    }
+    
     const emptyFields = requiredFields.filter(field => !this.newUser[field as keyof typeof this.newUser]);
     
+    console.log('✅ COMPONENTE: Validación campos vacíos - Tipo de usuario:', this.newUser.rol);
     console.log('✅ COMPONENTE: Validación campos vacíos - Campos requeridos:', requiredFields);
     console.log('✅ COMPONENTE: Validación campos vacíos - Campos vacíos encontrados:', emptyFields);
     
@@ -142,15 +155,28 @@ export class AdminDashboardComponent implements OnInit {
     this.isCreating = true;
     console.log('🔄 COMPONENTE: isCreating = true');
 
-    const userData = {
+    // Construir userData según el tipo de usuario
+    let userData: any = {
       nombre: this.newUser.nombre,
       apellidos: this.newUser.apellidos,
       email: this.newUser.email,
       contrasenia: this.newUser.contrasenia,
-      departamento: this.newUser.departamento,
       foto: this.newUser.foto || undefined,
       rol: this.newUser.rol
     };
+
+    // Agregar campos específicos según el rol
+    if (this.newUser.rol === 'Gestor') {
+      userData = {
+        ...userData,
+        alias: this.newUser.alias,
+        descripcion: this.newUser.descripcion || undefined,
+        especialidad: this.newUser.especialidad,
+        tipoContenido: this.newUser.tipoContenido
+      };
+    } else {
+      userData.departamento = this.newUser.departamento;
+    }
 
     console.log('🚀 COMPONENTE: Preparando datos para envío...');
     console.log('📤 COMPONENTE: userData creado:', userData);
@@ -194,7 +220,10 @@ export class AdminDashboardComponent implements OnInit {
         
         this.isCreating = false;
         this.isSuccess = true;
-        this.successMessage = `¡Administrador "${nombreCreado}" creado exitosamente!`;
+        
+        // Mensaje de éxito específico por rol
+        const tipoUsuario = this.newUser.rol === 'Gestor' ? 'Gestor de Contenido' : 'Administrador';
+        this.successMessage = `¡${tipoUsuario} "${nombreCreado}" creado exitosamente!`;
         
         console.log('✅ ESTADOS ACTUALIZADOS:');
         console.log('  isCreating:', this.isCreating);
@@ -276,7 +305,12 @@ export class AdminDashboardComponent implements OnInit {
       repetirContrasenia: '',
       foto: '',
       departamento: '',
-      rol: 'Administrador'
+      rol: 'Administrador',
+      // Campos específicos para Gestor
+      alias: '',
+      descripcion: '',
+      especialidad: '',
+      tipoContenido: ''
     };
     this.resetMessages();
   }
