@@ -6,17 +6,17 @@
         <h1 class="text-xl font-semibold">ESIMedia</h1>
 
         <nav class="flex gap-6">
-          <button (click)="setActiveTab('inicio')"
+          <button (click)="navigateToHome()"
             [ngClass]="activeTab === 'inicio' ? 'text-foreground' : 'text-muted-foreground'"
             class="text-sm font-medium transition-colors hover:text-foreground">
             Inicio
           </button>
-          <button (click)="setActiveTab('usuarios')"
+          <button (click)="navigateToHome()"
             [ngClass]="activeTab === 'usuarios' ? 'text-foreground' : 'text-muted-foreground'"
             class="text-sm font-medium transition-colors hover:text-foreground">
             Usuarios
           </button>
-          <button (click)="setActiveTab('configuracion')"
+          <button (click)="navigateToHome()"
             [ngClass]="activeTab === 'configuracion' ? 'text-foreground' : 'text-muted-foreground'"
             class="text-sm font-medium transition-colors hover:text-foreground">
             Configuración
@@ -24,7 +24,7 @@
         </nav>
       </div>
 
-      <button class="px-3 py-2 rounded-md bg-accent hover:bg-accent/70 transition-colors">
+      <button (click)="navigateToHome()" class="px-3 py-2 rounded-md bg-accent hover:bg-accent/70 transition-colors">
         Mi cuenta
       </button>
     </div>

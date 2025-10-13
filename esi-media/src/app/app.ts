@@ -1,5 +1,5 @@
 import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, Router } from '@angular/router';
 
 @Component({
   selector: 'app-root',
@@ -9,7 +9,14 @@ import { RouterOutlet } from '@angular/router';
 })
 export class App {
   protected readonly title = signal('esi-media');
-    toggleDarkMode() {
+  
+  constructor(private router: Router) {}
+  
+  toggleDarkMode() {
     document.documentElement.classList.toggle('dark');
+  }
+  
+  navigateToHome() {
+    this.router.navigate(['/home']);
   }
 }
