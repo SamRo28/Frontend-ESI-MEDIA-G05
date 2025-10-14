@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -11,7 +12,13 @@ import { CommonModule } from '@angular/common';
 export class AdminDashboardComponent {
   activeTab = 'inicio';
 
+  constructor(private router: Router) {}
+
   setActiveTab(tab: string) {
     this.activeTab = tab;
+  }
+
+  navigateToHome() {
+    this.router.navigate(['/home']);
   }
 }

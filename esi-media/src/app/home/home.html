@@ -1,0 +1,104 @@
+<header>
+    <svg class="logo-header" viewBox="0 0 280 50" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="logoGradientHeader" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#a855f7;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+            </linearGradient>
+            <filter id="glowHeader">
+                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+            </filter>
+        </defs>
+        <path d="M 8 18 Q 6 15 6 22 L 6 30 Q 6 32 8 32 L 10 32 Q 12 32 12 30 L 12 22 Q 12 20 10 20 L 8 20" 
+              fill="url(#logoGradientHeader)" filter="url(#glowHeader)"/>
+        <path d="M 40 18 Q 42 15 42 22 L 42 30 Q 42 32 40 32 L 38 32 Q 36 32 36 30 L 36 22 Q 36 20 38 20 L 40 20" 
+              fill="url(#logoGradientHeader)" filter="url(#glowHeader)"/>
+        <path d="M 12 18 Q 24 8 36 18" 
+              stroke="url(#logoGradientHeader)" stroke-width="2" fill="none" stroke-linecap="round" filter="url(#glowHeader)"/>
+        <rect x="16" y="12" width="16" height="28" rx="4" ry="4" 
+              fill="none" stroke="url(#logoGradientHeader)" stroke-width="2" filter="url(#glowHeader)"/>
+        <path d="M 29 22 Q 27 20 24 20 Q 20 20 20 24 L 20 36 Q 20 40 24 40 Q 27 40 29 38" 
+              stroke="url(#logoGradientHeader)" stroke-width="2.5" fill="none" stroke-linecap="round" filter="url(#glowHeader)"/>
+        <path d="M 22 24 L 22 36 L 28 30 Z" fill="url(#logoGradientHeader)" filter="url(#glowHeader)"/>
+        <text x="50" y="34" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="white" filter="url(#glowHeader)">EsiMedia</text>
+    </svg>
+    <nav>
+        <a routerLink="/login" class="nav-link">Iniciar Sesión</a>
+        <a routerLink="/register" class="btn-register">Regístrate Gratis</a>
+    </nav>
+</header>
+
+<section class="hero">
+    <div class="gradient-bg"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+
+    <svg class="logo-main-svg" viewBox="0 0 600 150" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="logoGradientMain" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#a855f7;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+            </linearGradient>
+            <filter id="glowMain">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+            </filter>
+        </defs>
+        <path d="M 50 35 Q 40 25 40 60 L 40 85 Q 40 95 50 95 L 60 95 Q 70 95 70 85 L 70 60 Q 70 50 60 50 L 50 50" 
+              fill="url(#logoGradientMain)" filter="url(#glowMain)"/>
+        <path d="M 240 35 Q 250 25 250 60 L 250 85 Q 250 95 240 95 L 230 95 Q 220 95 220 85 L 220 60 Q 220 50 230 50 L 240 50" 
+              fill="url(#logoGradientMain)" filter="url(#glowMain)"/>
+        <path d="M 70 35 Q 145 0 220 35" 
+              stroke="url(#logoGradientMain)" stroke-width="8" fill="none" stroke-linecap="round" filter="url(#glowMain)"/>
+        <rect x="95" y="30" width="100" height="110" rx="18" ry="18" 
+              fill="none" stroke="url(#logoGradientMain)" stroke-width="8" filter="url(#glowMain)"/>
+        <path d="M 165 60 Q 155 50 135 50 Q 115 50 115 70 L 115 110 Q 115 130 135 130 Q 155 130 165 120" 
+              stroke="url(#logoGradientMain)" stroke-width="10" fill="none" stroke-linecap="round" filter="url(#glowMain)"/>
+        <path d="M 125 70 L 125 110 L 155 90 Z" fill="url(#logoGradientMain)" filter="url(#glowMain)"/>
+        <text x="270" y="100" font-family="Arial, sans-serif" font-size="65" font-weight="700" fill="white" filter="url(#glowMain)">EsiMedia</text>
+    </svg>
+    
+    <div class="hero-content">
+        <h1 class="hero-title">
+            Tu universo de<br>entretenimiento infinito
+        </h1>
+        <p class="hero-subtitle">
+            Descubre millones de canciones, películas, series y podcasts.<br>
+            Todo en un solo lugar. Sin interrupciones. Sin límites.
+        </p>
+        
+        <div class="cta-buttons">
+            <a routerLink="/register" class="btn-primary">
+                ▶ Empezar ahora
+            </a>
+        </div>
+
+        <div class="features-preview">
+            <div class="feature-card">
+                <div class="feature-icon">🎵</div>
+                <div class="feature-title">Música sin límites</div>
+                <div class="feature-desc">Millones de canciones de todos los géneros, listas personalizadas y nuevos lanzamientos</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎬</div>
+                <div class="feature-title">Películas & Series</div>
+                <div class="feature-desc">El mejor catálogo de entretenimiento en video con calidad HD y 4K</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎙️</div>
+                <div class="feature-title">Podcasts</div>
+                <div class="feature-desc">Descubre historias, aprende algo nuevo o simplemente relájate escuchando</div>
+            </div>
+        </div>
+    </div>
+</section>
