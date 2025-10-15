@@ -1,0 +1,218 @@
+<div class="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
+  <!-- Partículas de fondo -->
+  <div class="absolute inset-0 overflow-hidden">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="relative z-10 bg-black/20 backdrop-blur-sm border-b border-white/10">
+    <div class="container mx-auto px-6 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center gap-4">
+          <h1 class="text-2xl font-bold text-white">ESIMedia</h1>
+          <span class="text-pink-300">Gestor de Video</span>
+        </div>
+        <a routerLink="/home" class="text-white/80 hover:text-white transition-colors">
+          ← Volver al inicio
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenido principal -->
+  <div class="relative z-10 container mx-auto px-6 py-12">
+    <div class="max-w-2xl mx-auto">
+      <!-- Título -->
+      <div class="text-center mb-8">
+        <h2 class="text-4xl font-bold text-white mb-4">Subir Video</h2>
+        <p class="text-white/70">Comparte tus videos con la comunidad ESIMedia</p>
+      </div>
+
+      <!-- Formulario -->
+      <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-8 shadow-2xl">
+        <form [formGroup]="videoForm" (ngSubmit)="onSubmit()" class="space-y-6">
+          
+          <!-- Título -->
+          <div>
+            <label for="titulo" class="block text-white font-semibold mb-2">Título *</label>
+            <input 
+              type="text" 
+              id="titulo"
+              formControlName="titulo"
+              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-pink-400 focus:outline-none transition-colors"
+              placeholder="Título de tu video"
+            >
+            <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('titulo')">
+              {{ getFieldError('titulo') }}
+            </div>
+          </div>
+
+          <!-- Descripción -->
+          <div>
+            <label for="descripcion" class="block text-white font-semibold mb-2">Descripción</label>
+            <textarea 
+              id="descripcion"
+              formControlName="descripcion"
+              rows="3"
+              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-pink-400 focus:outline-none transition-colors resize-none"
+              placeholder="Descripción opcional del video"
+            ></textarea>
+            <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('descripcion')">
+              {{ getFieldError('descripcion') }}
+            </div>
+          </div>
+
+          <!-- URL del video -->
+          <div>
+            <label for="url" class="block text-white font-semibold mb-2">URL del Video *</label>
+            <input 
+              type="url" 
+              id="url"
+              formControlName="url"
+              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-pink-400 focus:outline-none transition-colors"
+              placeholder="https://youtube.com/watch?v=..."
+            >
+            <div class="text-white/60 text-sm mt-1">URL de YouTube, Vimeo u otra plataforma</div>
+            <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('url')">
+              {{ getFieldError('url') }}
+            </div>
+          </div>
+
+          <!-- Tags -->
+          <div>
+            <label for="tags" class="block text-white font-semibold mb-2">Tags *</label>
+            <input 
+              type="text" 
+              id="tags"
+              formControlName="tags"
+              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-pink-400 focus:outline-none transition-colors"
+              placeholder="entretenimiento, educativo, música (separados por comas)"
+            >
+            <div class="text-white/60 text-sm mt-1">Separa los tags con comas</div>
+            <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('tags')">
+              {{ getFieldError('tags') }}
+            </div>
+          </div>
+
+          <!-- Duración y Resolución -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="duracion" class="block text-white font-semibold mb-2">Duración (segundos) *</label>
+              <input 
+                type="number" 
+                id="duracion"
+                formControlName="duracion"
+                min="0.1" 
+                max="14400"
+                step="0.1"
+                class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-pink-400 focus:outline-none transition-colors"
+                placeholder="3600"
+              >
+              <div class="text-white/60 text-sm mt-1">Máximo 4 horas</div>
+              <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('duracion')">
+                {{ getFieldError('duracion') }}
+              </div>
+            </div>
+
+            <div>
+              <label for="resolucion" class="block text-white font-semibold mb-2">Resolución *</label>
+              <select 
+                id="resolucion"
+                formControlName="resolucion"
+                class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:border-pink-400 focus:outline-none transition-colors"
+              >
+                <option value="" disabled>Selecciona resolución</option>
+                <option value="480p">480p</option>
+                <option value="720p">720p</option>
+                <option value="1080p">1080p</option>
+                <option value="1440p">1440p</option>
+                <option value="4K">4K</option>
+              </select>
+              <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('resolucion')">
+                {{ getFieldError('resolucion') }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Edad mínima -->
+          <div>
+            <label for="edadVisualizacion" class="block text-white font-semibold mb-2">Edad mínima *</label>
+            <input 
+              type="number" 
+              id="edadVisualizacion"
+              formControlName="edadVisualizacion"
+              min="0" 
+              max="18"
+              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-pink-400 focus:outline-none transition-colors"
+              placeholder="0"
+            >
+            <div class="text-white/60 text-sm mt-1">De 0 a 18 años</div>
+            <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('edadVisualizacion')">
+              {{ getFieldError('edadVisualizacion') }}
+            </div>
+          </div>
+
+          <!-- Fecha disponible hasta -->
+          <div>
+            <label for="fechaDisponibleHasta" class="block text-white font-semibold mb-2">Disponible hasta (opcional)</label>
+            <input 
+              type="datetime-local" 
+              id="fechaDisponibleHasta"
+              formControlName="fechaDisponibleHasta"
+              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:border-pink-400 focus:outline-none transition-colors"
+            >
+            <div class="text-white/60 text-sm mt-1">Deja vacío para disponibilidad permanente</div>
+          </div>
+
+          <!-- Opciones -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex items-center space-x-3">
+              <input 
+                type="checkbox" 
+                formControlName="vip"
+                id="vip"
+                class="w-5 h-5 text-pink-500 bg-white/10 border-white/30 rounded focus:ring-pink-500"
+              >
+              <label for="vip" class="text-white font-semibold">Contenido VIP</label>
+            </div>
+
+            <div class="flex items-center space-x-3">
+              <input 
+                type="checkbox" 
+                formControlName="visible"
+                id="visible"
+                class="w-5 h-5 text-pink-500 bg-white/10 border-white/30 rounded focus:ring-pink-500"
+              >
+              <label for="visible" class="text-white font-semibold">Visible públicamente</label>
+            </div>
+          </div>
+
+          <!-- Mensaje de resultado -->
+          <div *ngIf="uploadMessage" 
+               [class]="uploadMessage.includes('✅') ? 'text-green-400' : 'text-red-400'"
+               class="p-4 bg-white/10 rounded-lg text-center font-semibold">
+            {{ uploadMessage }}
+          </div>
+
+          <!-- Botón de submit -->
+          <button 
+            type="submit" 
+            [disabled]="!videoForm.valid || isUploading"
+            class="w-full py-4 bg-gradient-to-r from-pink-600 to-purple-600 text-white font-bold rounded-lg hover:from-pink-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105"
+          >
+            <span *ngIf="!isUploading">🎬 Subir Video</span>
+            <span *ngIf="isUploading" class="flex items-center justify-center">
+              <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+              Subiendo...
+            </span>
+          </button>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
