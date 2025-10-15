@@ -14,6 +14,12 @@ export class AdminDashboardComponent implements OnInit {
   activeTab = 'inicio';
   showForm = false;
   usuarios: Usuario[] = [];
+  usuariosFiltrados: Usuario[] = []; // Lista filtrada para mostrar
+  
+  // Filtros
+  filtroRol = 'Todos'; // 'Todos', 'Administrador', 'Gestor', 'Visualizador'
+  busquedaNombre = ''; // Texto de búsqueda
+
   newUser = {
     nombre: '',
     apellidos: '',
@@ -37,6 +43,14 @@ export class AdminDashboardComponent implements OnInit {
   // Propiedades para manejar errores de validación
   fieldsWithError: string[] = [];
 
+  // Fotos de perfil disponibles
+  fotosDisponibles = [
+    { id: 'perfil1.png', nombre: 'Perfil 1' },
+    { id: 'perfil2.png', nombre: 'Perfil 2' },
+    { id: 'perfil3.png', nombre: 'Perfil 3' },
+    { id: 'perfil4.png', nombre: 'Perfil 4' }
+  ];
+
   constructor(
     private adminService: AdminService,
     private cdr: ChangeDetectorRef
@@ -50,6 +64,7 @@ export class AdminDashboardComponent implements OnInit {
     this.adminService.getUsuarios().subscribe({
       next: (usuarios) => {
         this.usuarios = usuarios;
+        this.aplicarFiltros(); // Aplicar filtros después de cargar usuarios
       },
       error: (error: any) => {
         console.error('Error al cargar usuarios:', error);
@@ -85,13 +100,6 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
-  onFileSelected(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      this.newUser.foto = file.name;
-    }
-  }
-
   onRoleChange(role: 'Administrador' | 'Gestor') {
     this.newUser.rol = role;
   }
@@ -110,7 +118,7 @@ export class AdminDashboardComponent implements OnInit {
     let requiredFields: string[];
     
     if (this.newUser.rol === 'Gestor') {
-      requiredFields = ['nombre', 'apellidos', 'email', 'contrasenia', 'alias', 'especialidad', 'tipoContenido'];
+      requiredFields = ['nombre', 'apellidos', 'email', 'contrasenia', 'alias', 'especialidad', 'tipoContenido', 'foto'];
     } else {
       requiredFields = ['nombre', 'apellidos', 'email', 'contrasenia', 'departamento'];
     }
@@ -328,6 +336,22 @@ export class AdminDashboardComponent implements OnInit {
     return this.fieldsWithError.includes(fieldName);
   }
 
+  // Método para seleccionar/deseleccionar foto de perfil
+  selectFoto(fotoId: string) {
+    // Si la foto ya está seleccionada y es para Administrador (opcional), deseleccionar
+    if (this.newUser.foto === fotoId && this.newUser.rol === 'Administrador') {
+      this.newUser.foto = '';
+    } else {
+      // Seleccionar la nueva foto
+      this.newUser.foto = fotoId;
+    }
+    
+    // Limpiar error de foto si existía
+    if (this.fieldsWithError.includes('foto')) {
+      this.fieldsWithError = this.fieldsWithError.filter(field => field !== 'foto');
+    }
+  }
+
   // Método para salir del formulario después del éxito
   exitForm() {
     this.showForm = false;
@@ -350,5 +374,40 @@ export class AdminDashboardComponent implements OnInit {
     return this.usuarios.filter(u => u.bloqueado).length;
   }
 
+  // Métodos de filtrado
+  aplicarFiltros() {
+    let usuariosFiltrados = [...this.usuarios];
+
+    // Filtrar por rol si no es "Todos"
+    if (this.filtroRol !== 'Todos') {
+      usuariosFiltrados = usuariosFiltrados.filter(usuario => usuario.rol === this.filtroRol);
+    }
+
+    // Filtrar por nombre (búsqueda en tiempo real)
+    if (this.busquedaNombre.trim()) {
+      const busqueda = this.busquedaNombre.toLowerCase().trim();
+      usuariosFiltrados = usuariosFiltrados.filter(usuario => {
+        const nombreCompleto = `${usuario.nombre} ${usuario.apellidos}`.toLowerCase();
+        return nombreCompleto.includes(busqueda) || 
+               usuario.email.toLowerCase().includes(busqueda);
+      });
+    }
+
+    this.usuariosFiltrados = usuariosFiltrados;
+  }
+
+  onFiltroRolChange() {
+    this.aplicarFiltros();
+  }
+
+  onBusquedaChange() {
+    this.aplicarFiltros();
+  }
+
+  limpiarFiltros() {
+    this.filtroRol = 'Todos';
+    this.busquedaNombre = '';
+    this.aplicarFiltros();
+  }
 
 }
