@@ -13,7 +13,9 @@
     <div class="container mx-auto px-6 py-4">
       <div class="flex justify-between items-center">
         <div class="flex items-center gap-4">
-          <h1 class="text-2xl font-bold text-white">ESIMedia</h1>
+          <h1 class="text-2xl font-bold text-white">
+            <span class="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">ESI</span><span class="text-white">Media</span>
+          </h1>
           <span class="text-purple-300">Gestor de Audio</span>
         </div>
         <a routerLink="/home" class="text-white/80 hover:text-white transition-colors">
@@ -34,11 +36,28 @@
 
       <!-- Formulario -->
       <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-8 shadow-2xl">
+        <!-- Indicador de progreso -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between text-sm text-white/70 mb-2">
+            <span>Progreso de subida</span>
+            <span>{{ getFormProgress() }}% completado</span>
+          </div>
+          <div class="w-full bg-white/20 rounded-full h-2">
+            <div class="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300" 
+                 [style.width.%]="getFormProgress()"></div>
+          </div>
+        </div>
+
         <form [formGroup]="audioForm" (ngSubmit)="onSubmit()" class="space-y-6">
           
           <!-- Título -->
           <div>
-            <label for="titulo" class="block text-white font-semibold mb-2">Título *</label>
+            <label for="titulo" class="block text-white font-semibold mb-2">
+              <span class="flex items-center gap-2">
+                Título <span class="text-red-400">*</span>
+                <span *ngIf="isFieldComplete('titulo')" class="text-green-400 text-sm">✓</span>
+              </span>
+            </label>
             <input 
               type="text" 
               id="titulo"
@@ -46,6 +65,9 @@
               class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
               placeholder="Título de tu audio"
             >
+            <div class="text-blue-300 text-sm mt-1" *ngIf="!getFieldError('titulo')">
+              {{ getFieldHelpMessage('titulo') }}
+            </div>
             <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('titulo')">
               {{ getFieldError('titulo') }}
             </div>
@@ -61,6 +83,7 @@
               class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors resize-none"
               placeholder="Descripción opcional del audio"
             ></textarea>
+            <div class="text-white/60 text-sm mt-1">Opcional - Describe tu audio (máximo 500 caracteres)</div>
             <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('descripcion')">
               {{ getFieldError('descripcion') }}
             </div>
@@ -68,60 +91,115 @@
 
           <!-- Tags -->
           <div>
-            <label for="tags" class="block text-white font-semibold mb-2">Tags *</label>
-            <input 
-              type="text" 
-              id="tags"
-              formControlName="tags"
-              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
-              placeholder="rock, pop, instrumental (separados por comas)"
-            >
-            <div class="text-white/60 text-sm mt-1">Separa los tags con comas</div>
-            <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('tags')">
-              {{ getFieldError('tags') }}
+            <label class="block text-white font-semibold mb-2">
+              <span class="flex items-center gap-2">
+                Tags <span class="text-red-400">*</span>
+                <span *ngIf="isFieldComplete('tags')" class="text-green-400 text-sm">✓</span>
+              </span>
+            </label>
+            
+            <!-- Grid de tags seleccionables -->
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+              <div *ngFor="let tag of availableAudioTags" 
+                   class="flex items-center space-x-2">
+                <input 
+                  type="checkbox" 
+                  [id]="'tag-' + tag.value"
+                  [checked]="isTagSelected(tag.value)"
+                  (change)="toggleTag(tag.value)"
+                  class="w-4 h-4 text-purple-500 bg-white/10 border-white/30 rounded focus:ring-purple-500"
+                >
+                <label [for]="'tag-' + tag.value" 
+                       class="text-white text-sm cursor-pointer hover:text-purple-300 transition-colors">
+                  {{ tag.label }}
+                </label>
+              </div>
+            </div>
+            
+            <!-- Resumen de tags seleccionados -->
+            <div class="text-blue-300 text-sm mt-1" *ngIf="selectedTags.length === 0">
+              Selecciona al menos 1 tag para categorizar tu audio
+            </div>
+            <div class="text-blue-300 text-sm mt-1" *ngIf="selectedTags.length > 0">
+              {{ getFieldHelpMessage('tags') }}
             </div>
           </div>
 
-          <!-- Duración y Edad -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label for="duracion" class="block text-white font-semibold mb-2">Duración (segundos) *</label>
-              <input 
-                type="number" 
-                id="duracion"
-                formControlName="duracion"
-                min="0.1" 
-                max="600"
-                step="0.1"
-                class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
-                placeholder="120.5"
-              >
-              <div class="text-white/60 text-sm mt-1">Máximo 10 minutos</div>
-              <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('duracion')">
-                {{ getFieldError('duracion') }}
+          <!-- Duración -->
+          <div>
+            <label class="block text-white font-semibold mb-2">
+              <span class="flex items-center gap-2">
+                Duración <span class="text-red-400">*</span>
+                <span *ngIf="isFieldComplete('minutos') && isFieldComplete('segundos')" class="text-green-400 text-sm">✓</span>
+              </span>
+            </label>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="minutos" class="block text-white/70 text-sm mb-1">Minutos</label>
+                <input 
+                  type="number" 
+                  id="minutos"
+                  formControlName="minutos"
+                  min="0" 
+                  max="10"
+                  class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
+                  placeholder="2"
+                >
+              </div>
+              <div>
+                <label for="segundos" class="block text-white/70 text-sm mb-1">Segundos</label>
+                <input 
+                  type="number" 
+                  id="segundos"
+                  formControlName="segundos"
+                  min="0" 
+                  max="59"
+                  class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
+                  placeholder="30"
+                >
               </div>
             </div>
+            <div class="text-blue-300 text-sm mt-1" *ngIf="!getFieldError('minutos') && !getFieldError('segundos')">
+              {{ getDurationHelpMessage() }}
+            </div>
+            <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('minutos') || getFieldError('segundos')">
+              {{ getFieldError('minutos') || getFieldError('segundos') }}
+            </div>
+          </div>
 
-            <div>
-              <label for="edadVisualizacion" class="block text-white font-semibold mb-2">Edad mínima *</label>
-              <input 
-                type="number" 
-                id="edadVisualizacion"
-                formControlName="edadVisualizacion"
-                min="0" 
-                max="18"
-                class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
-                placeholder="0"
-              >
-              <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('edadVisualizacion')">
-                {{ getFieldError('edadVisualizacion') }}
-              </div>
+          <!-- Edad mínima -->
+          <div>
+            <label for="edadVisualizacion" class="block text-white font-semibold mb-2">
+              <span class="flex items-center gap-2">
+                Edad mínima <span class="text-red-400">*</span>
+                <span *ngIf="isFieldComplete('edadVisualizacion')" class="text-green-400 text-sm">✓</span>
+              </span>
+            </label>
+            <select 
+              id="edadVisualizacion"
+              formControlName="edadVisualizacion"
+              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:border-purple-400 focus:outline-none transition-colors"
+            >
+              <option value="" disabled>Selecciona clasificación de edad</option>
+              <option value="TP">TP (Todo Público)</option>
+              <option value="18">+18 (Adultos)</option>
+            </select>
+            <div class="text-blue-300 text-sm mt-1" *ngIf="!getFieldError('edadVisualizacion')">
+              {{ getFieldHelpMessage('edadVisualizacion') }}
+            </div>
+            <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('edadVisualizacion')">
+              {{ getFieldError('edadVisualizacion') }}
             </div>
           </div>
 
           <!-- Archivo de audio -->
           <div>
-            <label for="audioFile" class="block text-white font-semibold mb-2">Archivo de Audio *</label>
+            <label for="audioFile" class="block text-white font-semibold mb-2">
+              <span class="flex items-center gap-2">
+                Archivo de Audio <span class="text-red-400">*</span>
+                <span *ngIf="selectedFile" class="text-green-400 text-sm">✓</span>
+              </span>
+            </label>
             <div class="border-2 border-dashed border-white/30 rounded-lg p-6 text-center hover:border-purple-400 transition-colors">
               <input 
                 type="file" 
@@ -138,16 +216,36 @@
                 (click)="fileInput.click()">
                 <div class="text-4xl text-white/50 mb-2">🎵</div>
                 <p class="text-white">Haz clic para seleccionar un archivo MP3</p>
-                <p class="text-white/60 text-sm mt-1">Máximo 2MB</p>
+                <p class="text-white/60 text-sm mt-1">Máximo 2MB • Solo archivos .mp3</p>
               </button>
               <div *ngIf="selectedFile" class="text-white">
                 <div class="text-2xl mb-2">✅</div>
-                <p>{{ selectedFile.name }}</p>
-                <p class="text-white/60 text-sm">{{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB</p>
-                <button type="button" (click)="fileInput.click()" class="mt-2 text-purple-300 hover:text-purple-200">
+                <p class="font-semibold">{{ selectedFile.name }}</p>
+                <p class="text-green-300 text-sm">{{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB</p>
+                <button type="button" (click)="fileInput.click()" class="mt-2 text-purple-300 hover:text-purple-200 underline">
                   Cambiar archivo
                 </button>
               </div>
+            </div>
+            <!-- Error específico del archivo -->
+            <div class="text-red-400 text-sm mt-2" *ngIf="fileError">
+              ❌ {{ fileError }}
+            </div>
+            <!-- Mensaje de ayuda cuando no hay archivo seleccionado -->
+            <div class="text-blue-300 text-sm mt-2" *ngIf="!selectedFile && !fileError">
+              💡 Tip: Asegúrate de que tu archivo MP3 sea de buena calidad para mejor experiencia
+            </div>
+          </div>
+
+          <!-- Carátula (placeholder para futuros sprints) -->
+          <div>
+            <label for="caratula" class="block text-white font-semibold mb-2">
+              Carátula <span class="text-white/60">(próximamente)</span>
+            </label>
+            <div class="border-2 border-dashed border-white/20 rounded-lg p-6 text-center opacity-50">
+              <div class="text-4xl text-white/30 mb-2">🖼️</div>
+              <p class="text-white/40">Funcionalidad de carátula disponible en próximos sprints</p>
+              <p class="text-white/30 text-sm mt-1">Podrás subir imágenes PNG o seleccionar carátulas prediseñadas</p>
             </div>
           </div>
 
@@ -188,23 +286,44 @@
 
           <!-- Mensaje de resultado -->
           <div *ngIf="uploadMessage" 
-               [class]="uploadMessage.includes('✅') ? 'text-green-400' : 'text-red-400'"
-               class="p-4 bg-white/10 rounded-lg text-center font-semibold">
+               [class]="uploadMessage.includes('✅') ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'"
+               class="p-4 border-2 rounded-lg text-center font-semibold animate-pulse">
             {{ uploadMessage }}
           </div>
 
           <!-- Botón de submit -->
           <button 
             type="submit" 
-            [disabled]="!audioForm.valid || isUploading"
-            class="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105"
+            [disabled]="!audioForm.valid || !selectedFile || isUploading"
+            [class]="(audioForm.valid && selectedFile && !isUploading) 
+              ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transform hover:scale-105' 
+              : 'bg-gray-600 cursor-not-allowed'"
+            class="w-full py-4 text-white font-bold rounded-lg disabled:opacity-50 transition-all duration-300"
           >
-            <span *ngIf="!isUploading">🎵 Subir Audio</span>
+            <span *ngIf="!isUploading && (audioForm.valid && selectedFile)" class="flex items-center justify-center">
+              🎵 Subir Audio
+            </span>
+            <span *ngIf="!isUploading && (!audioForm.valid || !selectedFile)" class="flex items-center justify-center">
+              ⚠️ Completa todos los campos
+            </span>
             <span *ngIf="isUploading" class="flex items-center justify-center">
               <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-              Subiendo...
+              Subiendo audio...
             </span>
           </button>
+
+          <!-- Verificación previa al envío -->
+          <div *ngIf="getFormProgress() < 100 && !isUploading" 
+               class="p-4 bg-yellow-400/10 border-2 border-yellow-400/30 rounded-lg">
+            <div class="text-yellow-300 font-semibold mb-2">⚠️ Campos pendientes:</div>
+            <ul class="text-yellow-200 text-sm space-y-1">
+              <li *ngIf="!isFieldComplete('titulo')">• Título requerido</li>
+              <li *ngIf="!isFieldComplete('tags')">• Tags requeridos</li>
+              <li *ngIf="!isFieldComplete('duracion')">• Duración requerida</li>
+              <li *ngIf="!isFieldComplete('edadVisualizacion')">• Edad mínima requerida</li>
+              <li *ngIf="!selectedFile">• Archivo de audio requerido</li>
+            </ul>
+          </div>
 
         </form>
       </div>

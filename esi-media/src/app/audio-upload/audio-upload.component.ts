@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormArray } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ContentService, AudioUploadData, UploadResponse } from '../services/content.service';
@@ -16,7 +16,29 @@ export class AudioUploadComponent {
   selectedFile: File | null = null;
   isUploading = false;
   uploadMessage = '';
-
+  fileError = ''; // Error específico del archivo
+  
+  // Tags predefinidos para audio
+  availableAudioTags = [
+    { value: 'pop', label: 'Pop' },
+    { value: 'rock', label: 'Rock' },
+    { value: 'rap', label: 'Rap/Hip-Hop' },
+    { value: 'jazz', label: 'Jazz' },
+    { value: 'clasica', label: 'Clásica' },
+    { value: 'electronica', label: 'Electrónica' },
+    { value: 'reggaeton', label: 'Reggaeton' },
+    { value: 'indie', label: 'Indie' },
+    { value: 'folk', label: 'Folk' },
+    { value: 'blues', label: 'Blues' },
+    { value: 'metal', label: 'Metal' },
+    { value: 'podcast', label: 'Podcast' },
+    { value: 'audiolibro', label: 'Audiolibro' },
+    { value: 'instrumental', label: 'Instrumental' },
+    { value: 'acustico', label: 'Acústico' }
+  ];
+  
+  selectedTags: string[] = [];
+  
   constructor(
     private fb: FormBuilder,
     private contentService: ContentService,
@@ -25,10 +47,11 @@ export class AudioUploadComponent {
     this.audioForm = this.fb.group({
       titulo: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
       descripcion: ['', [Validators.maxLength(500)]],
-      tags: ['', [Validators.required]],
-      duracion: ['', [Validators.required, Validators.min(0.1), Validators.max(600)]],
+      tags: ['', [Validators.required]], // Mantenemos como string simple por ahora, cambiaremos la lógica después
+      minutos: ['', [Validators.required, Validators.min(0), Validators.max(10)]],
+      segundos: ['', [Validators.required, Validators.min(0), Validators.max(59)]],
       vip: [false, [Validators.required]],
-      edadVisualizacion: [0, [Validators.required, Validators.min(0), Validators.max(18)]],
+      edadVisualizacion: ['', [Validators.required]],
       fechaDisponibleHasta: [''],
       visible: [true, [Validators.required]],
       archivo: [null, [Validators.required]],
@@ -38,22 +61,27 @@ export class AudioUploadComponent {
 
   onFileSelected(event: any) {
     const file = event.target.files[0];
+    this.fileError = ''; // Limpiar errores previos
+    
     if (file) {
       // Validar tipo de archivo
       if (!file.type.includes('audio/mpeg') && !file.type.includes('audio/mp3')) {
-        this.uploadMessage = 'Error: Solo se permiten archivos MP3';
+        this.fileError = 'Solo se permiten archivos MP3';
+        this.selectedFile = null;
         return;
       }
       
       // Validar tamaño (2MB máximo)
       if (file.size > 2 * 1024 * 1024) {
-        this.uploadMessage = 'Error: El archivo excede el tamaño máximo de 2MB';
+        this.fileError = 'El archivo excede el tamaño máximo de 2MB';
+        this.selectedFile = null;
         return;
       }
       
       // Validar extensión
       if (!file.name.toLowerCase().endsWith('.mp3')) {
-        this.uploadMessage = 'Error: El archivo debe tener extensión .mp3';
+        this.fileError = 'El archivo debe tener extensión .mp3';
+        this.selectedFile = null;
         return;
       }
 
@@ -63,22 +91,47 @@ export class AudioUploadComponent {
     }
   }
 
+  // Métodos para manejar selección múltiple de tags
+  toggleTag(tagValue: string) {
+    const index = this.selectedTags.indexOf(tagValue);
+    if (index > -1) {
+      this.selectedTags.splice(index, 1);
+    } else {
+      this.selectedTags.push(tagValue);
+    }
+    
+    // Actualizar el formulario
+    this.audioForm.patchValue({ tags: this.selectedTags.join(',') });
+  }
+
+  isTagSelected(tagValue: string): boolean {
+    return this.selectedTags.includes(tagValue);
+  }
+
+  getSelectedTagsText(): string {
+    if (this.selectedTags.length === 0) return '';
+    return this.selectedTags.map(tag => {
+      const tagObj = this.availableAudioTags.find(t => t.value === tag);
+      return tagObj ? tagObj.label : tag;
+    }).join(', ');
+  }
+
   onSubmit() {
     if (this.audioForm.valid && this.selectedFile) {
       this.isUploading = true;
-      this.uploadMessage = '';
+      this.uploadMessage = 'Preparando datos para subir...';
 
-      // Convertir tags de string a array
-      const tagsArray = this.audioForm.value.tags
-        .split(',')
-        .map((tag: string) => tag.trim())
-        .filter((tag: string) => tag.length > 0);
+      // Usar selectedTags directamente (ya están como array)
+      const tagsArray = this.selectedTags.length > 0 ? this.selectedTags : [];
+
+      // Convertir minutos y segundos a total de minutos (decimal)
+      const totalMinutos = Number(this.audioForm.value.minutos) + (Number(this.audioForm.value.segundos) / 60);
 
       const audioData: AudioUploadData = {
         titulo: this.audioForm.value.titulo,
         descripcion: this.audioForm.value.descripcion || undefined,
         tags: tagsArray,
-        duracion: Number(this.audioForm.value.duracion),
+        duracion: totalMinutos, // Ahora se pasa en minutos
         vip: this.audioForm.value.vip,
         edadVisualizacion: Number(this.audioForm.value.edadVisualizacion),
         fechaDisponibleHasta: this.audioForm.value.fechaDisponibleHasta 
@@ -125,5 +178,101 @@ export class AudioUploadComponent {
       if (errors['max']) return `${fieldName} no puede ser mayor a ${errors['max'].max}`;
     }
     return '';
+  }
+
+  // Calcular progreso del formulario para feedback visual
+  getFormProgress(): number {
+    const requiredFields = ['titulo', 'tags', 'minutos', 'segundos', 'edadVisualizacion'];
+    const completedFields = requiredFields.filter(field => {
+      const control = this.audioForm.get(field);
+      return control && control.valid && control.value !== '';
+    });
+    
+    // Agregar archivo como campo requerido
+    const hasFile = this.selectedFile !== null;
+    const totalRequired = requiredFields.length + 1; // +1 for file
+    const totalCompleted = completedFields.length + (hasFile ? 1 : 0);
+    
+    return Math.round((totalCompleted / totalRequired) * 100);
+  }
+
+  // Verificar si un campo específico está completo
+  isFieldComplete(fieldName: string): boolean {
+    if (fieldName === 'tags') {
+      return this.selectedTags.length > 0;
+    }
+    const field = this.audioForm.get(fieldName);
+    return field ? field.valid && field.value !== '' : false;
+  }
+
+  // Obtener mensaje de ayuda para campos
+  getFieldHelpMessage(fieldName: string): string {
+    const field = this.audioForm.get(fieldName);
+    if (!field) return '';
+
+    switch (fieldName) {
+      case 'titulo':
+        if (!field.value) return 'Escribe un título descriptivo para tu audio';
+        if (field.value.length < 2) return 'El título necesita al menos 2 caracteres';
+        return '✓ Título válido';
+      
+      case 'tags':
+        if (this.selectedTags.length === 0) return 'Selecciona al menos 1 tag para categorizar tu audio';
+        if (this.selectedTags.length === 1) return `✓ 1 tag seleccionado: ${this.getSelectedTagsText()}`;
+        return `✓ ${this.selectedTags.length} tags seleccionados: ${this.getSelectedTagsText()}`;
+      
+      case 'edadVisualizacion':
+        if (!field.value) return 'Selecciona la edad mínima apropiada';
+        const edadLabels: { [key: string]: string } = {
+          '0': 'Todo público',
+          '3': 'Niños 3+',
+          '7': 'Niños 7+',
+          '12': 'Adolescentes 12+',
+          '16': 'Jóvenes 16+',
+          '18': 'Solo adultos'
+        };
+        return `✓ ${edadLabels[field.value] || 'Edad configurada'}`;
+      
+      default:
+        return '';
+    }
+  }
+
+  // Mensaje de ayuda específico para duración
+  getDurationHelpMessage(): string {
+    const minutos = this.audioForm.get('minutos')?.value || 0;
+    const segundos = this.audioForm.get('segundos')?.value || 0;
+    
+    if (minutos === '' && segundos === '') {
+      return 'Especifica la duración de tu audio (máximo 10 minutos)';
+    }
+    
+    if (minutos === '' || segundos === '') {
+      return 'Completa tanto minutos como segundos';
+    }
+    
+    const totalMinutos = Number(minutos);
+    const totalSegundos = Number(segundos);
+    
+    if (totalMinutos === 0 && totalSegundos === 0) {
+      return 'La duración debe ser mayor a 0';
+    }
+    
+    if (totalMinutos > 10) {
+      return 'La duración máxima es 10 minutos';
+    }
+    
+    if (totalSegundos > 59) {
+      return 'Los segundos no pueden ser mayor a 59';
+    }
+    
+    return `✓ Duración: ${totalMinutos}m ${totalSegundos}s`;
+  }
+
+  // Formatear duración en minutos y segundos
+  formatDuration(seconds: number): string {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.round(seconds % 60);
+    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
   }
 }

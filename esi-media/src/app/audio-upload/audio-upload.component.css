@@ -49,6 +49,25 @@
   }
 }
 
+/* FIX: Desplegables (select) con texto visible */
+select {
+  color: white !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+select option {
+  background-color: #1f2937 !important;
+  color: white !important;
+  padding: 8px 12px;
+}
+
+select option:hover,
+select option:focus,
+select option:checked {
+  background-color: #374151 !important;
+  color: white !important;
+}
+
 /* Efectos para inputs y elementos */
 input:focus, textarea:focus {
   box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
