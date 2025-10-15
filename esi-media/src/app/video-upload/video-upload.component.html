@@ -54,7 +54,7 @@
           <div>
             <label for="titulo" class="block text-white font-semibold mb-2">
               <span class="flex items-center gap-2">
-                Título <span class="text-red-400">*</span>
+                Título <span class="text-red-500 text-xl font-bold">*</span>
                 <span *ngIf="isFieldComplete('titulo')" class="text-green-400 text-sm">✓</span>
               </span>
             </label>
@@ -93,7 +93,7 @@
           <div>
             <div class="block text-white font-semibold mb-2">
               <span class="flex items-center gap-2">
-                Tags <span class="text-red-400">*</span>
+                Tags <span class="text-red-500 text-xl font-bold">*</span>
                 <span *ngIf="isFieldComplete('tags')" class="text-green-400 text-sm">✓</span>
               </span>
             </div>
@@ -129,7 +129,7 @@
           <div>
             <div class="block text-white font-semibold mb-2">
               <span class="flex items-center gap-2">
-                Duración <span class="text-red-400">*</span>
+                Duración <span class="text-red-500 text-xl font-bold">*</span>
               </span>
             </div>
             <div class="grid grid-cols-2 gap-3">
@@ -142,7 +142,6 @@
                   min="0" 
                   max="240"
                   class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
-                  placeholder="10"
                 >
               </div>
               <div>
@@ -154,7 +153,6 @@
                   min="0" 
                   max="59"
                   class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
-                  placeholder="30"
                 >
               </div>
             </div>
@@ -166,7 +164,7 @@
 
           <!-- Resolución -->
           <div>
-            <label for="resolucion" class="block text-white font-semibold mb-2">Resolución <span class="text-red-400">*</span></label>
+            <label for="resolucion" class="block text-white font-semibold mb-2">Resolución <span class="text-red-500 text-xl font-bold">*</span></label>
             <select 
               id="resolucion"
               formControlName="resolucion"
@@ -186,7 +184,7 @@
           <div>
             <label for="edadVisualizacion" class="block text-white font-semibold mb-2">
               <span class="flex items-center gap-2">
-                Edad mínima <span class="text-red-400">*</span>
+                Edad mínima <span class="text-red-500 text-xl font-bold">*</span>
                 <span *ngIf="isFieldComplete('edadVisualizacion')" class="text-green-400 text-sm">✓</span>
               </span>
             </label>
@@ -211,7 +209,7 @@
           <div>
             <label for="url" class="block text-white font-semibold mb-2">
               <span class="flex items-center gap-2">
-                URL del Video <span class="text-red-400">*</span>
+                URL del Video <span class="text-red-500 text-xl font-bold">*</span>
                 <span *ngIf="isFieldComplete('url')" class="text-green-400 text-sm">✓</span>
               </span>
             </label>
@@ -244,9 +242,9 @@
 
           <!-- Fecha disponible hasta -->
           <div>
-            <label for="fechaDisponibleHasta" class="block text-white font-semibold mb-2">Disponible hasta (opcional)</label>
+            <label for="fechaDisponibleHasta" class="block text-white font-semibold mb-2">Disponible hasta</label>
             <input 
-              type="datetime-local" 
+              type="date" 
               id="fechaDisponibleHasta"
               formControlName="fechaDisponibleHasta"
               class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:border-purple-400 focus:outline-none transition-colors"
@@ -255,25 +253,35 @@
           </div>
 
           <!-- Opciones -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="flex items-center space-x-3">
-              <input 
-                type="checkbox" 
-                formControlName="vip"
-                id="vip"
-                class="w-5 h-5 text-purple-500 bg-white/10 border-white/30 rounded focus:ring-purple-500"
-              >
-              <label for="vip" class="text-white font-semibold">Contenido VIP</label>
+          <div class="space-y-4">
+            <div>
+              <div class="flex items-center space-x-3 mb-2">
+                <input 
+                  type="checkbox" 
+                  formControlName="vip"
+                  id="vip"
+                  class="w-5 h-5 text-purple-500 bg-white/10 border-white/30 rounded focus:ring-purple-500"
+                >
+                <label for="vip" class="text-white font-semibold">Contenido VIP</label>
+              </div>
+              <div class="text-white/60 text-sm ml-8">
+                Solo usuarios VIP podrán acceder a este contenido
+              </div>
             </div>
 
-            <div class="flex items-center space-x-3">
-              <input 
-                type="checkbox" 
-                formControlName="visible"
-                id="visible"
-                class="w-5 h-5 text-purple-500 bg-white/10 border-white/30 rounded focus:ring-purple-500"
-              >
-              <label for="visible" class="text-white font-semibold">Visible públicamente</label>
+            <div>
+              <div class="flex items-center space-x-3 mb-2">
+                <input 
+                  type="checkbox" 
+                  formControlName="visible"
+                  id="visible"
+                  class="w-5 h-5 text-purple-500 bg-white/10 border-white/30 rounded focus:ring-purple-500"
+                >
+                <label for="visible" class="text-white font-semibold">Visible públicamente</label>
+              </div>
+              <div class="text-white/60 text-sm ml-8">
+                El contenido aparecerá en búsquedas y listados públicos
+              </div>
             </div>
           </div>
 
