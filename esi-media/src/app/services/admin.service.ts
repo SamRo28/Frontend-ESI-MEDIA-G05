@@ -55,7 +55,7 @@ export class AdminService {
 
   private crearGestor(userData: any): Observable<any> {
     console.log('🔗 AdminService: Creando Gestor de Contenido');
-    const url = `${this.apiUrl}/administradores/crear-gestor`;
+    const url = `${this.apiUrl}/gestores/crear`;
     console.log('🌐 URL Gestor:', url);
     
     return this.http.post(url, userData).pipe(
