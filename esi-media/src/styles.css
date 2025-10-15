@@ -1,4 +1,17 @@
+<<<<<<< HEAD
 body {
   margin: 0;
   padding: 0;
+=======
+/* You can add global styles to this file, and also import other style files */
+/* Tailwind directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+>>>>>>> alvaro
 }

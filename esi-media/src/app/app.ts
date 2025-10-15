@@ -9,6 +9,7 @@ import { RouterOutlet, Router } from '@angular/router';
 })
 export class App {
   protected readonly title = signal('esi-media');
+<<<<<<< HEAD
   
   constructor(private router: Router) {}
   
@@ -19,4 +20,6 @@ export class App {
   navigateToHome() {
     this.router.navigate(['/home']);
   }
+=======
+>>>>>>> alvaro
 }
