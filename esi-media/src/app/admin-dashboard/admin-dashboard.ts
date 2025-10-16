@@ -1,6 +1,7 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectorRef, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AdminService, Usuario } from '../services/admin.service';
 
 @Component({
@@ -15,6 +16,18 @@ export class AdminDashboardComponent implements OnInit {
   showForm = false;
   usuarios: Usuario[] = [];
   usuariosFiltrados: Usuario[] = []; // Lista filtrada para mostrar
+  
+  // Información del usuario actual
+  currentUser: any = null;
+  
+  // Modal de perfil
+  showProfileModal = false;
+  editingProfile = {
+    nombre: '',
+    apellidos: '',
+    email: '',
+    foto: ''
+  };
   
   // Filtros
   filtroRol = 'Todos'; // 'Todos', 'Administrador', 'Gestor', 'Visualizador'
@@ -53,10 +66,20 @@ export class AdminDashboardComponent implements OnInit {
 
   constructor(
     private adminService: AdminService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   ngOnInit() {
+    // Cargar información del usuario actual desde localStorage (solo en el navegador)
+    if (isPlatformBrowser(this.platformId)) {
+      const userStr = localStorage.getItem('currentUser');
+      if (userStr) {
+        this.currentUser = JSON.parse(userStr);
+      }
+    }
+    
     this.loadUsuarios();
   }
 
@@ -162,6 +185,9 @@ export class AdminDashboardComponent implements OnInit {
     // Solo activar loading después de validar
     this.isCreating = true;
     console.log('🔄 COMPONENTE: isCreating = true');
+    
+    // Forzar detección de cambios después de actualizar isCreating
+    this.cdr.detectChanges();
 
     // Construir userData según el tipo de usuario
     let userData: any = {
@@ -408,6 +434,82 @@ export class AdminDashboardComponent implements OnInit {
     this.filtroRol = 'Todos';
     this.busquedaNombre = '';
     this.aplicarFiltros();
+  }
+
+  // ============================================
+  // MÉTODOS DE PERFIL Y LOGOUT
+  // ============================================
+
+  openProfileModal() {
+    if (this.currentUser) {
+      this.editingProfile = {
+        nombre: this.currentUser.nombre,
+        apellidos: this.currentUser.apellidos,
+        email: this.currentUser.email,
+        foto: this.currentUser.foto || ''
+      };
+      this.showProfileModal = true;
+    }
+  }
+
+  closeProfileModal() {
+    this.showProfileModal = false;
+    this.resetMessages();
+  }
+
+  saveProfile() {
+    // Validaciones
+    if (!this.editingProfile.nombre.trim() || !this.editingProfile.apellidos.trim()) {
+      this.errorMessage = 'Nombre y apellidos son obligatorios';
+      return;
+    }
+
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    // Preparar datos para enviar
+    const updates = {
+      nombre: this.editingProfile.nombre,
+      apellidos: this.editingProfile.apellidos,
+      foto: this.editingProfile.foto
+    };
+
+    const userId = this.currentUser._id || this.currentUser.id;
+
+    // Llamar al backend para actualizar en MongoDB
+    this.adminService.updateProfile(userId, updates).subscribe({
+      next: (response: any) => {
+        // Actualizar currentUser con la respuesta del servidor
+        this.currentUser = { ...this.currentUser, ...response };
+        
+        // Actualizar también en localStorage
+        localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+        
+        this.successMessage = 'Perfil actualizado correctamente en la base de datos';
+        setTimeout(() => {
+          this.closeProfileModal();
+        }, 1500);
+      },
+      error: (err: any) => {
+        console.error('Error al actualizar perfil:', err);
+        this.errorMessage = 'Error al actualizar el perfil. Por favor, intente nuevamente.';
+      }
+    });
+  }
+
+  logout() {
+    if (isPlatformBrowser(this.platformId)) {
+      // Limpiar localStorage
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('sessionToken');
+      
+      // Mostrar mensaje y redirigir
+      this.successMessage = 'Sesión cerrada';
+      setTimeout(() => {
+        this.router.navigate(['/home']);
+      }, 1000);
+    }
   }
 
 }

@@ -9,8 +9,12 @@ export const routes: Routes = [
     component: Home
   },
   {
-    path: 'admin',
+    path: 'admin-dashboard',
     component: AdminDashboardComponent
+  },
+  {
+    path: 'dashboard',
+    component: Home  // Por ahora redirige a Home, puedes crear un DashboardComponent específico después
   },
   {
     path: '',

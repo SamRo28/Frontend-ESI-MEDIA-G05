@@ -18,12 +18,12 @@ export interface Usuario {
   providedIn: 'root'
 })
 export class AdminService {
-  private apiUrl = 'http://localhost:8080/api';
+  private apiUrl = 'http://localhost:8080';
 
   constructor(private http: HttpClient) {}
 
   getUsuarios(): Observable<Usuario[]> {
-    return this.http.get<Usuario[]>(`${this.apiUrl}/usuarios/listar`);
+    return this.http.get<Usuario[]>(`${this.apiUrl}/users/listar`);
   }
 
   crearUsuario(userData: any): Observable<any> {
@@ -78,5 +78,19 @@ export class AdminService {
       }));
     }
     return throwError(() => error);
+  }
+
+  updateProfile(userId: string, updates: any): Observable<any> {
+    const url = `${this.apiUrl}/users/${userId}/profile`;
+    console.log('🔄 AdminService: Actualizando perfil en:', url);
+    console.log('📦 Datos:', updates);
+    
+    return this.http.put(url, updates).pipe(
+      timeout(10000),
+      catchError((error) => {
+        console.error('❌ Error actualizando perfil:', error);
+        return this.handleError(error);
+      })
+    );
   }
 }
