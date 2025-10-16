@@ -20,8 +20,9 @@ export class Login {
     this.userService.login(this.email, this.password).subscribe({
       next: (response) => {
         console.log('Login successful:', response);
-        // Navigate to a different page or perform other actions on success
-        this.router.navigate(['/dashboard']);
+  // Redirect to 2FA route after successful login
+  // Pasamos un flag en navigation extras para que el guard permita el acceso
+  this.router.navigate(['/2fa'], { state: { allowFa2: true } });
       },
       error: (error) => {
         console.error('Login failed:', error);
