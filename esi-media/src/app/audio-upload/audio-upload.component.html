@@ -91,7 +91,7 @@
 
           <!-- Tags -->
           <div>
-            <label class="block text-white font-semibold mb-2">
+            <label for="tags-section" class="block text-white font-semibold mb-2">
               <span class="flex items-center gap-2">
                 Tags <span class="text-red-500 text-xl font-bold">*</span>
                 <span *ngIf="isFieldComplete('tags')" class="text-green-400 text-sm">✓</span>
@@ -99,7 +99,7 @@
             </label>
             
             <!-- Grid de tags seleccionables -->
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+            <div id="tags-section" class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
               <div *ngFor="let tag of availableAudioTags" 
                    class="flex items-center space-x-2">
                 <input 
@@ -127,7 +127,7 @@
 
           <!-- Duración -->
           <div>
-            <label class="block text-white font-semibold mb-2">
+            <label for="minutos" class="block text-white font-semibold mb-2">
               <span class="flex items-center gap-2">
                 Duración <span class="text-red-500 text-xl font-bold">*</span>
                 <span *ngIf="isFieldComplete('minutos') && isFieldComplete('segundos')" class="text-green-400 text-sm">✓</span>

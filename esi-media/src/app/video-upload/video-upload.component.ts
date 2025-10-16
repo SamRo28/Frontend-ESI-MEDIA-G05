@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormArray } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ContentService, VideoUploadData, UploadResponse } from '../services/content.service';
@@ -52,9 +52,20 @@ export class VideoUploadComponent {
       edadVisualizacion: ['', [Validators.required]],
       fechaDisponibleHasta: [''],
       visible: [true, [Validators.required]],
-      url: ['', [Validators.required, Validators.pattern(/^(https?):\/\/[\w\-]+(\.[\w\-]+)+[/#?]?.*$/)]],
+      url: ['', [Validators.required, Validators.pattern(/^https?:\/\/[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*(?:[/#?].*)?$/)]],
       resolucion: ['', [Validators.required]],
       caratula: ['']
+    });
+
+    // Validación inteligente de duración: si minutos = 240, segundos debe ser 0
+    this.videoForm.get('minutos')?.valueChanges.subscribe(minutos => {
+      const segundosControl = this.videoForm.get('segundos');
+      if (Number(minutos) === 240) {
+        segundosControl?.setValue(0);
+        segundosControl?.disable();
+      } else {
+        segundosControl?.enable();
+      }
     });
   }
 
@@ -91,14 +102,14 @@ export class VideoUploadComponent {
       // Usar selectedTags directamente (ya están como array)
       const tagsArray = this.selectedTags.length > 0 ? this.selectedTags : [];
 
-      // Convertir minutos y segundos a total de minutos (decimal)
-      const totalMinutos = Number(this.videoForm.value.minutos) + (Number(this.videoForm.value.segundos) / 60);
+      // Convertir minutos y segundos a total de segundos
+      const totalSegundos = (Number(this.videoForm.value.minutos) * 60) + Number(this.videoForm.value.segundos);
 
       const videoData: VideoUploadData = {
         titulo: this.videoForm.value.titulo,
         descripcion: this.videoForm.value.descripcion || undefined,
         tags: tagsArray,
-        duracion: totalMinutos, // Ahora se pasa en minutos
+        duracion: totalSegundos, // Backend espera duración en segundos
         vip: this.videoForm.value.vip,
         edadVisualizacion: Number(this.videoForm.value.edadVisualizacion),
         fechaDisponibleHasta: this.videoForm.value.fechaDisponibleHasta 
@@ -125,8 +136,25 @@ export class VideoUploadComponent {
         },
         error: (error: any) => {
           this.isUploading = false;
-          this.uploadMessage = `❌ Error: ${error.error?.message || 'Error interno del servidor'}`;
           console.error('Error uploading video:', error);
+          
+          // Manejo específico de errores HTTP según el backend
+          if (error.status === 400) {
+            // Error de validación
+            this.uploadMessage = `❌ Error de validación: ${error.error?.message || 'Datos inválidos'}`;
+          } else if (error.status === 401) {
+            // Error de autenticación
+            this.uploadMessage = '❌ No autorizado. Por favor, inicia sesión nuevamente.';
+          } else if (error.status === 500) {
+            // Error interno del servidor
+            this.uploadMessage = '❌ Error interno del servidor. Inténtalo más tarde.';
+          } else if (error.status === 0) {
+            // Error de conexión
+            this.uploadMessage = '❌ Error de conexión. Verifica tu conexión a internet.';
+          } else {
+            // Error genérico
+            this.uploadMessage = `❌ Error: ${error.error?.message || 'Error inesperado'}`;
+          }
         }
       });
     } else {
@@ -151,16 +179,20 @@ export class VideoUploadComponent {
 
   // Calcular progreso del formulario para feedback visual
   getFormProgress(): number {
-    const requiredFields = ['titulo', 'url', 'minutos', 'segundos', 'resolucion', 'edadVisualizacion'];
-    const completedFields = requiredFields.filter(field => {
+    const basicFields = ['titulo', 'url', 'resolucion', 'edadVisualizacion'];
+    const completedBasicFields = basicFields.filter(field => {
       const control = this.videoForm.get(field);
       return control && control.valid && control.value !== '';
     });
     
-    // Agregar tags como requerido
+    // Contar duración como una sola unidad (minutos Y segundos completos)
+    const durationComplete = this.isFieldComplete('minutos') && this.isFieldComplete('segundos');
+    
+    // Contar tags como requerido
     const tagsComplete = this.selectedTags.length > 0;
-    const totalRequired = requiredFields.length + 1; // +1 for tags
-    const totalCompleted = completedFields.length + (tagsComplete ? 1 : 0);
+    
+    const totalRequired = 6; // titulo, url, resolucion, edadVisualizacion, duracion (minutos+segundos), tags
+    const totalCompleted = completedBasicFields.length + (durationComplete ? 1 : 0) + (tagsComplete ? 1 : 0);
     
     return Math.round((totalCompleted / totalRequired) * 100);
   }
@@ -171,7 +203,13 @@ export class VideoUploadComponent {
       return this.selectedTags.length > 0;
     }
     const field = this.videoForm.get(fieldName);
-    return field ? field.valid && field.value !== '' : false;
+    if (!field) return false;
+
+    if (!field.enabled) {
+      return field.value !== null && field.value !== undefined && field.value !== '';
+    }
+
+    return field.valid && field.value !== '';
   }
 
   // Obtener mensaje de ayuda para campos
@@ -181,39 +219,55 @@ export class VideoUploadComponent {
 
     switch (fieldName) {
       case 'titulo':
-        if (!field.value) return 'Escribe un título descriptivo para tu video';
-        if (field.value.length < 2) return 'El título necesita al menos 2 caracteres';
-        return '✓ Título válido';
-      
+        return this.getTituloHelpMessage(field);
       case 'url':
-        if (!field.value) return 'Proporciona la URL del video (YouTube, Vimeo, etc.)';
-        if (field.errors?.['pattern']) return 'URL debe comenzar con http:// o https://';
-        return '✓ URL válida';
-      
+        return this.getUrlHelpMessage(field);
       case 'tags':
-        if (this.selectedTags.length === 0) return 'Selecciona al menos 1 tag para categorizar tu video';
-        if (this.selectedTags.length === 1) return `✓ 1 tag seleccionado: ${this.getSelectedTagsText()}`;
-        return `✓ ${this.selectedTags.length} tags seleccionados: ${this.getSelectedTagsText()}`;
-      
+        return this.getTagsHelpMessage();
       case 'resolucion':
-        if (!field.value) return 'Selecciona la resolución del video';
-        return `✓ Resolución: ${field.value}`;
-      
+        return this.getResolucionHelpMessage(field);
       case 'edadVisualizacion':
-        if (!field.value) return 'Selecciona la edad mínima apropiada';
-        const edadLabels: { [key: string]: string } = {
-          '0': 'Todo público',
-          '3': 'Niños 3+',
-          '7': 'Niños 7+',
-          '12': 'Adolescentes 12+',
-          '16': 'Jóvenes 16+',
-          '18': 'Solo adultos'
-        };
-        return `✓ ${edadLabels[field.value] || 'Edad configurada'}`;
-      
+        return this.getEdadHelpMessage(field);
       default:
         return '';
     }
+  }
+
+  // Métodos auxiliares para reducir complejidad cognitiva
+  private getTituloHelpMessage(field: any): string {
+    if (!field.value) return 'Escribe un título descriptivo para tu video';
+    if (field.value.length < 2) return 'El título necesita al menos 2 caracteres';
+    return '✓ Título válido';
+  }
+
+  private getUrlHelpMessage(field: any): string {
+    if (!field.value) return 'Proporciona la URL del video (YouTube, Vimeo, etc.)';
+    if (field.errors?.['pattern']) return 'URL debe comenzar con http:// o https://';
+    return '✓ URL válida';
+  }
+
+  private getTagsHelpMessage(): string {
+    if (this.selectedTags.length === 0) return 'Selecciona al menos 1 tag para categorizar tu video';
+    if (this.selectedTags.length === 1) return `✓ 1 tag seleccionado: ${this.getSelectedTagsText()}`;
+    return `✓ ${this.selectedTags.length} tags seleccionados: ${this.getSelectedTagsText()}`;
+  }
+
+  private getResolucionHelpMessage(field: any): string {
+    if (!field.value) return 'Selecciona la resolución del video';
+    return `✓ Resolución: ${field.value}`;
+  }
+
+  private getEdadHelpMessage(field: any): string {
+    if (!field.value) return 'Selecciona la edad mínima apropiada';
+    const edadLabels: { [key: string]: string } = {
+      '0': 'Todo público',
+      '3': 'Niños 3+',
+      '7': 'Niños 7+',
+      '12': 'Adolescentes 12+',
+      '16': 'Jóvenes 16+',
+      '18': 'Solo adultos'
+    };
+    return `✓ ${edadLabels[field.value] || 'Edad configurada'}`;
   }
 
   // Mensaje de ayuda específico para duración

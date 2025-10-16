@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, of, delay, throwError } from 'rxjs';
+import { Observable } from 'rxjs';
+
 
 export interface AudioUploadData {
   titulo: string;
@@ -9,7 +10,7 @@ export interface AudioUploadData {
   duracion: number;
   vip: boolean;
   edadVisualizacion: number;
-  fechaDisponibleHasta?: Date;
+  fechaDisponibleHasta?: Date | null;
   visible: boolean;
   archivo: File;
   caratula?: any;
@@ -22,7 +23,7 @@ export interface VideoUploadData {
   duracion: number;
   vip: boolean;
   edadVisualizacion: number;
-  fechaDisponibleHasta?: Date;
+  fechaDisponibleHasta?: Date | null;
   visible: boolean;
   url: string;
   resolucion: string;
@@ -38,17 +39,23 @@ export interface UploadResponse {
   url?: string;
 }
 
+// Interface para manejo de errores del backend
+export interface BackendError {
+  success: false;
+  message: string;
+  errors?: { [key: string]: string };
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class ContentService {
-  private baseUrl = 'http://localhost:8080/api/gestor';
-  private mockToken = 'Bearer mock-token-for-development'; // Token temporal para desarrollo
+  private baseUrl = 'http://localhost:8080/gestor';
 
   constructor(private http: HttpClient) {}
 
   /**
-   * Sube un archivo de audio usando el endpoint /api/gestor/audio/subir
+   * Sube un archivo de audio usando el endpoint /gestor/audio/subir
    */
   uploadAudio(audioData: AudioUploadData): Observable<UploadResponse> {
     const formData = new FormData();
@@ -58,28 +65,34 @@ export class ContentService {
     if (audioData.descripcion) {
       formData.append('descripcion', audioData.descripcion);
     }
-    formData.append('tags', JSON.stringify(audioData.tags));
+    
+    // Los tags se envían como elementos separados del array
+    audioData.tags.forEach((tag, index) => {
+      formData.append(`tags[${index}]`, tag);
+    });
+    
     formData.append('duracion', audioData.duracion.toString());
     formData.append('vip', audioData.vip.toString());
     formData.append('edadVisualizacion', audioData.edadVisualizacion.toString());
+    
     if (audioData.fechaDisponibleHasta) {
       formData.append('fechaDisponibleHasta', audioData.fechaDisponibleHasta.toISOString());
     }
+    
     formData.append('visible', audioData.visible.toString());
     formData.append('archivo', audioData.archivo);
     if (audioData.caratula) {
-      formData.append('caratula', JSON.stringify(audioData.caratula));
+      formData.append('caratula', audioData.caratula);
     }
 
-    const headers = new HttpHeaders({
-      'Authorization': this.mockToken
-    });
+    // El interceptor authInterceptor se encarga automáticamente del header Authorization
+    const headers = new HttpHeaders();
 
     return this.http.post<UploadResponse>(`${this.baseUrl}/audio/subir`, formData, { headers });
   }
 
   /**
-   * Sube un video por URL usando el endpoint /api/gestor/video/subir
+   * Sube un video por URL usando el endpoint /gestor/video/subir
    */
   uploadVideo(videoData: VideoUploadData): Observable<UploadResponse> {
     const payload = {
@@ -89,16 +102,16 @@ export class ContentService {
       duracion: videoData.duracion,
       vip: videoData.vip,
       edadVisualizacion: videoData.edadVisualizacion,
-      fechaDisponibleHasta: videoData.fechaDisponibleHasta?.toISOString(),
+      fechaDisponibleHasta: videoData.fechaDisponibleHasta || null,
       visible: videoData.visible,
       url: videoData.url,
       resolucion: videoData.resolucion,
       caratula: videoData.caratula
     };
 
+    // El interceptor authInterceptor se encarga automáticamente del header Authorization
     const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': this.mockToken
+      'Content-Type': 'application/json'
     });
 
     return this.http.post<UploadResponse>(`${this.baseUrl}/video/subir`, payload, { headers });
@@ -116,5 +129,35 @@ export class ContentService {
    */
   checkVideoStatus(): Observable<any> {
     return this.http.get(`${this.baseUrl}/video/estado`);
+  }
+
+  /**
+   * Prueba la conectividad con el backend
+   */
+  testConnection(): Observable<{ audio: any, video: any }> {
+    const audioStatus$ = this.checkAudioStatus();
+    const videoStatus$ = this.checkVideoStatus();
+    
+    // Usar forkJoin para hacer ambas peticiones en paralelo
+    return new Observable(observer => {
+      const audioPromise = new Promise(resolve => {
+        audioStatus$.subscribe({
+          next: result => resolve(result),
+          error: err => resolve({ error: err })
+        });
+      });
+      
+      const videoPromise = new Promise(resolve => {
+        videoStatus$.subscribe({
+          next: result => resolve(result),
+          error: err => resolve({ error: err })
+        });
+      });
+      
+      Promise.all([audioPromise, videoPromise]).then(([audio, video]) => {
+        observer.next({ audio, video });
+        observer.complete();
+      });
+    });
   }
 }
