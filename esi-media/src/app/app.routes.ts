@@ -2,6 +2,8 @@ import { Routes } from '@angular/router';
 import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard';
 import { Home } from './home/home';
 import { Login } from './login/login';
+import { Fa2Qr } from './fa2-qr/fa2-qr';
+import { Fa2Guard } from './guards/fa2.guard';
 import { RegistroVisualizadorComponent } from './registro-visualizador/registro-visualizador.component';
 
 export const routes: Routes = [
@@ -14,8 +16,9 @@ export const routes: Routes = [
     component: AdminDashboardComponent
   },
   {
-    path: 'dashboard',
-    component: Home  // Por ahora redirige a Home, puedes crear un DashboardComponent específico después
+    path: '2fa',
+    component: Fa2Qr,
+    canActivate: [Fa2Guard]
   },
   {
     path: '',
