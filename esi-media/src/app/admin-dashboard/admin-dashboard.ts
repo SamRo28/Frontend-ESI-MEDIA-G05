@@ -1,11 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-<<<<<<< HEAD
-import { Router } from '@angular/router';
-=======
 import { FormsModule } from '@angular/forms';
 import { AdminService, Usuario } from '../services/admin.service';
->>>>>>> alvaro
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -77,8 +73,6 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
-  constructor(private router: Router) {}
-
   setActiveTab(tab: string) {
     this.activeTab = tab;
     if (tab === 'usuarios') {
@@ -87,11 +81,6 @@ export class AdminDashboardComponent implements OnInit {
     this.resetMessages();
   }
 
-<<<<<<< HEAD
-  navigateToHome() {
-    this.router.navigate(['/home']);
-  }
-=======
   resetMessages() {
     this.errorMessage = '';
     this.successMessage = '';
@@ -421,5 +410,4 @@ export class AdminDashboardComponent implements OnInit {
     this.aplicarFiltros();
   }
 
->>>>>>> alvaro
 }
