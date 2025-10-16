@@ -10,7 +10,7 @@ export class UserService {
     constructor(private client: HttpClient) {}
 
     login(email: string, password: string): Observable<any> {
-        return this.client.post<string>(`http://localhost:8080/users/login`, { email, password }, { responseType: 'text' as 'json' })
+        return this.client.post<any>(`http://localhost:8080/users/login`, { email, password })
         
     }
 

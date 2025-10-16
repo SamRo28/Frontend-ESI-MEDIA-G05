@@ -3,7 +3,7 @@ import { Lista } from './lista';
 import { Contenido } from './contenido';
 
 export class Gestor_de_Contenido extends Usuario {
-    private alias?: string;
+    override apodo?: string;
     private descripcion?: string;
     private campo_especializacion?: string;
     private tipo_contenido_video_o_audio?: string;
@@ -12,14 +12,15 @@ export class Gestor_de_Contenido extends Usuario {
     constructor(apellidos: string, bloqueado: boolean, contrasenia: any, email: string, foto: any, nombre: string) {
         super(apellidos, bloqueado, contrasenia, email, foto, nombre);
         this.listas_generadas = [];
-        this.alias = undefined;
+        this.apodo = undefined;
         this.descripcion = undefined;
         this.campo_especializacion = undefined;
         this.tipo_contenido_video_o_audio = undefined;
+        this.rol = 'Gestor';
     }
 
-    public get_alias(): string | undefined { return this.alias; }
-    public set_alias(a: string | undefined) { this.alias = a; }
+    public get_alias(): string | undefined { return this.apodo; }
+    public set_alias(a: string | undefined) { this.apodo = a; }
 
     public get_descripcion(): string | undefined { return this.descripcion; }
     public set_descripcion(d: string | undefined) { this.descripcion = d; }

@@ -1,0 +1,108 @@
+<!--
+  RegistroVisualizadorComponent - Paso 1 (Scaffolding)
+  Partes reproducidas de la captura:
+  - Hero superior con gradiente oscuro y logo a la izquierda
+  - Card centrada con fondo translúcido, título grande y subtítulo
+  - Espacio reservado para logo/imagen en la parte superior de la card
+
+  NOTAS: Aquí no hay formulario aún. Se añadirá en el Paso 2/3.
+-->
+
+<div class="gradient-bg"></div>
+
+<div class="back-home">
+  <a routerLink="/home" class="btn-back">← Volver al inicio</a>
+</div>
+
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+  <div class="logo-container"><div class="logo-login"></div></div>
+      <h1 class="login-title">Registro Visualizador</h1>
+      <p class="login-subtitle">Crea tu cuenta para descubrir música, podcasts y más</p>
+    </div>
+
+    <form class="login-form" [formGroup]="form" (ngSubmit)="onSubmit()">
+
+  <div class="grid-two spaced name-pair">
+        <div class="form-group">
+          <label for="nombre" class="form-label">Nombre</label>
+          <input id="nombre" class="form-input" type="text" formControlName="nombre" placeholder="Tu nombre" maxlength="40" [ngClass]="{'error-field': (formSubmitted && form.get('nombre')?.invalid) || form.get('nombre')?.hasError('server')}" />
+        </div>
+
+        <div class="form-group">
+          <label for="apellidos" class="form-label">Apellidos</label>
+          <input id="apellidos" class="form-input" type="text" formControlName="apellidos" placeholder="Tus apellidos" maxlength="60" [ngClass]="{'error-field': (formSubmitted && form.get('apellidos')?.invalid) || form.get('apellidos')?.hasError('server')}" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email" class="form-label">Email</label>
+        <input id="email" class="form-input" type="email" formControlName="email" placeholder="tu@email.com" [ngClass]="{'error-field': (formSubmitted && form.get('email')?.invalid) || form.get('email')?.hasError('server') || form.get('email')?.hasError('duplicate')}" />
+      </div>
+
+      <div class="form-group">
+        <label for="alias" class="form-label">Alias (opcional)</label>
+        <input id="alias" class="form-input" type="text" formControlName="alias" placeholder="alias" maxlength="12" [ngClass]="{'error-field': (formSubmitted && form.get('alias')?.invalid) || form.get('alias')?.hasError('server')}" />
+      </div>
+
+      <div class="form-group">
+        <label for="fecha_nac" class="form-label">Fecha de nacimiento</label>
+        <input id="fecha_nac" class="form-input" type="date" formControlName="fecha_nac" placeholder="aaaa-mm-dd" [attr.max]="todayStr" [attr.min]="minAllowedBirthStr" [ngClass]="{'error-field': (formSubmitted && form.get('fecha_nac')?.invalid) || form.get('fecha_nac')?.hasError('server')}" />
+  <small class="hint" *ngIf="formSubmitted && form.get('fecha_nac')?.value && form.get('fecha_nac')?.invalid">No debe ser futura. Debes tener al menos 4 años.</small>
+      </div>
+
+  <div class="grid-two spaced pass-pair">
+        <div class="form-group">
+          <label for="password" class="form-label">Contraseña</label>
+          <input id="password" class="form-input" type="password" formControlName="password" placeholder="Contraseña" [ngClass]="{'error-field': (formSubmitted && form.get('password')?.invalid) || form.get('password')?.hasError('server')}" />
+        </div>
+
+        <div class="form-group">
+          <label for="passwordConfirm" class="form-label">Confirmar contraseña</label>
+          <input id="passwordConfirm" class="form-input" type="password" formControlName="passwordConfirm" placeholder="Repite la contraseña" [ngClass]="{'error-field': (formSubmitted && form.get('passwordConfirm')?.invalid) || form.get('passwordConfirm')?.hasError('server')}" />
+        </div>
+      </div>
+
+      <div class="form-group vip-row">
+        <label class="form-label" for="vip">VIP</label>
+        <input id="vip" type="checkbox" formControlName="vip" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Avatar de perfil</label>
+        <div class="preloaded">
+          <div class="thumbs">
+            <img *ngFor="let img of preloadedImages; index as i" 
+                [src]="img" 
+                (click)="selectPreloaded(i)" 
+                [ngClass]="{'selected-avatar': selectedAvatar === i}" 
+                class="thumb" 
+                alt="avatar" />
+          </div>
+        </div>
+        <div class="preview" *ngIf="selectedAvatar !== -1">
+          <img [src]="preloadedImages[selectedAvatar]" alt="preview" class="preview-img" />
+          <button type="button" class="btn remove-btn" (click)="removePreview()">Quitar selección</button>
+        </div>
+      </div>
+
+      <div class="error-block" aria-live="polite" [style.display]="aggregatedErrors.length ? 'block' : 'none'">
+        <ul>
+          <li *ngFor="let e of aggregatedErrors">{{ e }}</li>
+        </ul>
+      </div>
+
+      <div class="actions">
+        <button class="btn-submit" type="submit">Registrarme</button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- Comentarios de diseño:
+  - .hero reproduce el gradiente superior de la captura (oscuro -> violeta)
+  - .card usa fondo translúcido y bordes redondeados como la tarjeta central
+  - .card-image es un placeholder para el logo/imagen grande
+-->
