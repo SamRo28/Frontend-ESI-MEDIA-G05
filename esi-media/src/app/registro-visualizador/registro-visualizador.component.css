@@ -1,0 +1,320 @@
+/* Merge: copiar estilos principales del login para que el registro tenga el mismo look */
+:host {
+    display: block;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow-x: hidden;
+    background: #1a1a2e;
+    color: white;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start; /* empezar desde arriba para permitir scroll natural */
+    justify-content: center;
+    position: relative; /* permitir scroll y la rueda del ratón */
+    width: 100%;
+}
+
+/* Animated gradient background */
+.gradient-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 20% 50%, rgba(168, 85, 247, 0.25) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.25) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(59, 130, 246, 0.2) 0%, transparent 50%);
+    animation: moveGradient 15s ease infinite;
+    z-index: 0;
+}
+
+@keyframes moveGradient {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.1) rotate(5deg); }
+}
+
+/* Login container/card from login.css */
+.login-container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+    animation: fadeInUp 0.8s ease-out;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.logo-container { text-align: center; margin-bottom: 30px; width: 100%; }
+.logo-login { width: 240px; height: auto; margin: 0 auto; display: block; filter: drop-shadow(0 0 30px rgba(168, 85, 247, 0.5)); }
+
+.login-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 40px 35px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    width: 100%;
+}
+
+.login-header { text-align: center; margin-bottom: 35px; }
+
+.login-title {
+    font-size: 32px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fff 0%, #a855f7 50%, #ec4899 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+}
+
+.login-subtitle { font-size: 15px; color: rgba(255, 255, 255, 0.6); }
+
+.login-form { display: flex; flex-direction: column; gap: 16px; }
+
+.form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 0; }
+
+.form-label { font-size: 14px; font-weight: 600; color: rgba(255, 255, 255, 0.9); margin-left: 4px; }
+
+.form-input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px 20px;
+    font-size: 15px;
+    color: white;
+    font-family: inherit;
+    transition: all 0.3s;
+    outline: none;
+}
+
+.form-input::placeholder { color: rgba(255, 255, 255, 0.4); }
+
+.form-input:focus { background: rgba(255, 255, 255, 0.08); border-color: #a855f7; box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.1); }
+
+.form-input:hover { border-color: rgba(255, 255, 255, 0.2); }
+
+.btn-submit {
+    background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+    color: white;
+    padding: 18px;
+    border-radius: 12px;
+    border: none;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 10px 30px rgba(168, 85, 247, 0.4);
+    margin-top: 8px;
+}
+
+.btn-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(168, 85, 247, 0.6); }
+.btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Divider and other helpers kept minimal for this component */
+.divider { display:flex; align-items:center; gap:16px; margin:32px 0; }
+.divider-line { flex:1; height:1px; background: rgba(255,255,255,0.1); }
+.divider-text { color: rgba(255,255,255,0.5); font-size:13px; font-weight:500 }
+    :host {
+        display: block;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        overflow-x: hidden;
+        background: #1a1a2e;
+        color: white;
+        min-height: 100vh;
+        display: flex;
+        align-items: flex-start; /* comenzar desde arriba para permitir scroll natural */
+        justify-content: center;
+        position: relative; /* permitir scroll y que la rueda funcione */
+        width: 100%;
+    }
+
+/* Estilos para botones genéricos */
+.btn{ 
+  background: transparent; 
+  border: 1px solid rgba(255,255,255,0.06); 
+  padding: 8px 12px; 
+  color: white; 
+  border-radius: 8px; 
+  cursor: pointer; 
+}
+
+/* Spacing helpers: unificar espacio entre bloques y evitar margins acumulados */
+.grid-two.spaced { gap: 16px 20px; row-gap: 16px; column-gap: 20px; }
+/* Ajustes puntuales (ahora homogéneos) */
+.grid-two.spaced.name-pair { gap: 16px 20px; }
+.grid-two.spaced.pass-pair { gap: 16px 20px; }
+
+/* Forzar que los hijos directos del formulario no usen margins y usar sólo gap */
+.login-form > * { margin: 0 !important; }
+
+/* Asegurar que dentro del grid no se añadan margins extra a los grupos */
+.grid-two.spaced .form-group { margin: 0 !important; }
+
+/* VIP a la derecha */
+.vip-row { display:flex; flex-direction:row; align-items:center; justify-content:flex-start; gap:12px; }
+
+/* Forzar ocultado del input file para evitar renderizado por el navegador en algunos estilos */
+.file-input { display: none !important; }
+
+/* Back to home button (copiado de login.css) */
+.back-home {
+    position: fixed;
+    top: 30px;
+    left: 30px;
+    z-index: 100;
+    cursor: pointer;
+}
+
+.btn-back {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 12px 24px;
+    color: white;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s;
+    cursor: pointer;
+    user-select: none;
+}
+
+.btn-back:hover { transform: translateX(-4px); background: rgba(255,255,255,0.1); border-color: rgba(168,85,247,0.5); }
+.actions{ margin-top:18px; display:flex; justify-content:flex-end; }
+.error-block{ margin-top:12px; background:rgba(255,50,50,0.06); color:#ff9fa0; padding:12px; border-radius:10px; }
+
+/* Estilo para campos con error */
+.error-field {
+  border-color: #ff3232 !important;
+  box-shadow: 0 0 0 1px rgba(255, 50, 50, 0.2) !important;
+  background: rgba(255, 50, 50, 0.05) !important;
+}
+
+.error-field:focus {
+  box-shadow: 0 0 0 3px rgba(255, 50, 50, 0.2) !important;
+  border-color: #ff3232 !important;
+}
+
+/* Estilo para avatares */
+.thumbs {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.thumb {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.thumb:hover {
+  transform: translateY(-3px);
+  border-color: rgba(168, 85, 247, 0.5);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.selected-avatar {
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.3);
+  transform: scale(1.05);
+}
+
+.preview {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.preview-img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(168, 85, 247, 0.2);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.remove-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ff7f7f;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.remove-btn:hover {
+  background: rgba(255, 50, 50, 0.1);
+  border-color: rgba(255, 50, 50, 0.2);
+}
+
+/* Estilo para mensajes de error específicos */
+.error-hint {
+  color: #ff6b6b;
+  font-size: 13px;
+  margin-top: 8px;
+  display: block;
+  font-weight: 600;
+  margin-left: 4px;
+  animation: fadeIn 0.3s ease-in-out;
+  padding: 6px 10px;
+  background-color: rgba(255, 50, 50, 0.1);
+  border-radius: 6px;
+  border-left: 3px solid #ff5252;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+    /* Se elimina el selector duplicado de login-container */
+
+    /* Responsive adjustments */
+@media (max-width: 768px) {
+    .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 0; }
+    .login-container { padding: 20px; }
+    .row-inline{ display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+    .login-card { padding: 40px 30px; }
+    .inline{ margin-right:8px; }
+    .logo-login { width: 200px; }
+    .login-title { font-size: 28px; }
+    .vip-row { display:flex; align-items:center; gap:12px; }
+    .vip-row .form-label { margin:0; }
+}
+
+@media (max-width:900px){
+    .image-controls{ display:flex; gap:8px; align-items:center; }
+    .file-input { display:none; }
+    .file-btn { display:inline-block; background: rgba(255, 255, 255, 0.05); border: 2px solid rgba(255,255,255,0.1); color: white; padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight:600; }
+    .file-name { margin-left: 10px; color: rgba(255,255,255,0.7); font-size: 13px; }
+  .grid-two{ grid-template-columns: 1fr; }
+  .preview-img{ max-width:140px; max-height:140px }
+}
+
+@media (max-width:600px){
+  .login-card{ padding:18px; border-radius:12px; }
+  .login-title{ font-size:22px; }
+  .thumb{ width:48px; height:48px }
+}
