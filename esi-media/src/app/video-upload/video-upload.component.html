@@ -1,0 +1,342 @@
+<div class="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+  <!-- Partículas de fondo -->
+  <div class="absolute inset-0 overflow-hidden">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="relative z-10 bg-black/20 backdrop-blur-sm border-b border-white/10">
+    <div class="container mx-auto px-6 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center gap-4">
+          <h1 class="text-2xl font-bold text-white">
+            <span class="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">ESI</span><span class="text-white">Media</span>
+          </h1>
+          <span class="text-purple-300">Gestor de Video</span>
+        </div>
+        <a routerLink="/home" class="text-white/80 hover:text-white transition-colors">
+          ← Volver al inicio
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenido principal -->
+  <div class="relative z-10 container mx-auto px-6 py-12">
+    <div class="max-w-2xl mx-auto">
+      <!-- Título -->
+      <div class="text-center mb-8">
+        <h2 class="text-4xl font-bold text-white mb-4">Subir Video</h2>
+        <p class="text-white/70">Comparte tus videos con la comunidad ESIMedia</p>
+      </div>
+
+      <!-- Formulario -->
+      <div class="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-8 shadow-2xl">
+        <!-- Indicador de progreso -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between text-sm text-white/70 mb-2">
+            <span>Progreso de subida</span>
+            <span>{{ getFormProgress() }}% completado</span>
+          </div>
+          <div class="w-full bg-white/20 rounded-full h-2">
+            <div class="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300" 
+                 [style.width.%]="getFormProgress()"></div>
+          </div>
+        </div>
+
+        <form [formGroup]="videoForm" (ngSubmit)="onSubmit()" class="space-y-6">
+          
+          <!-- Título -->
+          <div>
+            <label for="titulo" class="block text-white font-semibold mb-2">
+              <span class="flex items-center gap-2">
+                Título <span class="text-red-500 text-xl font-bold">*</span>
+                <span *ngIf="isFieldComplete('titulo')" class="text-green-400 text-sm">✓</span>
+              </span>
+            </label>
+            <input 
+              type="text" 
+              id="titulo"
+              formControlName="titulo"
+              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
+              placeholder="Título de tu video"
+            >
+            <div class="text-blue-300 text-sm mt-1" *ngIf="shouldShowHelpMessage('titulo')">
+              {{ getFieldHelpMessage('titulo') }}
+            </div>
+            <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('titulo')">
+              {{ getFieldError('titulo') }}
+            </div>
+          </div>
+
+          <!-- Descripción -->
+          <div>
+            <label for="descripcion" class="block text-white font-semibold mb-2">Descripción</label>
+            <textarea 
+              id="descripcion"
+              formControlName="descripcion"
+              rows="3"
+              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors resize-none"
+              placeholder="Descripción opcional del video"
+            ></textarea>
+            <div class="text-white/60 text-sm mt-1">Opcional - Describe tu video (máximo 500 caracteres)</div>
+            <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('descripcion')">
+              {{ getFieldError('descripcion') }}
+            </div>
+          </div>
+
+          <!-- Tags -->
+          <div>
+            <div class="block text-white font-semibold mb-2">
+              <span class="flex items-center gap-2">
+                Tags <span class="text-red-500 text-xl font-bold">*</span>
+                <span *ngIf="isFieldComplete('tags')" class="text-green-400 text-sm">✓</span>
+              </span>
+            </div>
+            
+            <!-- Grid de tags seleccionables -->
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+              <div *ngFor="let tag of availableVideoTags" 
+                   class="flex items-center space-x-2">
+                <input 
+                  type="checkbox" 
+                  [id]="'tag-' + tag.value"
+                  [checked]="isTagSelected(tag.value)"
+                  (change)="toggleTag(tag.value)"
+                  class="w-4 h-4 text-purple-500 bg-white/10 border-white/30 rounded focus:ring-purple-500"
+                >
+                <label [for]="'tag-' + tag.value" 
+                       class="text-white text-sm cursor-pointer hover:text-purple-300 transition-colors">
+                  {{ tag.label }}
+                </label>
+              </div>
+            </div>
+            
+            <!-- Resumen de tags seleccionados -->
+            <div class="text-blue-300 text-sm mt-1" *ngIf="selectedTags.length === 0">
+              Selecciona al menos 1 tag para categorizar tu video
+            </div>
+            <div class="text-blue-300 text-sm mt-1" *ngIf="selectedTags.length > 0">
+              {{ getFieldHelpMessage('tags') }}
+            </div>
+          </div>
+
+          <!-- Duración -->
+          <div>
+            <div class="block text-white font-semibold mb-2">
+              <span class="flex items-center gap-2">
+                Duración <span class="text-red-500 text-xl font-bold">*</span>
+                <span *ngIf="isFieldComplete('minutos') && isFieldComplete('segundos')" class="text-green-400 text-sm">✓</span>
+              </span>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="minutos" class="block text-white/70 text-sm mb-1">Minutos</label>
+                <input 
+                  type="number" 
+                  id="minutos"
+                  formControlName="minutos"
+                  min="0" 
+                  max="240"
+                  (keydown)="onlyNumbers($event)"
+                  class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
+                >
+              </div>
+              <div>
+                <label for="segundos" class="block text-white/70 text-sm mb-1">Segundos</label>
+                <input 
+                  type="number" 
+                  id="segundos"
+                  formControlName="segundos"
+                  min="0" 
+                  max="59"
+                  (keydown)="onlyNumbers($event)"
+                  class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
+                >
+              </div>
+            </div>
+            <div class="text-white/60 text-sm mt-1">Máximo 4 horas (240 minutos)</div>
+            <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('minutos') || getFieldError('segundos')">
+              {{ getFieldError('minutos') || getFieldError('segundos') }}
+            </div>
+          </div>
+
+          <!-- Resolución -->
+          <div>
+            <label for="resolucion" class="block text-white font-semibold mb-2">
+              <span class="flex items-center gap-2">
+                Resolución <span class="text-red-500 text-xl font-bold">*</span>
+                <span *ngIf="isFieldComplete('resolucion')" class="text-green-400 text-sm">✓</span>
+              </span>
+            </label>
+            <select 
+              id="resolucion"
+              formControlName="resolucion"
+              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:border-purple-400 focus:outline-none transition-colors"
+            >
+              <option value="" disabled>Selecciona resolución</option>
+              <option value="720p">720p (HD)</option>
+              <option value="1080p">1080p (Full HD)</option>
+              <option value="2160p">2160p (4K)</option>
+            </select>
+            <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('resolucion')">
+              {{ getFieldError('resolucion') }}
+            </div>
+          </div>
+
+          <!-- Edad mínima -->
+          <div>
+            <label for="edadVisualizacion" class="block text-white font-semibold mb-2">
+              <span class="flex items-center gap-2">
+                Edad mínima <span class="text-red-500 text-xl font-bold">*</span>
+                <span *ngIf="isFieldComplete('edadVisualizacion')" class="text-green-400 text-sm">✓</span>
+              </span>
+            </label>
+            <select 
+              id="edadVisualizacion"
+              formControlName="edadVisualizacion"
+              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:border-purple-400 focus:outline-none transition-colors"
+            >
+              <option value="" disabled>Selecciona clasificación de edad</option>
+              <option value="TP">TP (Todo Público)</option>
+              <option value="18">+18 (Adultos)</option>
+            </select>
+            <div class="text-blue-300 text-sm mt-1" *ngIf="shouldShowHelpMessage('edadVisualizacion')">
+              {{ getFieldHelpMessage('edadVisualizacion') }}
+            </div>
+            <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('edadVisualizacion')">
+              {{ getFieldError('edadVisualizacion') }}
+            </div>
+          </div>
+
+          <!-- URL del video -->
+          <div>
+            <label for="url" class="block text-white font-semibold mb-2">
+              <span class="flex items-center gap-2">
+                URL del Video <span class="text-red-500 text-xl font-bold">*</span>
+                <span *ngIf="isFieldComplete('url')" class="text-green-400 text-sm">✓</span>
+              </span>
+            </label>
+            <input 
+              type="url" 
+              id="url"
+              formControlName="url"
+              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
+              placeholder="https://youtube.com/watch?v=..."
+            >
+            <div class="text-blue-300 text-sm mt-1" *ngIf="shouldShowHelpMessage('url')">
+              {{ getFieldHelpMessage('url') }}
+            </div>
+            <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('url')">
+              {{ getFieldError('url') }}
+            </div>
+          </div>
+
+          <!-- Carátula -->
+          <div>
+            <label for="caratula" class="block text-white font-semibold mb-2">
+              Carátula <span class="text-white/60">(próximamente)</span>
+            </label>
+            <div class="border-2 border-dashed border-white/20 rounded-lg p-6 text-center opacity-50">
+              <div class="text-4xl text-white/30 mb-2">🖼️</div>
+              <p class="text-white/40">Funcionalidad de carátula disponible en próximos sprints</p>
+              <p class="text-white/30 text-sm mt-1">Podrás subir imágenes PNG o seleccionar carátulas prediseñadas</p>
+            </div>
+          </div>
+
+          <!-- Fecha disponible hasta -->
+          <div>
+            <label for="fechaDisponibleHasta" class="block text-white font-semibold mb-2">Disponible hasta</label>
+            <input 
+              type="date" 
+              id="fechaDisponibleHasta"
+              formControlName="fechaDisponibleHasta"
+              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:border-purple-400 focus:outline-none transition-colors"
+            >
+            <div class="text-white/60 text-sm mt-1">Deja vacío para disponibilidad permanente</div>
+          </div>
+
+          <!-- Opciones -->
+          <div class="space-y-4">
+            <div>
+              <div class="flex items-center space-x-3 mb-2">
+                <input 
+                  type="checkbox" 
+                  formControlName="vip"
+                  id="vip"
+                  class="w-5 h-5 text-purple-500 bg-white/10 border-white/30 rounded focus:ring-purple-500"
+                >
+                <label for="vip" class="text-white font-semibold">Contenido VIP</label>
+              </div>
+              <div class="text-white/60 text-sm ml-8">
+                Solo usuarios VIP podrán acceder a este contenido
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center space-x-3 mb-2">
+                <input 
+                  type="checkbox" 
+                  formControlName="visible"
+                  id="visible"
+                  class="w-5 h-5 text-purple-500 bg-white/10 border-white/30 rounded focus:ring-purple-500"
+                >
+                <label for="visible" class="text-white font-semibold">Visible públicamente</label>
+              </div>
+              <div class="text-white/60 text-sm ml-8">
+                El contenido aparecerá en búsquedas y listados públicos
+              </div>
+            </div>
+          </div>
+
+          <!-- Mensaje de resultado -->
+          <div *ngIf="uploadMessage" 
+               [class]="uploadMessage.includes('✅') ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'"
+               class="p-4 border-2 rounded-lg text-center font-semibold animate-pulse">
+            {{ uploadMessage }}
+          </div>
+
+          <!-- Botón de submit -->
+          <button 
+            type="submit" 
+            [disabled]="!videoForm.valid || isUploading"
+            [class]="(videoForm.valid && !isUploading) 
+              ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transform hover:scale-105' 
+              : 'bg-gray-600 cursor-not-allowed'"
+            class="w-full py-4 text-white font-bold rounded-lg disabled:opacity-50 transition-all duration-300"
+          >
+            <span *ngIf="!isUploading && videoForm.valid" class="flex items-center justify-center">
+              🎬 Subir Video
+            </span>
+            <span *ngIf="!isUploading && !videoForm.valid" class="flex items-center justify-center">
+              ⚠️ Completa todos los campos
+            </span>
+            <span *ngIf="isUploading" class="flex items-center justify-center">
+              <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+              Subiendo video...
+            </span>
+          </button>
+
+          <!-- Verificación previa al envío -->
+          <div *ngIf="getFormProgress() < 100 && !isUploading" 
+               class="p-4 bg-yellow-400/10 border-2 border-yellow-400/30 rounded-lg">
+            <div class="text-yellow-300 font-semibold mb-2">⚠️ Campos pendientes:</div>
+            <ul class="text-yellow-200 text-sm space-y-1">
+              <li *ngIf="!isFieldComplete('titulo')">• Título requerido</li>
+              <li *ngIf="!isFieldComplete('tags')">• Tags requeridos</li>
+              <li *ngIf="!isFieldComplete('minutos') || !isFieldComplete('segundos')">• Duración requerida</li>
+              <li *ngIf="!isFieldComplete('resolucion')">• Resolución requerida</li>
+              <li *ngIf="!isFieldComplete('edadVisualizacion')">• Edad mínima requerida</li>
+              <li *ngIf="!isFieldComplete('url')">• URL del video requerida</li>
+            </ul>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

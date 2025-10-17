@@ -2,6 +2,8 @@ import { Routes } from '@angular/router';
 import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard';
 import { Home } from './home/home';
 import { Login } from './login/login';
+import { AudioUploadComponent } from './audio-upload/audio-upload.component';
+import { VideoUploadComponent } from './video-upload/video-upload.component';
 import { Fa2Qr } from './fa2-qr/fa2-qr';
 import { Fa2Guard } from './guards/fa2.guard';
 import { Fa2Code } from './fa2-code/fa2-code';
@@ -47,6 +49,14 @@ export const routes: Routes = [
   {
     path: 'login',
     component: Login
+  },
+  {
+    path: 'audio/subir',
+    component: AudioUploadComponent
+  },
+  {
+    path: 'video/subir',
+    component: VideoUploadComponent
   },
   {
     path: 'dashboard',
