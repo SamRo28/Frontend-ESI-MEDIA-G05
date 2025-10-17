@@ -135,16 +135,18 @@ export class AudioUploadComponent {
       // Usar selectedTags directamente (ya están como array)
       const tagsArray = this.selectedTags.length > 0 ? this.selectedTags : [];
 
-      // Convertir minutos y segundos a total de segundos
-      const totalSegundos = (Number(this.audioForm.value.minutos) * 60) + Number(this.audioForm.value.segundos);
+      // Convertir minutos y segundos a total de segundos con validación
+      const minutos = Number(this.audioForm.value.minutos) || 0;
+      const segundos = Number(this.audioForm.value.segundos) || 0;
+      const totalSegundos = (minutos * 60) + segundos;
 
       const audioData: AudioUploadData = {
         titulo: this.audioForm.value.titulo,
         descripcion: this.audioForm.value.descripcion || undefined,
         tags: tagsArray,
-        duracion: totalSegundos, // Backend espera duración en segundos
+        duracion: totalSegundos > 0 ? totalSegundos : 1, // Mínimo 1 segundo
         vip: this.audioForm.value.vip,
-        edadVisualizacion: Number(this.audioForm.value.edadVisualizacion),
+        edadVisualizacion: Number(this.audioForm.value.edadVisualizacion) || 0,
         fechaDisponibleHasta: this.audioForm.value.fechaDisponibleHasta 
           ? new Date(this.audioForm.value.fechaDisponibleHasta) 
           : undefined,
@@ -158,10 +160,10 @@ export class AudioUploadComponent {
           this.isUploading = false;
           if (response.success) {
             this.uploadMessage = `✅ ${response.message}`;
-            // Opcional: redirigir después de unos segundos
-            setTimeout(() => {
-              this.router.navigate(['/home']);
-            }, 2000);
+            // Mostrar botón para ir a home o subir otro audio
+            // setTimeout(() => {
+            //   this.router.navigate(['/home']);
+            // }, 2000);
           } else {
             this.uploadMessage = `❌ ${response.message}`;
           }
@@ -212,6 +214,21 @@ export class AudioUploadComponent {
       if (errors['max']) return `${fieldName} no puede ser mayor a ${errors['max'].max}`;
     }
     return '';
+  }
+
+  // Método para mostrar mensajes de ayuda solo cuando es apropiado
+  shouldShowHelpMessage(fieldName: string): boolean {
+    if (fieldName === 'duracion') {
+      const minutosField = this.audioForm.get('minutos');
+      const segundosField = this.audioForm.get('segundos');
+      const hasError = this.getFieldError('minutos') || this.getFieldError('segundos');
+      const hasTouched = !!(minutosField?.touched || segundosField?.touched);
+      return !hasError && hasTouched;
+    }
+    
+    const field = this.audioForm.get(fieldName);
+    const hasError = this.getFieldError(fieldName);
+    return !hasError && !!(field?.touched);
   }
 
   // Calcular progreso del formulario para feedback visual
@@ -336,5 +353,18 @@ export class AudioUploadComponent {
     const mins = Math.floor(seconds / 60);
     const secs = Math.round(seconds % 60);
     return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+  }
+
+  // Solo permitir números en campos de duración
+  onlyNumbers(event: KeyboardEvent): void {
+    const key = event.key;
+    // Permitir: números 0-9, backspace, delete, tab, escape, enter, flechas
+    const allowedKeys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
+                         'Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 
+                         'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+    
+    if (!allowedKeys.includes(key)) {
+      event.preventDefault();
+    }
   }
 }

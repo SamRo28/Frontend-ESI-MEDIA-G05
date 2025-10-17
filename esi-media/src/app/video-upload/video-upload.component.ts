@@ -126,10 +126,10 @@ export class VideoUploadComponent {
           this.isUploading = false;
           if (response.success) {
             this.uploadMessage = `✅ ${response.message}`;
-            // Opcional: redirigir después de unos segundos
-            setTimeout(() => {
-              this.router.navigate(['/home']);
-            }, 2000);
+            // COMENTADO: Para mejor UX, el usuario puede elegir cuándo navegar
+            // setTimeout(() => {
+            //   this.router.navigate(['/home']);
+            // }, 2000);
           } else {
             this.uploadMessage = `❌ ${response.message}`;
           }
@@ -166,15 +166,35 @@ export class VideoUploadComponent {
   getFieldError(fieldName: string): string {
     const field = this.videoForm.get(fieldName);
     if (field && field.touched && field.errors) {
-      const errors = field.errors;
-      if (errors['required']) return `${fieldName} es obligatorio`;
-      if (errors['minlength']) return `${fieldName} debe tener al menos ${errors['minlength'].requiredLength} caracteres`;
-      if (errors['maxlength']) return `${fieldName} no puede exceder ${errors['maxlength'].requiredLength} caracteres`;
-      if (errors['min']) return `${fieldName} debe ser mayor a ${errors['min'].min}`;
-      if (errors['max']) return `${fieldName} no puede ser mayor a ${errors['max'].max}`;
-      if (errors['pattern']) return `${fieldName} debe tener un formato válido (http/https)`;
+      return this.getErrorMessage(fieldName, field.errors);
     }
     return '';
+  }
+
+  // Método auxiliar para reducir complejidad cognitiva
+  private getErrorMessage(fieldName: string, errors: any): string {
+    if (errors['required']) return `${fieldName} es obligatorio`;
+    if (errors['minlength']) return `${fieldName} debe tener al menos ${errors['minlength'].requiredLength} caracteres`;
+    if (errors['maxlength']) return `${fieldName} no puede exceder ${errors['maxlength'].requiredLength} caracteres`;
+    if (errors['min']) return `${fieldName} debe ser mayor a ${errors['min'].min}`;
+    if (errors['max']) return `${fieldName} no puede ser mayor a ${errors['max'].max}`;
+    if (errors['pattern']) return `${fieldName} debe tener un formato válido (http/https)`;
+    return '';
+  }
+
+  // Método para mostrar mensajes de ayuda solo cuando es apropiado
+  shouldShowHelpMessage(fieldName: string): boolean {
+    if (fieldName === 'duracion') {
+      const minutosField = this.videoForm.get('minutos');
+      const segundosField = this.videoForm.get('segundos');
+      const hasError = this.getFieldError('minutos') || this.getFieldError('segundos');
+      const hasTouched = !!(minutosField?.touched || segundosField?.touched);
+      return !hasError && hasTouched;
+    }
+    
+    const field = this.videoForm.get(fieldName);
+    const hasError = this.getFieldError(fieldName);
+    return !hasError && !!(field?.touched);
   }
 
   // Calcular progreso del formulario para feedback visual
@@ -299,5 +319,18 @@ export class VideoUploadComponent {
     }
     
     return `✓ Duración: ${totalMinutos}m ${totalSegundos}s`;
+  }
+
+  // Solo permitir números en campos de duración
+  onlyNumbers(event: KeyboardEvent): void {
+    const key = event.key;
+    // Permitir: números 0-9, backspace, delete, tab, escape, enter, flechas
+    const allowedKeys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
+                         'Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 
+                         'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+    
+    if (!allowedKeys.includes(key)) {
+      event.preventDefault();
+    }
   }
 }

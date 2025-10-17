@@ -97,16 +97,18 @@ export class ContentService {
   uploadVideo(videoData: VideoUploadData): Observable<UploadResponse> {
     const payload = {
       titulo: videoData.titulo,
-      descripcion: videoData.descripcion,
+      descripcion: videoData.descripcion || null, // CAMBIO: null en lugar de undefined
       tags: videoData.tags,
-      duracion: videoData.duracion,
+      duracion: videoData.duracion, // Mantener como number, no string
       vip: videoData.vip,
       edadVisualizacion: videoData.edadVisualizacion,
-      fechaDisponibleHasta: videoData.fechaDisponibleHasta || null,
+      fechaDisponibleHasta: videoData.fechaDisponibleHasta 
+        ? videoData.fechaDisponibleHasta.toISOString() // CAMBIO: Usar toISOString() como audio
+        : null,
       visible: videoData.visible,
       url: videoData.url,
       resolucion: videoData.resolucion,
-      caratula: videoData.caratula
+      caratula: videoData.caratula || null // CAMBIO: null en lugar de undefined
     };
 
     // El interceptor authInterceptor se encarga automáticamente del header Authorization

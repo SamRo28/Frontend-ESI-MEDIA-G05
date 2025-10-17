@@ -13,8 +13,19 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
   // Solo agregar el token a peticiones hacia nuestro backend
   if (req.url.includes('localhost:8080/gestor')) {
     
-    // Token temporal para desarrollo
-    const mockToken = 'mock-token-for-development';
+    // Determinar qué token usar según el endpoint
+    let mockToken: string;
+    
+    if (req.url.includes('/audio/subir')) {
+      // Token para gestor de audio
+      mockToken = 'mock-token-for-development';
+    } else if (req.url.includes('/video/subir')) {
+      // Token para gestor de video  
+      mockToken = 'mock-token-video-development';
+    } else {
+      // Token por defecto (audio)
+      mockToken = 'mock-token-for-development';
+    }
     
     // Agregar el header de autorización
     const authReq = req.clone({
