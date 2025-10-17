@@ -212,12 +212,27 @@ export class RegistroVisualizadorComponent implements OnInit {
       vip: val.vip || false,
       foto: this.selectedAvatar >= 0 ? this.preloadedImages[this.selectedAvatar] : null // Incluir avatar seleccionado
     };
-
+    
     // Llamar al servicio con el objeto JSON
     this.svc.register(payload).subscribe({
       next: (response) => {
         console.log('Registro exitoso:', response);
-        this.router.navigate(['/2fa']);
+        sessionStorage.setItem('email', val.email);
+        // Preguntar al usuario si desea activar 2FA
+        // Usamos el diálogo nativo confirm por simplicidad; si el proyecto tiene
+        // un modal o servicio de notificaciones, se puede reemplazar por eso.
+        const wants2fa = window.confirm('Registro completado. ¿Deseas activar la autenticación en 2 pasos (2FA) ahora?');
+
+        if (wants2fa) {
+          // Redirigir a la página de configuración de 2FA
+          // El guard `Fa2Guard` comprueba `allowFa2` en navigation.extras.state o history.state,
+          // por eso enviamos `allowFa2: true` aquí (coincide con `login` y con la expectativa del guard).
+          this.router.navigate(['/2fa'], { state: { allowFa2: true } });
+        } else {
+          // Si el usuario no quiere 2FA, redirigir a la página principal o login
+          // Ajusta la ruta según la estructura de rutas de la aplicación
+          this.router.navigate(['/dashboard']);
+        }
       },
       error: (err) => {
         console.error('Error en registro:', err);

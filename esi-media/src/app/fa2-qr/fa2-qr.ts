@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { UserService } from '../../userService';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-fa2-qr',
@@ -29,7 +30,7 @@ export class Fa2Qr implements OnInit {
   // Estado del botón de copiar
   isCopied: boolean = false;
 
-  constructor(private userService: UserService, private sanitizer: DomSanitizer, private cdr: ChangeDetectorRef) { }
+  constructor(private userService: UserService, private sanitizer: DomSanitizer, private cdr: ChangeDetectorRef, private router: Router) { }
 
   ngOnInit(): void {
     // Aquí llamarías a tu servicio para obtener el QR y la clave secreta
@@ -90,23 +91,38 @@ export class Fa2Qr implements OnInit {
   }
 
   verifyCode(): void {
-    if (this.verificationCode.length === 6) {
-      // Aquí llamarías a tu servicio para verificar el código
-      // Ejemplo: this.authService.verifyTOTP(this.verificationCode).subscribe(
-      //   response => {
-      //     if (response.success) {
-      //       // Código verificado correctamente
-      //       console.log('2FA activado correctamente');
-      //       // Redirigir o mostrar mensaje de éxito
-      //     } else {
-      //       // Código incorrecto
-      //       console.log('Código incorrecto');
-      //     }
-      //   }
-      // );
-      
-      console.log('Verificando código:', this.verificationCode);
+    const email = sessionStorage.getItem('email') || '';
+
+  if (!email) {
+    alert('No se encontró el correo del usuario. Inicia sesión de nuevo e inténtalo otra vez.');
+    return;
+  }
+
+  if (!this.verificationCode || this.verificationCode.trim() === '') {
+    alert('Introduce el código de verificación antes de enviar.');
+    return;
+  }
+
+  console.log('Verificando código:', this.verificationCode, 'para', email);
+
+  this.userService.verify2FACode(email, this.verificationCode).subscribe({
+    next: (res: any) => {
+      const wants2fa = window.confirm('Registro completado. ¿Deseas activar la autenticación en 2 pasos (2FA) ahora?');
+
+        if (wants2fa) {
+          // Redirigir a la página de configuración de 2FA
+          this.router.navigate(['3verification'], { state: { allowFa3Code: true } });
+        } else {
+          // Si el usuario no quiere 2FA, redirigir a la página principal o login
+          // Ajusta la ruta según la estructura de rutas de la aplicación
+          this.router.navigate(['/dashboard']);
+        }
+    },
+    error: (err: any) => {
+      console.error('Error verificando 2FA:', err);
+      alert('Código inválido o error en el servidor. Revisa el código e inténtalo de nuevo.');
     }
+  });
   }
 
 }
