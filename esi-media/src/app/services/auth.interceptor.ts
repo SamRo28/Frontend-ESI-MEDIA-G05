@@ -17,14 +17,14 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
     let mockToken: string;
     
     if (req.url.includes('/audio/subir')) {
-      // Token para gestor de audio
-      mockToken = 'mock-token-for-development';
+      // Token para gestor de audio (nueva notación)
+      mockToken = 'mock-token-audio-new';
     } else if (req.url.includes('/video/subir')) {
-      // Token para gestor de video  
-      mockToken = 'mock-token-video-development';
+      // Token para gestor de video (nueva notación)  
+      mockToken = 'mock-token-video-new';
     } else {
       // Token por defecto (audio)
-      mockToken = 'mock-token-for-development';
+      mockToken = 'mock-token-audio-new';
     }
     
     // Agregar el header de autorización
