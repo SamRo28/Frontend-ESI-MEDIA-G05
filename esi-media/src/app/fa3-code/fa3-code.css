@@ -1,0 +1,227 @@
+.verification-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #2d1b4e 0%, #1a0b2e 50%, #3d2563 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.verification-container::before {
+  content: '';
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  top: -100px;
+  right: -100px;
+  animation: pulse 8s ease-in-out infinite;
+}
+
+.verification-container::after {
+  content: '';
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(217, 70, 239, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  bottom: -100px;
+  left: -100px;
+  animation: pulse 6s ease-in-out infinite reverse;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+.back-button {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(-5px);
+}
+
+.verification-card {
+  background: rgba(50, 35, 75, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 24px;
+  padding: 50px 40px;
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  position: relative;
+  z-index: 1;
+}
+
+.lock-icon {
+  font-size: 60px;
+  margin-bottom: 20px;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.title {
+  color: #ffffff;
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 15px;
+  background: linear-gradient(135deg, #ffffff 0%, #e9d5ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  color: #b8a8d4;
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 40px;
+  max-width: 380px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.code-inputs {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 35px;
+}
+
+.code-input {
+  width: 60px;
+  height: 70px;
+  background: rgba(75, 50, 120, 0.5);
+  border: 2px solid rgba(168, 85, 247, 0.3);
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 28px;
+  font-weight: 600;
+  text-align: center;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.code-input:focus {
+  border-color: #a855f7;
+  background: rgba(75, 50, 120, 0.7);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+  transform: scale(1.05);
+}
+
+.code-input:not(:placeholder-shown) {
+  border-color: #c084fc;
+  background: rgba(168, 85, 247, 0.2);
+}
+
+.verify-button {
+  width: 100%;
+  background: linear-gradient(135deg, #a855f7 0%, #d946ef 100%);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.4);
+  margin-bottom: 25px;
+}
+
+.verify-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(168, 85, 247, 0.5);
+}
+
+.verify-button:active {
+  transform: translateY(0);
+}
+
+.resend-section {
+  margin-top: 20px;
+}
+
+.resend-text {
+  color: #9ca3af;
+  font-size: 15px;
+  margin-right: 8px;
+}
+
+.resend-link {
+  color: #c084fc;
+  font-size: 15px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.resend-link:hover {
+  color: #d946ef;
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .verification-card {
+    padding: 40px 25px;
+  }
+
+  .code-inputs {
+    gap: 8px;
+  }
+
+  .code-input {
+    width: 48px;
+    height: 60px;
+    font-size: 24px;
+  }
+
+  .title {
+    font-size: 26px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+  }
+
+  .back-button {
+    top: 20px;
+    left: 20px;
+    padding: 10px 18px;
+    font-size: 14px;
+  }
+}

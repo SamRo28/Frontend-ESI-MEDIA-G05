@@ -34,9 +34,9 @@
     position: relative;
     z-index: 1;
     width: 100%;
-    max-width: 420px; /* same as login-style width family */
+    max-width: 820px; /* ligeramente más estrecho según petición */
     padding: 20px;
-    margin: 80px auto;
+    margin: 50px auto;
     animation: fadeInUp 0.8s ease-out;
     display: flex;
     flex-direction: column;
@@ -51,24 +51,32 @@
 .btn-back:hover{ background: rgba(255,255,255,0.1); border-color: rgba(168,85,247,0.5); transform: translateX(-4px) }
 
 /* Card */
-.qr-card{ background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border:1px solid rgba(255,255,255,0.1); border-radius:24px; padding: 36px 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); width:100% }
+.qr-card{ background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border:1px solid rgba(255,255,255,0.1); border-radius:24px; padding: 20px 26px; box-shadow: 0 16px 40px rgba(0,0,0,0.26); width:100%;
+    /* Mantener una sola columna, pero hacer la card más ancha y compacta */
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+    max-width: 760px; /* limitar anchura interior para buena lectura */
+    margin: 0 auto; /* centrar la card dentro del contenedor ampliado */
+}
 
-.qr-header{ text-align:center; margin-bottom:28px }
+.qr-header{ text-align:center; margin-bottom:6px }
 .qr-title{ font-size:28px; font-weight:700; background: linear-gradient(135deg,#fff 0%,#a855f7 50%,#ec4899 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:8px }
 .qr-subtitle{ font-size:14px; color: rgba(255,255,255,0.6); line-height:1.6 }
 
 /* Steps / info blocks */
-.steps-container{ display:flex; flex-direction:column; gap:12px; margin-bottom:24px }
+.steps-container{ display:flex; flex-direction:column; gap:10px; margin-bottom:6px }
 .step{ display:flex; align-items:center; gap:12px; background: rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:12px 16px }
 .step:hover{ background: rgba(255,255,255,0.05); border-color: rgba(168,85,247,0.3) }
 .step-number{ width:32px; height:32px; background:linear-gradient(135deg,#a855f7 0%,#ec4899 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700 }
 .step-text{ font-size:14px; color: rgba(255,255,255,0.85) }
 
 /* QR area */
-.qr-code-container{ text-align:center; margin:28px 0 }
-.qr-code-wrapper{ background:white; border:3px solid rgba(168,85,247,0.28); border-radius:18px; padding:18px; display:inline-block; box-shadow:0 15px 50px rgba(168,85,247,0.25); margin-bottom:12px }
-.qr-placeholder{ width:240px; height:240px; display:flex; align-items:center; justify-content:center }
-.qr-image{ width:100%; height:100%; display:block }
+.qr-code-container{ text-align:center; margin:6px 0 }
+.qr-code-wrapper{ background:white; border:3px solid rgba(168,85,247,0.28); border-radius:18px; padding:12px; display:inline-block; box-shadow:0 10px 30px rgba(168,85,247,0.18); margin-bottom:6px }
+.qr-placeholder{ width:200px; height:200px; display:flex; align-items:center; justify-content:center }
+.qr-image{ max-width:100%; max-height:100%; display:block }
 .qr-loading{ display:flex; flex-direction:column; align-items:center; gap:12px; color:#999 }
 .spinner{ width:36px; height:36px; border:4px solid #e0e0e0; border-top-color:#a855f7; border-radius:50%; animation:spin 1s linear infinite }
 @keyframes spin{ to{ transform:rotate(360deg) } }
@@ -76,7 +84,7 @@
 .qr-helper-text{ font-size:13px; color: rgba(255,255,255,0.55) }
 
 /* Manual code */
-.manual-code-section{ margin:20px 0 }
+.manual-code-section{ margin:10px 0 }
 .manual-label{ font-size:13px; color: rgba(255,255,255,0.75); margin-bottom:8px; font-weight:600 }
 .secret-key-container{ display:flex; align-items:center; gap:10px; background: rgba(255,255,255,0.04); border:2px solid rgba(168,85,247,0.12); border-radius:12px; padding:12px 16px }
 .secret-key{ flex:1; font-family: 'Courier New', monospace; font-size:15px; color:#a855f7; font-weight:700; letter-spacing:2px }
@@ -86,7 +94,7 @@
 .manual-helper{ font-size:12px; color: rgba(255,255,255,0.5) }
 
 /* Verification */
-.verification-section{ margin:20px 0; padding:20px; background: rgba(168,85,247,0.05); border:1px solid rgba(168,85,247,0.12); border-radius:14px }
+.verification-section{ margin:10px 0; padding:14px; background: rgba(168,85,247,0.05); border:1px solid rgba(168,85,247,0.12); border-radius:14px }
 .verification-label{ font-size:14px; color: rgba(255,255,255,0.95); margin-bottom:12px; font-weight:600; text-align:center }
 .code-input-container{ display:flex; justify-content:center; margin-bottom:10px }
 .code-input{ background: rgba(255,255,255,0.05); border:2px solid rgba(255,255,255,0.1); border-radius:12px; padding:14px 18px; font-size:22px; color:white; font-family:'Courier New', monospace; font-weight:700; letter-spacing:8px; text-align:center; width:180px; outline:none; transition:all 0.3s }
@@ -95,7 +103,7 @@
 .verification-helper{ font-size:13px; color: rgba(255,255,255,0.55); text-align:center; margin-bottom:12px }
 
 /* Use the same button style as other screens */
-.btn-verify{ width:100%; background: linear-gradient(135deg,#a855f7 0%,#ec4899 100%); color:white; padding:16px; border-radius:12px; border:none; font-size:16px; font-weight:700; cursor:pointer; transition:all 0.3s; box-shadow:0 10px 30px rgba(168,85,247,0.35) }
+.btn-verify{ width:100%; background: linear-gradient(135deg,#a855f7 0%,#ec4899 100%); color:white; padding:14px; border-radius:12px; border:none; font-size:16px; font-weight:700; cursor:pointer; transition:all 0.3s; box-shadow:0 10px 30px rgba(168,85,247,0.35) }
 .btn-verify:hover{ transform:translateY(-2px); box-shadow:0 15px 40px rgba(168,85,247,0.55) }
 
 /* Info and apps */
@@ -112,12 +120,20 @@
 .app-name{ font-size:12px; color: rgba(255,255,255,0.6); font-weight:500 }
 
 /* Responsive adjustments */
-@media (max-width:768px){
-    .qr-container{ margin:60px auto 40px; padding:16px }
-    .qr-card{ padding:28px 22px }
+@media (max-width:992px){
+    .qr-container{ margin:40px auto 30px; padding:14px }
+    .qr-card{ padding:18px 16px; max-width: 720px }
     .qr-title{ font-size:24px }
     .qr-placeholder{ width:200px; height:200px }
     .code-input{ width:150px; font-size:20px; padding:12px 16px }
+}
+
+@media (max-width:768px){
+    .qr-container{ margin:60px auto 40px; padding:16px }
+    .qr-card{ padding:16px 14px; max-width: 100% }
+    .qr-title{ font-size:22px }
+    .qr-placeholder{ width:180px; height:180px }
+    .code-input{ width:140px; font-size:18px; padding:10px 14px }
     .back-button{ top:20px; left:20px }
     .btn-back{ padding:10px 18px; font-size:13px }
     .apps-list{ flex-direction:column }
