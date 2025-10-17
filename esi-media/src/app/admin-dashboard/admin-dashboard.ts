@@ -29,6 +29,10 @@ export class AdminDashboardComponent implements OnInit {
     foto: ''
   };
   
+  // Modal de confirmación para eliminar usuario
+  showDeleteModal = false;
+  usuarioAEliminar: Usuario | null = null;
+  
   // Filtros
   filtroRol = 'Todos'; // 'Todos', 'Administrador', 'Gestor', 'Visualizador'
   busquedaNombre = ''; // Texto de búsqueda
@@ -84,6 +88,9 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   loadUsuarios() {
+    // Limpiar cualquier mensaje de error anterior
+    this.errorMessage = '';
+    
     this.adminService.getUsuarios().subscribe({
       next: (usuarios) => {
         this.usuarios = usuarios;
@@ -92,6 +99,13 @@ export class AdminDashboardComponent implements OnInit {
       error: (error: any) => {
         console.error('Error al cargar usuarios:', error);
         this.errorMessage = 'Error al cargar la lista de usuarios';
+        
+        // Intentar recargar después de un tiempo si hay un error temporal
+        setTimeout(() => {
+          if (this.usuarios.length === 0) {
+            this.loadUsuarios();
+          }
+        }, 3000);
       }
     });
   }
@@ -512,4 +526,103 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
+  // Métodos para la eliminación de usuarios
+  openDeleteModal(usuario: Usuario) {
+    this.usuarioAEliminar = usuario;
+    this.showDeleteModal = true;
+  }
+
+  closeDeleteModal() {
+    this.showDeleteModal = false;
+    this.usuarioAEliminar = null;
+    this.isDeleting = false; // Asegurar que el flag de eliminación se resetea
+    
+    // Forzar la detección de cambios para asegurar que Angular actualiza la vista
+    this.cdr.detectChanges();
+    
+    // Doble comprobación para asegurar que el modal se cierra
+    setTimeout(() => {
+      if (this.showDeleteModal) {
+        console.log("Forzando cierre del modal");
+        this.showDeleteModal = false;
+        this.cdr.detectChanges();
+      }
+    }, 100);
+  }
+
+  // Variable para evitar múltiples clics
+  isDeleting = false;
+
+  deleteUser() {
+    if (!this.usuarioAEliminar || this.isDeleting) return;
+    
+    const userId = this.usuarioAEliminar.id; 
+    const nombreUsuario = this.usuarioAEliminar.nombre;
+    const apellidosUsuario = this.usuarioAEliminar.apellidos;
+    
+    if (!userId) {
+      this.errorMessage = 'Error: ID de usuario no disponible';
+      this.closeDeleteModal();
+      return;
+    }
+    
+    // Activar flag para prevenir múltiples clics
+    this.isDeleting = true;
+    
+    // CAMBIO IMPORTANTE: Cerrar el modal ANTES de la llamada al API
+    // Esto garantiza que el modal se cierre independientemente de la respuesta del servidor
+    // Guardar referencia local del usuario y sus datos
+    const tempId = userId;
+    const tempNombre = nombreUsuario;
+    const tempApellidos = apellidosUsuario;
+    
+    // Cerrar el modal inmediatamente
+    this.showDeleteModal = false;
+    
+    // Realizar la llamada al backend para eliminar el usuario
+    this.adminService.deleteUser(tempId).subscribe({
+      next: (response: any) => {
+        console.log('Usuario eliminado correctamente:', response);
+        
+        // Actualizar la lista después de la eliminación exitosa
+        this.usuarios = this.usuarios.filter(u => u.id !== tempId);
+        this.aplicarFiltros();
+        
+        // Limpiar la referencia al usuario eliminado
+        this.usuarioAEliminar = null;
+        
+        // Mostrar mensaje de éxito
+        this.successMessage = `Usuario ${tempNombre} ${tempApellidos} eliminado correctamente`;
+        
+        // Limpiar mensaje después de unos segundos
+        setTimeout(() => {
+          this.successMessage = '';
+        }, 3000);
+      },
+      error: (error) => {
+        console.error('Error al eliminar usuario:', error);
+        
+        // Asegurar que el modal esté cerrado y la referencia limpia
+        this.usuarioAEliminar = null;
+        
+        // Mostrar mensaje de error
+        this.errorMessage = `Error al eliminar el usuario ${tempNombre}. Inténtelo de nuevo.`;
+        
+        // Recargar la lista de usuarios para asegurarnos de que está actualizada
+        this.loadUsuarios();
+        
+        // Limpiar mensaje después de unos segundos
+        setTimeout(() => {
+          this.errorMessage = '';
+        }, 5000);
+      },
+      complete: () => {
+        // Restablecer flag de eliminación siempre
+        this.isDeleting = false;
+        
+        // Forzar detección de cambios
+        this.cdr.detectChanges();
+      }
+    });
+  }
 }

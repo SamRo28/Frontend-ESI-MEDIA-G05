@@ -93,4 +93,18 @@ export class AdminService {
       })
     );
   }
+
+  deleteUser(userId: string): Observable<any> {
+    const url = `${this.apiUrl}/users/${userId}`;
+    console.log('AdminService: Eliminando usuario:', userId);
+    
+    // Usamos directamente el endpoint del backend que ya maneja la eliminación de contraseña
+    return this.http.delete(url).pipe(
+      timeout(5000), // Reducir el timeout a 5 segundos es suficiente
+      catchError((error) => {
+        console.error('Error en el proceso de eliminación:', error);
+        return this.handleError(error);
+      })
+    );
+  }
 }

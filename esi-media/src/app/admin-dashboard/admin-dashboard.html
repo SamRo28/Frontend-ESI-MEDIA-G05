@@ -80,12 +80,19 @@
             </div>
           </div>
 
-          <!-- Mensaje de éxito en la vista principal -->
+          <!-- Mensajes de éxito/error en la vista principal -->
           <div *ngIf="successMessage && !showForm" class="mb-3 p-3 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-lg flex items-start gap-3">
             <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
             </svg>
             <span>{{ successMessage }}</span>
+          </div>
+          
+          <div *ngIf="errorMessage && !showForm" class="mb-3 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg flex items-start gap-3">
+            <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+            </svg>
+            <span>{{ errorMessage }}</span>
           </div>
 
           <!-- Filtros y Búsqueda -->
@@ -218,7 +225,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                           </svg>
                         </button>
-                        <button class="p-1 hover:bg-gray-100 rounded" title="Eliminar">
+                        <button class="p-1 hover:bg-gray-100 rounded" title="Eliminar" (click)="openDeleteModal(usuario)">
                           <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                           </svg>
@@ -231,7 +238,7 @@
             </div>
           </div>
 
-          <!-- Si no hay usuarios -->
+                  <!-- Si no hay usuarios -->
           <div *ngIf="usuariosFiltrados.length === 0 && usuarios.length > 0" class="text-center py-16 bg-white rounded-lg border border-gray-200">
             <svg class="w-20 h-20 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -913,6 +920,93 @@
           </svg>
           Guardar Cambios
         </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal de Confirmación para Eliminar Usuario -->
+  <div *ngIf="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm" (click)="closeDeleteModal()">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4" (click)="$event.stopPropagation()">
+      <div class="relative"> <!-- Contenedor con posición relativa para permitir botón de cerrar absoluto -->
+        <!-- Botón cerrar absoluto en esquina superior derecha -->
+        <button 
+          (click)="closeDeleteModal()" 
+          class="absolute top-3 right-3 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 focus:outline-none"
+          aria-label="Cerrar">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+        
+        <!-- Header del Modal -->
+        <div class="bg-gradient-to-r from-red-600 to-red-800 text-white p-6 rounded-t-xl">
+          <h2 class="text-2xl font-bold">Eliminar Usuario</h2>
+          <p class="text-red-100 text-sm mt-1">Esta acción no se puede deshacer</p>
+        </div>
+
+        <!-- Contenido del Modal -->
+        <div class="p-6 space-y-4">
+          <div class="flex items-center justify-center">
+            <div class="bg-red-100 rounded-full p-4">
+              <svg class="w-16 h-16 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+            </div>
+          </div>
+
+          <div class="text-center">
+            <h3 class="text-lg font-bold text-gray-900 mb-2">¿Deseas eliminar el siguiente usuario?</h3>
+            <div *ngIf="usuarioAEliminar" class="bg-gray-50 p-4 rounded-lg mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                  <img *ngIf="usuarioAEliminar.foto" [src]="'/' + usuarioAEliminar.foto" [alt]="usuarioAEliminar.nombre" class="w-full h-full object-cover">
+                  <div *ngIf="!usuarioAEliminar.foto" class="w-full h-full bg-blue-600 text-white flex items-center justify-center font-bold">
+                    {{ usuarioAEliminar.nombre.charAt(0).toUpperCase() }}
+                  </div>
+                </div>
+                <div class="text-left">
+                  <p class="font-bold text-gray-900">{{ usuarioAEliminar.nombre }} {{ usuarioAEliminar.apellidos }}</p>
+                  <p class="text-sm text-gray-600">{{ usuarioAEliminar.email }}</p>
+                  <span class="inline-flex items-center px-2 py-1 mt-1 text-xs font-medium rounded"
+                      [ngClass]="{
+                        'bg-amber-100 text-amber-700': usuarioAEliminar.rol === 'Administrador',
+                        'bg-blue-100 text-blue-700': usuarioAEliminar.rol === 'Gestor',
+                        'bg-gray-100 text-gray-700': usuarioAEliminar.rol === 'Visualizador'
+                      }">
+                      {{ usuarioAEliminar.rol || 'Visualizador' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p class="text-gray-500 mb-4">Esta acción eliminará permanentemente al usuario del sistema y todos sus datos asociados.</p>
+          </div>
+        </div>
+        
+        <!-- Footer del Modal -->
+        <div class="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end gap-3">
+          <button 
+            (click)="closeDeleteModal()"
+            [disabled]="isDeleting"
+            class="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+            Cancelar
+          </button>
+          <button 
+            (click)="deleteUser(); $event.preventDefault(); $event.stopPropagation();"
+            [disabled]="isDeleting"
+            class="px-5 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+            id="btn-eliminar-usuario">
+            <!-- Icono de carga cuando está eliminando -->
+            <svg *ngIf="isDeleting" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <!-- Icono de papelera cuando no está eliminando -->
+            <svg *ngIf="!isDeleting" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            {{ isDeleting ? 'Eliminando...' : 'Eliminar Usuario' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
