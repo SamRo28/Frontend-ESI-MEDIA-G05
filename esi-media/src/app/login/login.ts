@@ -45,6 +45,9 @@ export class Login {
           else if(response.tipo === 'admin'){
             this.router.navigate(['/admin-dashboard']);
           }
+          else if(response.tipo === 'gestor_de_contenido'){
+            this.router.navigate(['/gestor-dashboard']);
+          }
           else if(response.tipo === 'creador'){
             this.router.navigate(['/creador-dashboard']);
           }

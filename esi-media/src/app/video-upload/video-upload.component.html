@@ -18,7 +18,7 @@
           </h1>
           <span class="text-purple-300">Gestor de Video</span>
         </div>
-        <a routerLink="/home" class="text-white/80 hover:text-white transition-colors">
+        <a routerLink="/gestor-dashboard" class="text-white/80 hover:text-white transition-colors">
           ← Volver al inicio
         </a>
       </div>
@@ -255,6 +255,8 @@
               type="date" 
               id="fechaDisponibleHasta"
               formControlName="fechaDisponibleHasta"
+              (keydown)="preventKeyboardInput($event)"
+              (paste)="$event.preventDefault()"
               class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:border-purple-400 focus:outline-none transition-colors"
             >
             <div class="text-white/60 text-sm mt-1">Deja vacío para disponibilidad permanente</div>
@@ -295,13 +297,23 @@
 
           <!-- Mensaje de resultado -->
           <div *ngIf="uploadMessage" 
-               [class]="uploadMessage.includes('✅') ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'"
-               class="p-4 border-2 rounded-lg text-center font-semibold animate-pulse">
+               [class]="uploadSuccess ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'"
+               class="p-6 border-2 rounded-lg text-center font-semibold">
             {{ uploadMessage }}
           </div>
 
-          <!-- Botón de submit -->
+          <!-- Botón OK para volver al dashboard (solo visible en éxito) -->
           <button 
+            *ngIf="uploadSuccess"
+            type="button" 
+            (click)="backToDashboard()"
+            class="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105">
+            ✅ OK - Volver al Dashboard
+          </button>
+
+          <!-- Botón de submit (solo visible si no hay éxito) -->
+          <button 
+            *ngIf="!uploadSuccess"
             type="submit" 
             [disabled]="!videoForm.valid || isUploading"
             [class]="(videoForm.valid && !isUploading) 
