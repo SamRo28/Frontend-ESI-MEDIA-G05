@@ -14,13 +14,35 @@ export interface Usuario {
   apodo?: string;
 }
 
+export interface PerfilDetalle {
+  id: string;
+  nombre: string;
+  apellidos: string;
+  email: string;
+  foto?: any;
+  bloqueado: boolean;
+  rol: string;
+  fechaRegistro?: Date;
+  // Campos específicos de Administrador
+  departamento?: string;
+  // Campos específicos de Gestor
+  alias?: string;
+  descripcion?: string;
+  especialidad?: string;
+  tipoContenido?: string;
+  // Campos específicos de Visualizador
+  fechaNacimiento?: Date;
+  vip?: boolean;
+  edad?: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class AdminService {
-  private apiUrl = 'http://localhost:8080';
+  private readonly apiUrl = 'http://localhost:8080';
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   getUsuarios(): Observable<Usuario[]> {
     return this.http.get<Usuario[]>(`${this.apiUrl}/users/listar`);
@@ -103,6 +125,31 @@ export class AdminService {
       timeout(5000), // Reducir el timeout a 5 segundos es suficiente
       catchError((error) => {
         console.error('Error en el proceso de eliminación:', error);
+        return this.handleError(error);
+      })
+    );
+  }
+
+  /**
+   * Obtiene el perfil detallado de un usuario
+   * @param usuarioId ID del usuario a consultar
+   * @param adminId ID del administrador que realiza la consulta
+   */
+  obtenerPerfil(usuarioId: string, adminId?: string): Observable<PerfilDetalle> {
+    const url = `${this.apiUrl}/perfiles/${usuarioId}`;
+    console.log('🔍 AdminService: Obteniendo perfil de usuario:', usuarioId);
+    if (adminId) {
+      console.log('👤 Administrador consultante:', adminId);
+    } else {
+      console.log('⚠️ AdminService: Admin-ID no disponible; se realizará la petición sin encabezado');
+    }
+
+    const options = adminId ? { headers: { 'Admin-ID': adminId } } : {};
+
+    return this.http.get<PerfilDetalle>(url, options).pipe(
+      timeout(5000),
+      catchError((error) => {
+        console.error('❌ Error obteniendo perfil:', error);
         return this.handleError(error);
       })
     );

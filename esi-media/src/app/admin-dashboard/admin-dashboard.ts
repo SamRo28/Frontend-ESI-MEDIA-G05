@@ -1,15 +1,15 @@
 import { Component, OnInit, ChangeDetectorRef, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { AdminService, Usuario } from '../services/admin.service';
+import { Router, RouterModule } from '@angular/router';
+import { AdminService, Usuario, PerfilDetalle } from '../services/admin.service';
 
 @Component({
   selector: 'app-admin-dashboard',
   templateUrl: './admin-dashboard.html',
   styleUrls: ['./admin-dashboard.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule, RouterModule]
 })
 export class AdminDashboardComponent implements OnInit {
   activeTab = 'inicio';
@@ -32,6 +32,12 @@ export class AdminDashboardComponent implements OnInit {
   // Modal de confirmación para eliminar usuario
   showDeleteModal = false;
   usuarioAEliminar: Usuario | null = null;
+  
+  // Modal de visualización de perfil
+  showPerfilModal = false;
+  perfilDetalle: PerfilDetalle | null = null;
+  loadingPerfil = false;
+  errorPerfil = '';
   
   // Filtros
   filtroRol = 'Todos'; // 'Todos', 'Administrador', 'Gestor', 'Visualizador'
@@ -69,10 +75,10 @@ export class AdminDashboardComponent implements OnInit {
   ];
 
   constructor(
-    private adminService: AdminService,
-    private cdr: ChangeDetectorRef,
-    private router: Router,
-    @Inject(PLATFORM_ID) private platformId: Object
+    private readonly adminService: AdminService,
+    private readonly cdr: ChangeDetectorRef,
+    private readonly router: Router,
+    @Inject(PLATFORM_ID) private readonly platformId: Object
   ) {}
 
   ngOnInit() {
@@ -128,11 +134,11 @@ export class AdminDashboardComponent implements OnInit {
 
   toggleForm() {
     this.showForm = !this.showForm;
-    if (!this.showForm) {
-      this.resetForm();
+    if (this.showForm) {
+      // Limpiar mensajes cuando se abre el formulario
       this.resetMessages();
     } else {
-      // Limpiar mensajes cuando se abre el formulario
+      this.resetForm();
       this.resetMessages();
     }
   }
@@ -624,5 +630,139 @@ export class AdminDashboardComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  // ============================================
+  // MÉTODOS PARA EL MODAL DE VISUALIZACIÓN DE PERFIL
+  // ============================================
+
+  /**
+   * Abre el modal de perfil y carga los datos del usuario
+   * @param usuario Usuario cuyo perfil se va a visualizar
+   */
+  verPerfil(usuario: Usuario) {
+    if (!usuario?.id) {
+      this.errorPerfil = 'ID de usuario no disponible';
+      this.showPerfilModal = true;
+      this.loadingPerfil = false;
+      this.perfilDetalle = null;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    // Resolver Admin-ID (cabecera requerida por el backend)
+    let adminId = this.currentUser?.id;
+    if (!adminId && this.currentUser?.email) {
+      const adminEnLista = this.usuarios.find(u => u.email === this.currentUser?.email);
+      if (adminEnLista?.id) adminId = adminEnLista.id;
+    }
+    if (!adminId) {
+      const primerAdmin = this.usuarios.find(u => u.rol === 'Administrador');
+      if (primerAdmin?.id) adminId = primerAdmin.id;
+    }
+
+    this.showPerfilModal = true;
+    this.loadingPerfil = true;
+    this.errorPerfil = '';
+    this.perfilDetalle = null;
+    this.cdr.detectChanges();
+
+    // Temporizador de respaldo por si la petición queda colgada
+    const backupTimeout = setTimeout(() => {
+      if (this.loadingPerfil) {
+        console.warn('[Perfil] Timeout de respaldo: backend no responde');
+        this.loadingPerfil = false;
+        this.errorPerfil = 'No se pudo obtener el perfil. Verifica que el backend esté en ejecución (puerto 8080).';
+        this.cdr.detectChanges();
+      }
+    }, 7000);
+
+    // Llamada real al backend
+    this.adminService.obtenerPerfil(usuario.id, adminId).subscribe({
+      next: (perfil) => {
+        clearTimeout(backupTimeout);
+        this.perfilDetalle = perfil;
+        this.loadingPerfil = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        clearTimeout(backupTimeout);
+        this.loadingPerfil = false;
+        // Mapear mensaje de error de forma robusta
+        let mensaje = 'Error al cargar el perfil del usuario';
+        if (error?.status === 0) {
+          mensaje = 'No hay conexión con el servidor. ¿Está el backend levantado en http://localhost:8080?';
+        } else if (error?.status === 'timeout' || error?.name === 'TimeoutError') {
+          mensaje = 'Tiempo de espera agotado al consultar el perfil.';
+        } else if (error?.error?.mensaje) {
+          mensaje = error.error.mensaje;
+        } else if (error?.error?.message) {
+          mensaje = error.error.message;
+        } else if (error?.message) {
+          mensaje = error.message;
+        }
+        this.errorPerfil = mensaje;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  /**
+   * Cierra el modal de perfil
+   */
+  cerrarPerfilModal() {
+    this.showPerfilModal = false;
+    this.perfilDetalle = null;
+    this.errorPerfil = '';
+    this.loadingPerfil = false;
+  }
+
+  /**
+   * Formatea una fecha para mostrar
+   * @param fecha Fecha a formatear
+   */
+  formatearFecha(fecha: Date | undefined): string {
+    if (!fecha) return 'No disponible';
+    
+    const date = new Date(fecha);
+    return date.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
+  usuarioADetalle: Usuario | null = null;
+
+  openPerfilModal(usuario: Usuario) {
+    this.usuarioADetalle = usuario;
+    this.showPerfilModal = true;
+    this.cdr.detectChanges();
+  }
+
+  closePerfilModal() {
+    this.showPerfilModal = false;
+    this.usuarioADetalle = null;
+    this.cdr.detectChanges();
+  }
+
+  // ==================================================
+  // Utilidad: normalizar URL de foto para cualquier rol
+  // Admite string absoluto, relativo o estructuras simples
+  // ==================================================
+  getFotoUrl(foto: any): string {
+    if (!foto) return '';
+    if (typeof foto === 'string') {
+      // Si ya es absoluta o empieza por '/', usar tal cual
+      if (foto.startsWith('http://') || foto.startsWith('https://') || foto.startsWith('/')) {
+        return foto;
+      }
+      // Si es solo el nombre de archivo, servir desde raíz pública
+      return `/${foto}`;
+    }
+    // Si viene como objeto con campo url o path
+    if (foto.url && typeof foto.url === 'string') return foto.url;
+    if (foto.path && typeof foto.path === 'string') return foto.path.startsWith('/') ? foto.path : `/${foto.path}`;
+    return '';
   }
 }
