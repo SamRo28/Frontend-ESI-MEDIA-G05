@@ -74,6 +74,15 @@ export class Fa2Code {
 
   this.userService.verify2FACode(email, this.verificationCode).subscribe({
     next: (res: any) => {
+      let user = JSON.parse(sessionStorage.getItem('user') || '{}');
+      if(user.threeFactorAutenticationEnabled){
+        this.router.navigate(['/3verification'], { state: { allowFa3Code: true } });
+        return;
+      }
+      else{
+        sessionStorage.setItem('token', res.sesionstoken.token);
+        this.router.navigate(['/dashboard']);
+      }
     },
     error: (err: any) => {
       console.error('Error verificando 2FA:', err);
@@ -82,50 +91,12 @@ export class Fa2Code {
   });
   }
 
-  resendCode(): void {
-    console.log('Reenviando código...');
-    
-    // Limpiar los inputs
-    const inputElements = this.inputs.toArray();
-    inputElements.forEach(input => {
-      input.nativeElement.value = '';
-    });
-    
-    // Enfocar el primer input
-    if (inputElements.length > 0) {
-      inputElements[0].nativeElement.focus();
-    }
-    
-    this.verificationCode = '';
-    
-    // Aquí iría tu lógica para reenviar el código
-    // this.authService.resendVerificationCode().subscribe(...)
-  }
+  
 
   goBack(): void {
     this.router.navigate(['/login']);
   }
 
-  onPaste(event: ClipboardEvent): void {
-    event.preventDefault();
-    const pastedData = event.clipboardData?.getData('text');
-    
-    if (pastedData && /^\d{6}$/.test(pastedData)) {
-      const inputElements = this.inputs.toArray();
-      const digits = pastedData.split('');
-      
-      digits.forEach((digit, index) => {
-        if (inputElements[index]) {
-          inputElements[index].nativeElement.value = digit;
-        }
-      });
-      
-      // Enfocar el último input
-      if (inputElements.length > 0) {
-        inputElements[inputElements.length - 1].nativeElement.focus();
-      }
-      
-      this.updateVerificationCode();
-    }
-  }
+  
+  
 }

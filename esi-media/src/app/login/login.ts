@@ -31,23 +31,17 @@ export class Login {
 
         sessionStorage.setItem('email', response.email);
         sessionStorage.setItem('currentUserClass', response.tipo);
-        
+        sessionStorage.setItem('user', JSON.stringify(response.usuario));
+
         if(response.usuario.twoFactorAutenticationEnabled){
            this.router.navigate(['/2verification'], { state: { allowFa2Code: true } });
         }
-        /*else if (!response.twoFactorAutenticationEnabled && response.tipo !== 'visualizador'){
+        else if (!response.twoFactorAutenticationEnabled && response.tipo !== 'visualizador'){
           this.router.navigate(['/2fa'], { state: { allowFa2: true } });
-        }*/
+        }
         else{
-          if(response.tipo === 'visualizador'){
-            this.router.navigate(['/visualizador']);
-          }
-          else if(response.tipo === 'admin'){
-            this.router.navigate(['/admin-dashboard']);
-          }
-          else if(response.tipo === 'creador'){
-            this.router.navigate(['/creador-dashboard']);
-          }
+          this.router.navigate(['/dashboard']);
+          
           sessionStorage.setItem('token', response.sesionstoken.token);
           this.router.navigate(['/dashboard']);
 

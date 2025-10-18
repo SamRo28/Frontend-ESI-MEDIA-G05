@@ -70,8 +70,22 @@ export class Fa3Code implements OnInit {
   verifyCode(): void {
     this.userService.verify3ACode(this.codeId, this.verificationCode).subscribe({
       next: (response) => {
-        console.log('Código verificado con éxito:', response);
-        this.router.navigate(['/dashboard']);
+        let tipoUsuario = sessionStorage.getItem('currentUserClass');
+        sessionStorage.setItem('token', response.sesionstoken.token);
+
+        if(tipoUsuario === 'Visualizador'){
+          this.router.navigate(['/dashboard']);
+          return;
+        }
+        else if (tipoUsuario === 'Administrador'){
+          this.router.navigate(['/admin-dashboard']);
+          return;
+        }
+
+        else{
+          this.router.navigate(['/gestor-dashboard']);
+        }
+
       }
     });
   }
