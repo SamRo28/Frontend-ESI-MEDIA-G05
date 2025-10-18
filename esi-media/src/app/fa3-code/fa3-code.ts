@@ -71,7 +71,7 @@ export class Fa3Code implements OnInit {
     this.userService.verify3ACode(this.codeId, this.verificationCode).subscribe({
       next: (response) => {
         let tipoUsuario = sessionStorage.getItem('currentUserClass');
-        sessionStorage.setItem('token', response.sesionstoken.token);
+        sessionStorage.setItem('token', response.token);
 
         if(tipoUsuario === 'Visualizador'){
           this.router.navigate(['/dashboard']);

@@ -1,14 +1,12 @@
 import { Component, Inject, PLATFORM_ID } from '@angular/core';
 import { RouterLink, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { UserService } from '../../userService';
-import { isPlatformBrowser } from '@angular/common';
-import { Session } from 'inspector/promises';
-import { allowedNodeEnvironmentFlags } from 'process';
 
 @Component({
   selector: 'app-login',
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, CommonModule],
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
@@ -16,6 +14,7 @@ export class Login {
   loginForm: any;
   email: string = '';
   password: string = '';
+  loginError: string = '';
 
   constructor(
     private router: Router, 
@@ -26,10 +25,12 @@ export class Login {
   onSubmit() {
     console.log('Intentando login con:', { email: this.email, password: this.password });
     
+    // resetear error anterior
+    this.loginError = '';
+
     this.userService.login(this.email, this.password).subscribe({
       next: (response) => {
-
-        sessionStorage.setItem('email', response.email);
+        sessionStorage.setItem('email', response.usuario.email);
         sessionStorage.setItem('currentUserClass', response.tipo);
         sessionStorage.setItem('user', JSON.stringify(response.usuario));
 
@@ -41,23 +42,14 @@ export class Login {
         }
         else{
           this.router.navigate(['/dashboard']);
-          
           sessionStorage.setItem('token', response.sesionstoken.token);
           this.router.navigate(['/dashboard']);
-
         }
-
-        
-        
-
       },
       error: (error) => {
-        console.error('Login failed:', error);
-        console.error('Error details:', error.error);
-        console.error('Status:', error.status);
-        // Handle login failure (e.g., show an error message)
+        this.loginError = 'Credenciales inválidas';
+        console.log('Error establecido:', this.loginError);
       }
     });
-    
   }
 }
