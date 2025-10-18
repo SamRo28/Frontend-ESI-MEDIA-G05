@@ -102,14 +102,16 @@ export class VideoUploadComponent {
       // Usar selectedTags directamente (ya están como array)
       const tagsArray = this.selectedTags.length > 0 ? this.selectedTags : [];
 
-      // Convertir minutos y segundos a total de segundos
-      const totalSegundos = (Number(this.videoForm.value.minutos) * 60) + Number(this.videoForm.value.segundos);
+      // Convertir minutos y segundos a total de segundos con validación
+      const minutos = Number(this.videoForm.value.minutos) || 0;
+      const segundos = Number(this.videoForm.value.segundos) || 0;
+      const totalSegundos = (minutos * 60) + segundos;
 
       const videoData: VideoUploadData = {
         titulo: this.videoForm.value.titulo,
         descripcion: this.videoForm.value.descripcion || undefined,
         tags: tagsArray,
-        duracion: totalSegundos, // Backend espera duración en segundos
+        duracion: totalSegundos > 0 ? totalSegundos : 1, // Mínimo 1 segundo
         vip: this.videoForm.value.vip,
         edadVisualizacion: Number(this.videoForm.value.edadVisualizacion),
         fechaDisponibleHasta: this.videoForm.value.fechaDisponibleHasta 
