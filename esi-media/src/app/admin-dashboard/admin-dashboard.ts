@@ -39,6 +39,13 @@ export class AdminDashboardComponent implements OnInit {
   loadingPerfil = false;
   errorPerfil = '';
   
+  // Modal de confirmación para bloquear/desbloquear usuario
+  showBloqueoModal = false;
+  usuarioABloquear: Usuario | null = null;
+  accionBloqueo: 'bloquear' | 'desbloquear' = 'bloquear';
+  loadingBloqueo = false;
+  errorBloqueo = '';
+  
   // Filtros
   filtroRol = 'Todos'; // 'Todos', 'Administrador', 'Gestor', 'Visualizador'
   busquedaNombre = ''; // Texto de búsqueda
@@ -765,4 +772,116 @@ export class AdminDashboardComponent implements OnInit {
     if (foto.path && typeof foto.path === 'string') return foto.path.startsWith('/') ? foto.path : `/${foto.path}`;
     return '';
   }
+
+  // ==================================================
+  // Bloquear/Desbloquear Usuario
+  // ==================================================
+
+  /**
+   * Abre el modal de confirmación para bloquear/desbloquear usuario
+   */
+  abrirModalBloqueo(usuario: Usuario) {
+    this.usuarioABloquear = usuario;
+    this.accionBloqueo = usuario.bloqueado ? 'desbloquear' : 'bloquear';
+    this.showBloqueoModal = true;
+    this.errorBloqueo = '';
+  }
+
+  /**
+   * Confirma y ejecuta la acción de bloquear/desbloquear
+   */
+  confirmarBloqueo() {
+    if (!this.usuarioABloquear) return;
+
+    const adminId = this.obtenerAdminId();
+    if (!adminId) {
+      this.errorBloqueo = 'No se pudo identificar al administrador';
+      return;
+    }
+
+    this.loadingBloqueo = true;
+    this.errorBloqueo = '';
+
+    const accion$ = this.accionBloqueo === 'bloquear'
+      ? this.adminService.bloquearUsuario(this.usuarioABloquear.id!, adminId)
+      : this.adminService.desbloquearUsuario(this.usuarioABloquear.id!, adminId);
+
+    // Fallback por si algo deja el loading en true más de 7s
+    const backup = setTimeout(() => {
+      if (this.loadingBloqueo) {
+        this.loadingBloqueo = false;
+        this.errorBloqueo = 'La operación tardó más de lo esperado. Refresca la lista para ver el estado.';
+        this.cdr.detectChanges();
+      }
+    }, 7000);
+
+    accion$.subscribe({
+      next: (response) => {
+        console.log('✅ Usuario', this.accionBloqueo === 'bloquear' ? 'bloqueado' : 'desbloqueado');
+        
+        // Actualizar el estado local INMEDIATAMENTE (usuarios y filtrados)
+        const nuevoEstado = this.accionBloqueo === 'bloquear';
+        const idObjetivo = this.usuarioABloquear?.id;
+        if (idObjetivo) {
+          // Actualizar referencia directa (objeto seleccionado)
+          this.usuarioABloquear!.bloqueado = nuevoEstado;
+
+          // Actualizar lista principal
+          this.usuarios = this.usuarios.map(u => u.id === idObjetivo ? { ...u, bloqueado: nuevoEstado } : u);
+
+          // Reaplicar filtros para refrescar la tabla visible
+          this.aplicarFiltros();
+        }
+
+        // Sincronizar con servidor tras un pequeño delay para evitar sobrescribir con datos obsoletos
+        setTimeout(() => this.loadUsuarios(), 600);
+        
+        // Cerrar modal
+        this.cerrarModalBloqueo();
+        this.loadingBloqueo = false;
+        clearTimeout(backup);
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('❌ Error:', error);
+        this.errorBloqueo = error.message || `Error al ${this.accionBloqueo} usuario`;
+        this.loadingBloqueo = false;
+        clearTimeout(backup);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  /**
+   * Cierra el modal de bloqueo
+   */
+  cerrarModalBloqueo() {
+    this.showBloqueoModal = false;
+    this.usuarioABloquear = null;
+    this.loadingBloqueo = false;
+    this.errorBloqueo = '';
+  }
+
+  /**
+   * Obtiene el ID del administrador actual
+   */
+  private obtenerAdminId(): string | null {
+    // Primero intenta desde currentUser
+    if (this.currentUser?.id) {
+      return this.currentUser.id;
+    }
+
+    // Buscar en la lista de usuarios por email
+    if (this.currentUser?.email) {
+      const adminEnLista = this.usuarios.find(u => u.email === this.currentUser?.email);
+      if (adminEnLista?.id) {
+        return adminEnLista.id;
+      }
+    }
+
+    // Último recurso: primer administrador de la lista
+    const primerAdmin = this.usuarios.find(u => u.rol === 'Administrador');
+    return primerAdmin?.id || null;
+  }
 }
+

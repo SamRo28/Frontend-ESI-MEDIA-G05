@@ -154,4 +154,44 @@ export class AdminService {
       })
     );
   }
+
+  /**
+   * Bloquea un usuario impidiendo su acceso al sistema
+   * @param usuarioId ID del usuario a bloquear
+   * @param adminId ID del administrador que realiza la acción
+   */
+  bloquearUsuario(usuarioId: string, adminId: string): Observable<any> {
+    const url = `${this.apiUrl}/usuarios/${usuarioId}/bloquear`;
+    console.log('🔒 AdminService: Bloqueando usuario:', usuarioId);
+    
+    const headers = { 'Admin-ID': adminId };
+    
+    return this.http.put(url, {}, { headers }).pipe(
+      timeout(5000),
+      catchError((error) => {
+        console.error('❌ Error bloqueando usuario:', error);
+        return this.handleError(error);
+      })
+    );
+  }
+
+  /**
+   * Desbloquea un usuario restaurando su acceso al sistema
+   * @param usuarioId ID del usuario a desbloquear
+   * @param adminId ID del administrador que realiza la acción
+   */
+  desbloquearUsuario(usuarioId: string, adminId: string): Observable<any> {
+    const url = `${this.apiUrl}/usuarios/${usuarioId}/desbloquear`;
+    console.log('🔓 AdminService: Desbloqueando usuario:', usuarioId);
+    
+    const headers = { 'Admin-ID': adminId };
+    
+    return this.http.put(url, {}, { headers }).pipe(
+      timeout(5000),
+      catchError((error) => {
+        console.error('❌ Error desbloqueando usuario:', error);
+        return this.handleError(error);
+      })
+    );
+  }
 }
