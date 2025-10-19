@@ -14,10 +14,10 @@ import { VisualizadorService } from '../services/visualizador.service';
 export class RegistroVisualizadorComponent implements OnInit {
   // Rutas de avatares predefinidos
   preloadedImages: string[] = [
-    'assets/images/avatar1.jpg',
-    'assets/images/avatar2.jpg',
-    'assets/images/avatar3.jpg',
-    'assets/images/avatar4.jpg'
+    'perfil1.png',
+    'perfil2.png',
+    'perfil3.png',
+    'perfil4.png'
   ];
   
   // Para la selección de avatar
@@ -27,6 +27,20 @@ export class RegistroVisualizadorComponent implements OnInit {
   todayStr: string;
   minAllowedBirthStr: string; // fecha mínima permitida (limite inferior) - no usada estrictamente aquí
   maxBirthForFourYearsStr: string; // fecha máxima para que el usuario tenga al menos 4 años
+
+  // Validación de contraseña en tiempo real
+  passwordValidation = {
+    minLength: false,
+    hasUpperCase: false,
+    hasLowerCase: false,
+    hasNumber: false,
+    hasSpecialChar: false,
+    hasPersonalData: false // Controla si la contraseña contiene datos personales
+  };
+
+  // Control para mostrar/ocultar las contraseñas
+  showPassword = false;
+  showConfirmPassword = false;
 
   form!: FormGroup;
   submitted = false;
@@ -78,11 +92,16 @@ export class RegistroVisualizadorComponent implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       alias: ['', [Validators.maxLength(12)]],
       fecha_nac: ['', [Validators.required, this.birthDateValidator(4)]],
-      password: ['', [Validators.required, Validators.pattern(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}/)]],
+      password: ['', [Validators.required, this.passwordValidator()]],
       passwordConfirm: ['', [Validators.required]],
       vip: [false],
       avatar: [null] // Para almacenar la ruta del avatar seleccionado
     }, { validators: this.passwordsMatchValidator });
+    
+    // Suscribirse a cambios en el campo de contraseña para validar en tiempo real
+    this.form.get('password')?.valueChanges.subscribe(value => {
+      this.validatePassword(value);
+    });
   }
 
   // Validador personalizado: comprobar que la fecha sea anterior a hoy y que la edad >= minYears
@@ -97,6 +116,92 @@ export class RegistroVisualizadorComponent implements OnInit {
       const cutoff = new Date(today.getFullYear() - minYears, today.getMonth(), today.getDate());
       if (d > cutoff) return { tooYoung: `Debes tener al menos ${minYears} años` };
       return null;
+    };
+  }
+
+  // Validador de contraseña que verifica criterios individuales
+  passwordValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = control.value;
+      if (!value) return null; // required lo maneja aparte
+      
+      // Verificar todos los criterios básicos
+      const hasMinLength = value.length >= 8;
+      const hasUpperCase = /[A-Z]/.test(value);
+      const hasLowerCase = /[a-z]/.test(value);
+      const hasNumber = /[0-9]/.test(value);
+      const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value);
+      
+      // Verificar que no contenga datos personales (se comprobará más a fondo en validatePassword)
+      // Aquí solo verificamos si el formulario existe y tiene los campos necesarios
+      let hasPersonalData = false;
+      const form = control.parent;
+      if (form) {
+        const nombre = form.get('nombre')?.value?.toLowerCase() || '';
+        const apellidos = form.get('apellidos')?.value?.toLowerCase() || '';
+        
+        if (nombre && apellidos && value) {
+          const lowerValue = value.toLowerCase();
+          // Comprobar si la contraseña contiene el nombre o apellidos
+          hasPersonalData = (nombre.length > 2 && lowerValue.includes(nombre.toLowerCase())) || 
+                           (apellidos.length > 2 && lowerValue.includes(apellidos.toLowerCase()));
+        }
+      }
+      
+      // Si todos los criterios pasan, devolver null (válido)
+      if (hasMinLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar && !hasPersonalData) {
+        return null;
+      }
+      
+      // Sino, devolver un objeto con los criterios que fallaron
+      return {
+        passwordPolicy: {
+          hasMinLength,
+          hasUpperCase,
+          hasLowerCase,
+          hasNumber,
+          hasSpecialChar,
+          hasPersonalData
+        }
+      };
+    };
+  }
+  
+  // Método para validar la contraseña y actualizar el estado de validación
+  validatePassword(value: string): void {
+    if (!value) {
+      this.resetPasswordValidation();
+      return;
+    }
+    
+    // Comprobar si contiene datos personales
+    const nombre = this.form?.get('nombre')?.value?.toLowerCase() || '';
+    const apellidos = this.form?.get('apellidos')?.value?.toLowerCase() || '';
+    const lowerValue = value.toLowerCase();
+    
+    const hasPersonalData = (nombre && nombre.length > 2 && lowerValue.includes(nombre)) || 
+                          (apellidos && apellidos.length > 2 && lowerValue.includes(apellidos));
+    
+    // Actualizar estado de validación
+    this.passwordValidation = {
+      minLength: value.length >= 8,
+      hasUpperCase: /[A-Z]/.test(value),
+      hasLowerCase: /[a-z]/.test(value),
+      hasNumber: /[0-9]/.test(value),
+      hasSpecialChar: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value),
+      hasPersonalData: hasPersonalData
+    };
+  }
+  
+  // Resetear el estado de validación de contraseña
+  resetPasswordValidation(): void {
+    this.passwordValidation = {
+      minLength: false,
+      hasUpperCase: false,
+      hasLowerCase: false,
+      hasNumber: false,
+      hasSpecialChar: false,
+      hasPersonalData: false
     };
   }
 
@@ -123,17 +228,60 @@ export class RegistroVisualizadorComponent implements OnInit {
       
       for (const err of Object.keys(control.errors)) {
         switch (err) {
-          case 'required': errors.push(`${this.humanize(key)} es obligatorio`); break;
-          case 'maxlength': errors.push(`${this.humanize(key)} supera longitud máxima`); break;
-          case 'email': errors.push('Email con formato inválido'); break;
-          case 'invalidDate': errors.push('Fecha de nacimiento inválida'); break;
-          case 'futureDate': errors.push('La fecha no puede ser futura'); break;
-          case 'tooYoung': errors.push(`Debes tener al menos 4 años`); break;
-          case 'pattern': errors.push('La contraseña no cumple la política mínima'); break;
+          case 'required': 
+            errors.push(`${this.humanize(key)} es obligatorio`);
+            break;
+          case 'maxlength': 
+            errors.push(`${this.humanize(key)} supera longitud máxima`);
+            break;
+          case 'email': 
+            errors.push('Email con formato inválido');
+            break;
+          case 'invalidDate': 
+            errors.push('Fecha de nacimiento inválida');
+            break;
+          case 'futureDate': 
+            errors.push('La fecha no puede ser futura');
+            break;
+          case 'tooYoung': 
+            errors.push(`Debes tener al menos 4 años`);
+            break;
+          case 'passwordPolicy':
+            // Mostrar mensajes específicos para cada criterio fallido de la política de contraseñas
+            const policy = control.errors['passwordPolicy'];
+            const passwordErrors: string[] = [];
+            
+            if (!policy.hasMinLength) {
+              passwordErrors.push('tener al menos 8 caracteres');
+            }
+            if (!policy.hasUpperCase) {
+              passwordErrors.push('incluir al menos una letra mayúscula');
+            }
+            if (!policy.hasLowerCase) {
+              passwordErrors.push('incluir al menos una letra minúscula');
+            }
+            if (!policy.hasNumber) {
+              passwordErrors.push('incluir al menos un número');
+            }
+            if (!policy.hasSpecialChar) {
+              passwordErrors.push('incluir al menos un carácter especial (!, @, #, $, etc.)');
+            }
+            if (policy.hasPersonalData) {
+              passwordErrors.push('no contener datos personales (nombre o apellidos)');
+            }
+            
+            if (passwordErrors.length > 0) {
+              errors.push(`La contraseña debe ${passwordErrors.join(', ')}`);
+            }
+            break;
+          case 'pattern': 
+            errors.push('La contraseña no cumple la política mínima');
+            break;
           case 'duplicate': 
             // No agregamos el error de duplicado aquí porque ya se muestra en el campo
             break; 
-          default: errors.push(`${this.humanize(key)}: ${err}`);
+          default: 
+            errors.push(`${this.humanize(key)}: ${err}`);
         }
       }
     }
@@ -212,27 +360,12 @@ export class RegistroVisualizadorComponent implements OnInit {
       vip: val.vip || false,
       foto: this.selectedAvatar >= 0 ? this.preloadedImages[this.selectedAvatar] : null // Incluir avatar seleccionado
     };
-    
+
     // Llamar al servicio con el objeto JSON
     this.svc.register(payload).subscribe({
       next: (response) => {
         console.log('Registro exitoso:', response);
-        sessionStorage.setItem('email', val.email);
-        // Preguntar al usuario si desea activar 2FA
-        // Usamos el diálogo nativo confirm por simplicidad; si el proyecto tiene
-        // un modal o servicio de notificaciones, se puede reemplazar por eso.
-        const wants2fa = window.confirm('Registro completado. ¿Deseas activar la autenticación en 2 pasos (2FA) ahora?');
-
-        if (wants2fa) {
-          // Redirigir a la página de configuración de 2FA
-          // El guard `Fa2Guard` comprueba `allowFa2` en navigation.extras.state o history.state,
-          // por eso enviamos `allowFa2: true` aquí (coincide con `login` y con la expectativa del guard).
-          this.router.navigate(['/2fa'], { state: { allowFa2: true } });
-        } else {
-          // Si el usuario no quiere 2FA, redirigir a la página principal o login
-          // Ajusta la ruta según la estructura de rutas de la aplicación
-          this.router.navigate(['/dashboard']);
-        }
+        this.router.navigate(['/2fa']);
       },
       error: (err) => {
         console.error('Error en registro:', err);
