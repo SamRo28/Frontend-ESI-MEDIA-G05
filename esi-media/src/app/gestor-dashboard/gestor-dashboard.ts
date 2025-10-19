@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { ContentService } from '../services/content.service';
 
@@ -40,7 +40,8 @@ export class GestorDashboardComponent implements OnInit {
 
   constructor(
     private readonly contentService: ContentService,
-    private readonly router: Router
+    private readonly router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   ngOnInit() {
@@ -49,23 +50,30 @@ export class GestorDashboardComponent implements OnInit {
   }
 
   loadUserInfo() {
-    // Obtener información del usuario del sessionStorage
-    const userType = sessionStorage.getItem('currentUserClass');
-    const email = sessionStorage.getItem('email');
-    
-    if (email) {
-      // Extraer el nombre del email (antes del @)
-      this.userName = email.split('@')[0] || 'Gestor';
+    // Solo acceder a sessionStorage en el navegador
+    if (isPlatformBrowser(this.platformId)) {
+      // Obtener información del usuario del sessionStorage
+      const userType = sessionStorage.getItem('currentUserClass');
+      const email = sessionStorage.getItem('email');
+      
+      if (email) {
+        // Extraer el nombre del email (antes del @)
+        this.userName = email.split('@')[0] || 'Gestor';
+      } else {
+        this.userName = 'Gestor';
+      }
+      
+      // Determinar el tipo de gestor basado en la información de sesión
+      if (userType === 'gestor_de_contenido') {
+        this.gestorType = 'audio'; // Por defecto, pero se puede extender
+      } else if (userType === 'admin') {
+        this.gestorType = 'admin';
+      } else {
+        this.gestorType = 'audio';
+      }
     } else {
+      // Valores por defecto para SSR
       this.userName = 'Gestor';
-    }
-    
-    // Determinar el tipo de gestor basado en la información de sesión
-    if (userType === 'gestor_de_contenido') {
-      this.gestorType = 'audio'; // Por defecto, pero se puede extender
-    } else if (userType === 'admin') {
-      this.gestorType = 'admin';
-    } else {
       this.gestorType = 'audio';
     }
   }

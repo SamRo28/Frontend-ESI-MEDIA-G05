@@ -18,6 +18,7 @@ export class AudioUploadComponent {
   uploadMessage = '';
   fileError = ''; // Error específico del archivo
   uploadSuccess = false; // Nueva propiedad para controlar el éxito
+  showUploadConfirmation = false;
   
   // Tags predefinidos para audio
   availableAudioTags = [
@@ -130,13 +131,26 @@ export class AudioUploadComponent {
 
   onSubmit() {
     if (this.audioForm.valid && this.selectedFile) {
-      this.isUploading = true;
-      this.uploadSuccess = false;
-      this.uploadMessage = 'Subiendo archivo de audio...';
-      
-      const minutos = Number(this.audioForm.value.minutos) || 0;
-      const segundos = Number(this.audioForm.value.segundos) || 0;
-      const formValues = this.audioForm.value; // Guardar todos los valores
+      // Mostrar modal de confirmación antes de subir
+      this.showUploadConfirmation = true;
+    }
+  }
+
+  // Método para cancelar la subida
+  cancelUpload() {
+    this.showUploadConfirmation = false;
+  }
+
+  // Método para confirmar y proceder con la subida
+  confirmUpload() {
+    this.showUploadConfirmation = false;
+    this.isUploading = true;
+    this.uploadSuccess = false;
+    this.uploadMessage = 'Subiendo archivo de audio...';
+    
+    const minutos = Number(this.audioForm.value.minutos) || 0;
+    const segundos = Number(this.audioForm.value.segundos) || 0;
+    const formValues = this.audioForm.value; // Guardar todos los valores
       
       // BLOQUEAR FORMULARIO COMPLETO
       this.audioForm.disable();
@@ -158,7 +172,7 @@ export class AudioUploadComponent {
           ? new Date(formValues.fechaDisponibleHasta) 
           : undefined,
         visible: formValues.visible,
-        archivo: this.selectedFile,
+        archivo: this.selectedFile!,
         caratula: formValues.caratula || undefined
       };
 
@@ -205,9 +219,6 @@ export class AudioUploadComponent {
           }
         }
       });
-    } else {
-      this.uploadMessage = '❌ Por favor, completa todos los campos obligatorios correctamente';
-    }
   }
 
   // Método para volver al dashboard después del éxito
@@ -387,6 +398,18 @@ export class AudioUploadComponent {
     const allowedKeys = ['Tab', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Delete', 'Backspace'];
     if (!allowedKeys.includes(event.key)) {
       event.preventDefault();
+    }
+  }
+
+  // Obtener texto descriptivo para edad de visualización
+  getEdadVisualizacionText(edad: string): string {
+    switch(edad) {
+      case 'TP':
+        return 'Todo Público';
+      case '18':
+        return '+18 (Adultos)';
+      default:
+        return edad || 'No especificado';
     }
   }
 }

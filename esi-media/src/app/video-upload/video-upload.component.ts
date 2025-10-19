@@ -16,6 +16,7 @@ export class VideoUploadComponent {
   isUploading = false;
   uploadMessage = '';
   uploadSuccess = false;
+  showUploadConfirmation = false;
 
   // Tags predefinidos para video
   availableVideoTags = [
@@ -97,13 +98,26 @@ export class VideoUploadComponent {
 
   onSubmit() {
     if (this.videoForm.valid) {
-      this.isUploading = true;
-      this.uploadSuccess = false;
-      this.uploadMessage = 'Subiendo información del video...';
-      
-      const minutos = Number(this.videoForm.value.minutos) || 0;
-      const segundos = Number(this.videoForm.value.segundos) || 0;
-      const formValues = this.videoForm.value; // Guardar todos los valores
+      // Mostrar modal de confirmación antes de subir
+      this.showUploadConfirmation = true;
+    }
+  }
+
+  // Método para cancelar la subida
+  cancelUpload() {
+    this.showUploadConfirmation = false;
+  }
+
+  // Método para confirmar y proceder con la subida
+  confirmUpload() {
+    this.showUploadConfirmation = false;
+    this.isUploading = true;
+    this.uploadSuccess = false;
+    this.uploadMessage = 'Subiendo información del video...';
+    
+    const minutos = Number(this.videoForm.value.minutos) || 0;
+    const segundos = Number(this.videoForm.value.segundos) || 0;
+    const formValues = this.videoForm.value; // Guardar todos los valores
       
       // BLOQUEAR FORMULARIO COMPLETO
       this.videoForm.disable();
@@ -167,9 +181,6 @@ export class VideoUploadComponent {
           }
         }
       });
-    } else {
-      this.uploadMessage = '❌ Por favor, completa todos los campos obligatorios correctamente';
-    }
   }
 
   // Método para volver al dashboard después del éxito
