@@ -18,8 +18,14 @@
             Inicio
           </button>
           <button (click)="setActiveTab('usuarios')"
-            [ngClass]="activeTab === 'usuarios' ? 'bg-blue-700 text-white' : 'text-blue-100 hover:text-white hover:bg-blue-600'"
+            [ngClass]="activeTab === 'usuarios' ? 'bg-blue-700 text-white' : 'text-blue-100 hover:text-white hover:bg-blue-600'"          <button (click)="setActiveTab(''contenidos'')"
+            [ngClass]="activeTab === 'contenidos' ? 'bg-blue-700 text-white' : 'text-blue-100 hover:text-white hover:bg-blue-600'"
             class="nav-button px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M4 8h16M4 12h16" />
+            </svg>
+            Contenidos
+          </button>            class="nav-button px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
             </svg>
@@ -60,7 +66,127 @@
   <main class="p-6">
     <div class="mx-auto max-w-6xl">
       <div [ngSwitch]="activeTab">
-        <!-- Vista de Usuarios -->
+                <!-- Vista de Contenidos -->
+        <div *ngSwitchCase="'contenidos'" class="space-y-3">
+          <div class="flex justify-between items-center pb-2">
+            <div>
+              <h2 class="text-3xl font-bold text-gray-900">Contenidos</h2>
+              <p class="text-gray-600 mt-1">Listado de contenidos (solo lectura)</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 bg-white p-4 rounded-lg shadow-sm border">
+            <div class="relative flex-1">
+              <input type="text" [(ngModel)]="busquedaContenido" (input)="onBusquedaContenidoChange()"
+                class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                placeholder="Buscar por título o gestor">
+            </div>
+            <select [(ngModel)]="filtroTipoContenido" (change)="onFiltroTipoContenidoChange()"
+              class="px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
+              <option>Todos</option>
+              <option>Audio</option>
+              <option>Video</option>
+            </select>
+            <button (click)="limpiarFiltrosContenidos()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">Limpiar</button>
+          </div>
+          <div class="table-container">
+            <div class="overflow-x-auto">
+              <table class="min-w-full">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Título</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Tipo</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Gestor</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100">
+                  <tr *ngFor="let c of contenidosFiltrados" class="hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                      <div class="text-sm font-medium text-gray-900">{{ c.titulo }}</div>
+                    </td>
+                    <td class="px-4 py-3">
+                      <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded"
+                        [ngClass]="c.tipo === 'Video' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700'">
+                        {{ c.tipo }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3">
+                      <div class="text-sm text-gray-700">{{ c.gestorNombre || '—' }}</div>
+                    </td>
+                    <td class="px-4 py-3">
+                      <div class="flex gap-1">
+                        <button type="button" (click)="verDetalleContenido(c)" class="p-1 hover:bg-gray-100 rounded" title="Ver detalles">
+                          <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div *ngIf="showContenidoModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" (click)="cerrarContenidoModal()">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden" (click)="$event.stopPropagation()">
+              <div class="p-6 border-b">
+                <h3 class="text-xl font-bold">Detalle de Contenido</h3>
+              </div>
+              <div class="p-6 space-y-2">
+                <div *ngIf="loadingContenido" class="text-gray-500">Cargando...</div>
+                <div *ngIf="errorContenido" class="text-red-600">{{ errorContenido }}</div>
+                <ng-container *ngIf="detalleContenido && !loadingContenido">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <div class="text-xs text-gray-500">Título</div>
+                      <div class="font-medium">{{ detalleContenido.titulo }}</div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-gray-500">Tipo</div>
+                      <div class="font-medium">{{ detalleContenido.tipo }}</div>
+                    </div>
+                    <div class="md:col-span-2">
+                      <div class="text-xs text-gray-500">Descripción</div>
+                      <div class="font-medium">{{ detalleContenido.descripcion || '—' }}</div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-gray-500">Duración (min)</div>
+                      <div class="font-medium">{{ detalleContenido.duracion }}</div>
+                    </div>
+                    <div *ngIf="detalleContenido.tipo === 'Video'">
+                      <div class="text-xs text-gray-500">Resolución</div>
+                      <div class="font-medium">{{ detalleContenido.resolucion || '—' }}</div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-gray-500">Estado</div>
+                      <div class="font-medium">{{ detalleContenido.estado ? 'Visible' : 'Oculto' }}</div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-gray-500">Fecha estado</div>
+                      <div class="font-medium">{{ detalleContenido.fechaEstado | date: 'short' }}</div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-gray-500">Disponible hasta</div>
+                      <div class="font-medium">{{ detalleContenido.fechaDisponibleHasta | date: 'short' }}</div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-gray-500">VIP</div>
+                      <div class="font-medium">{{ detalleContenido.vip ? 'Sí' : 'No' }}</div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-gray-500">Restricción edad</div>
+                      <div class="font-medium">{{ detalleContenido.edadMinima }}</div>
+                    </div>
+                  </div>
+                </ng-container>
+              </div>
+              <div class="p-4 border-t flex justify-end bg-gray-50">
+                <button class="px-4 py-2 border rounded-lg" (click)="cerrarContenidoModal()">Cerrar</button>
+              </div>
+            </div>
+          </div>
+        </div><!-- Vista de Usuarios -->
         <div *ngSwitchCase="'usuarios'" class="space-y-3">
           <!-- Encabezado principal -->
           <div class="flex justify-between items-center pb-2">
@@ -1263,3 +1389,4 @@
       </div>
     </div>
   </div>
+

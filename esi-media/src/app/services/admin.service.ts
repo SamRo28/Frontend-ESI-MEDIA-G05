@@ -194,4 +194,41 @@ export class AdminService {
       })
     );
   }
+
+  // =================== CONTENIDOS (solo lectura por administradores) ===================
+  getContenidos(adminId: string): Observable<ContenidoResumen[]> {
+    const url = `${this.apiUrl}/contenidos/listar`;
+    const headers = { 'Admin-ID': adminId };
+    return this.http.get<ContenidoResumen[]>(url, { headers }).pipe(
+      timeout(5000),
+      catchError((error) => this.handleError(error))
+    );
+  }
+
+  getContenidoDetalle(id: string, adminId: string): Observable<ContenidoDetalle> {
+    const url = `${this.apiUrl}/contenidos/${id}`;
+    const headers = { 'Admin-ID': adminId };
+    return this.http.get<ContenidoDetalle>(url, { headers }).pipe(
+      timeout(5000),
+      catchError((error) => this.handleError(error))
+    );
+  }
+}
+
+export interface ContenidoResumen {
+  id: string;
+  titulo: string;
+  tipo: 'Audio' | 'Video';
+  gestorNombre?: string;
+}
+
+export interface ContenidoDetalle extends ContenidoResumen {
+  descripcion?: string;
+  duracion?: number;
+  resolucion?: string; // solo Video
+  estado?: boolean;
+  fechaEstado?: Date;
+  fechaDisponibleHasta?: Date;
+  vip?: boolean;
+  edadMinima?: number;
 }

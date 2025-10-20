@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef, Inject, PLATFORM_ID } from '@angu
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { AdminService, Usuario, PerfilDetalle } from '../services/admin.service';
+import { AdminService, Usuario, PerfilDetalle, ContenidoResumen, ContenidoDetalle } from '../services/admin.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -16,6 +16,15 @@ export class AdminDashboardComponent implements OnInit {
   showForm = false;
   usuarios: Usuario[] = [];
   usuariosFiltrados: Usuario[] = []; // Lista filtrada para mostrar
+  // Contenidos (solo lectura)
+  contenidos: ContenidoResumen[] = [];
+  contenidosFiltrados: ContenidoResumen[] = [];
+  filtroTipoContenido: 'Todos' | 'Audio' | 'Video' = 'Todos';
+  busquedaContenido = '';
+  showContenidoModal = false;
+  detalleContenido: ContenidoDetalle | null = null;
+  loadingContenido = false;
+  errorContenido = '';
   
   // Información del usuario actual
   currentUser: any = null;
@@ -129,6 +138,8 @@ export class AdminDashboardComponent implements OnInit {
     this.activeTab = tab;
     if (tab === 'usuarios') {
       this.loadUsuarios();
+    } else if (tab === 'contenidos') {
+      this.loadContenidos();
     }
     this.resetMessages();
   }
@@ -140,7 +151,77 @@ export class AdminDashboardComponent implements OnInit {
     this.isSuccess = false; // Resetear estado de éxito
     this.fieldsWithError = []; // Limpiar errores de campos
   }
+  // ================= Contenidos (solo lectura) =================
+  loadContenidos() {
+    this.errorContenido = '';
+    const adminId = this.obtenerAdminId();
+    if (!adminId) {
+      this.errorContenido = 'No se pudo identificar al administrador';
+      return;
+    }
+    this.adminService.getContenidos(adminId).subscribe({
+      next: (lista) => {
+        this.contenidos = lista;
+        this.aplicarFiltrosContenidos();
+      },
+      error: (err) => {
+        console.error('Error al cargar contenidos:', err);
+        this.errorContenido = 'Error al cargar contenidos';
+      }
+    });
+  }
 
+  aplicarFiltrosContenidos() {
+    let arr = [...this.contenidos];
+    if (this.filtroTipoContenido !== 'Todos') {
+      arr = arr.filter(c => c.tipo === this.filtroTipoContenido);
+    }
+    if (this.busquedaContenido.trim()) {
+      const q = this.busquedaContenido.trim().toLowerCase();
+      arr = arr.filter(c => (c.titulo || '').toLowerCase().includes(q) || (c.gestorNombre || '').toLowerCase().includes(q));
+    }
+    this.contenidosFiltrados = arr;
+  }
+
+  onFiltroTipoContenidoChange() { this.aplicarFiltrosContenidos(); }
+  onBusquedaContenidoChange() { this.aplicarFiltrosContenidos(); }
+  limpiarFiltrosContenidos() {
+    this.filtroTipoContenido = 'Todos';
+    this.busquedaContenido = '';
+    this.aplicarFiltrosContenidos();
+  }
+
+  verDetalleContenido(c: any) {
+    const adminId = this.obtenerAdminId();
+    if (!adminId) {
+      this.errorContenido = 'No se pudo identificar al administrador';
+      return;
+    }
+    this.showContenidoModal = true;
+    this.loadingContenido = true;
+    this.errorContenido = '';
+    this.detalleContenido = null;
+    this.adminService.getContenidoDetalle(c.id, adminId).subscribe({
+      next: (det) => {
+        this.detalleContenido = det;
+        this.loadingContenido = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error contenido detalle:', err);
+        this.errorContenido = 'No se pudo cargar el detalle';
+        this.loadingContenido = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  cerrarContenidoModal() {
+    this.showContenidoModal = false;
+    this.detalleContenido = null;
+    this.loadingContenido = false;
+    this.errorContenido = '';
+  }
   toggleForm() {
     this.showForm = !this.showForm;
     if (this.showForm) {
