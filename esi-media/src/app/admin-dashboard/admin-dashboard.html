@@ -182,17 +182,18 @@
           </div>
           <div *ngIf="showContenidoModal" class="fixed inset-0 bg-black bg-opacity-50 content-modal-overlay flex items-center justify-center z-50" (click)="cerrarContenidoModal()">
             <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden" (click)="$event.stopPropagation()">
-              <div class="p-4 content-modal-header flex items-center justify-between">
+              <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
                 <div class="flex items-center gap-3">
-                  <h3 class="text-lg font-bold text-white m-0">Detalle de Contenido</h3>
-                  <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded"
-                        [ngClass]="detalleContenido?.tipo === 'Video' ? 'bg-purple-100 text-purple-800' : 'bg-emerald-100 text-emerald-800'">
-                    {{ detalleContenido?.tipo }}
-                  </span>
+                  <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-.661a1 1 0 01.894 1.447L18 14l.894 3.214a1 1 0 01-1.447 1.118L14 17l-3.447 1.332A1 1 0 019.106 17.214L10 14l-2.447-3.214a1 1 0 01.894-1.447L13 10l1.447-3.214A1 1 0 0115 6z"/>
+                  </svg>
+                  <div>
+                    <h3 class="text-xl font-bold text-gray-900">Detalle de Contenido</h3>
+                    <p class="text-sm text-gray-600 mt-1">Consulta de información (Solo lectura)</p>
+                  </div>
                 </div>
-                <button type="button" (click)="cerrarContenidoModal()" aria-label="Cerrar"
-                        class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button (click)="cerrarContenidoModal()" class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg p-2 transition-colors" aria-label="Cerrar">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                   </svg>
                 </button>
@@ -201,6 +202,29 @@
                 <div *ngIf="loadingContenido" class="text-gray-500">Cargando...</div>
                 <div *ngIf="errorContenido" class="text-red-600">{{ errorContenido }}</div>
                 <ng-container *ngIf="detalleContenido && !loadingContenido">
+                  <div class="flex items-start gap-6 p-6 bg-gray-50 rounded-lg">
+                    <div class="flex-shrink-0">
+                      <div class="w-24 h-24 rounded-full bg-gradient-to-br from-purple-400 to-indigo-600 flex items-center justify-center border-4 border-white shadow-lg">
+                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 10.869v2.262a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="flex-1">
+                      <h4 class="text-2xl font-bold text-gray-900">{{ detalleContenido.titulo }}</h4>
+                      <div class="flex gap-2 mt-3">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                          [ngClass]="detalleContenido?.tipo === 'Video' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700'">
+                          {{ detalleContenido.tipo }}
+                        </span>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                          [ngClass]="detalleContenido?.estado ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                          <span class="w-2 h-2 rounded-full mr-1.5" [ngClass]="detalleContenido?.estado ? 'bg-green-500' : 'bg-red-500'"></span>
+                          {{ detalleContenido?.estado ? 'Visible' : 'Oculto' }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4 content-detail-grid">
                     <div>
                       <div class="text-xs text-gray-500">TÍTULO</div>
@@ -1453,6 +1477,7 @@
       </div>
     </div>
   </div>
+
 
 
 
