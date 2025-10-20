@@ -3,6 +3,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AdminService, Usuario } from '../services/admin.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -32,6 +33,16 @@ export class AdminDashboardComponent implements OnInit {
   // Modal de confirmación para eliminar usuario
   showDeleteModal = false;
   usuarioAEliminar: Usuario | null = null;
+  
+  // Modal de edición de usuario
+  showEditUserModal = false;
+  editingUser: Usuario | null = null;
+  editUserForm: any = {};
+  
+  // Estados para doble confirmación
+  showEditConfirmation = false;
+  showUploadConfirmation = false;
+  showCreateConfirmation = false;
   
   // Filtros
   filtroRol = 'Todos'; // 'Todos', 'Administrador', 'Gestor', 'Visualizador'
@@ -630,6 +641,7 @@ export class AdminDashboardComponent implements OnInit {
 
   // Variable para evitar múltiples clics
   isDeleting = false;
+  isUpdating = false;
 
   deleteUser() {
     if (!this.usuarioAEliminar || this.isDeleting) return;
@@ -702,5 +714,374 @@ export class AdminDashboardComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  // ============================================
+  // MÉTODOS DE EDICIÓN DE USUARIOS
+  // ============================================
+
+  openEditUserModal(usuario: Usuario) {
+    this.editingUser = usuario;
+    
+    // Mostrar modal inmediatamente con datos básicos
+    this.showEditUserModal = true;
+    this.showEditConfirmation = false;
+    this.resetMessages();
+    
+    // Preparar formulario con datos básicos primero
+    this.editUserForm = {
+      id: usuario.id,
+      nombre: usuario.nombre,
+      apellidos: usuario.apellidos,
+      email: usuario.email,
+      foto: usuario.foto,
+      departamento: usuario.departamento || '',
+      rol: usuario.rol || 'Visualizador',
+      bloqueado: usuario.bloqueado,
+      alias: '',
+      especialidad: '',
+      descripcion: '',
+      tipocontenidovideooaudio: '',
+      fecharegistro: null,
+      fechanac: '',
+      vip: false
+    };
+    
+    // Cargar datos específicos según el tipo de usuario
+    this.loadUserDetails(usuario.id!, usuario.rol || 'Visualizador');
+  }
+
+  closeEditUserModal() {
+    this.showEditUserModal = false;
+    this.showEditConfirmation = false;
+    this.editingUser = null;
+    this.editUserForm = {};
+    this.resetMessages();
+  }
+
+  // NUEVO: Cargar detalles completos del usuario según su tipo
+  private loadUserDetails(userId: string, rol: string) {
+    console.log(`🔍 Cargando detalles completos para usuario ${userId} con rol ${rol}`);
+    console.log('🎯 NUEVA ESTRATEGIA: Usando endpoints genéricos /users/${id}');
+    
+    switch (rol) {
+      case 'Administrador':
+        console.log('🌐 Conectando con endpoint: /users/' + userId);
+        this.adminService.getAdministradorById(userId).subscribe({
+          next: (response) => this.processUserDetails(response, 'Administrador'),
+          error: (error) => this.handleUserDetailsError(error, '/users', 'Administrador')
+        });
+        break;
+      case 'Gestor':
+        console.log('🌐 Conectando con endpoint: /users/' + userId);
+        this.adminService.getGestorById(userId).subscribe({
+          next: (response) => this.processUserDetails(response, 'Gestor'),
+          error: (error) => this.handleUserDetailsError(error, '/users', 'Gestor')
+        });
+        break;
+      case 'Visualizador':
+      default:
+        console.log('🌐 Conectando con endpoint: /users/' + userId);
+        this.adminService.getVisualizadorById(userId).subscribe({
+          next: (response) => this.processUserDetails(response, 'Visualizador'),
+          error: (error) => this.handleUserDetailsError(error, '/users', 'Visualizador')
+        });
+        break;
+    }
+  }
+
+  private processUserDetails(response: any, rol: string) {
+    console.log(`✅ Respuesta del backend para ${rol}:`, response);
+    
+    let userDetails: any;
+    
+    // ESTRATEGIA SIMPLIFICADA: Asumir que la respuesta ES directamente los datos del usuario
+    if (response && typeof response === 'object') {
+      userDetails = response;
+      console.log('📦 Usando datos directos del usuario:', userDetails);
+    } else {
+      console.warn('⚠️ Respuesta inesperada:', response);
+      this.errorMessage = 'Error: no se pudieron cargar los datos del usuario';
+      return;
+    }
+    
+    console.log('📋 Campos disponibles en la respuesta:', Object.keys(userDetails));
+    
+    // Actualizar el formulario con TODOS los datos disponibles
+    this.editUserForm = {
+      ...this.editUserForm,
+      ...userDetails
+    };
+    
+    // Mapeos específicos para campos que pueden tener nombres diferentes
+    if (userDetails.campoespecializacion) {
+      this.editUserForm.especialidad = userDetails.campoespecializacion;
+    }
+    
+    // 🔧 ARREGLO DE FECHAS: Convertir fechas al formato YYYY-MM-DD para inputs HTML
+    if (userDetails.fechaNac || userDetails.fechanac) {
+      const fechaNac = userDetails.fechaNac || userDetails.fechanac;
+      this.editUserForm.fechanac = this.formatDateForInput(fechaNac);
+      console.log('📅 Fecha nacimiento procesada:', fechaNac, '→', this.editUserForm.fechanac);
+    }
+    
+    if (userDetails.fechaRegistro || userDetails.fecharegistro) {
+      const fechaRegistro = userDetails.fechaRegistro || userDetails.fecharegistro;
+      this.editUserForm.fecharegistro = this.formatDateForInput(fechaRegistro);
+      console.log('📅 Fecha registro procesada:', fechaRegistro, '→', this.editUserForm.fecharegistro);
+    }
+    
+    if (userDetails.alias) {
+      this.editUserForm.alias = userDetails.alias;
+    }
+    
+    console.log('📝 Formulario final actualizado:', this.editUserForm);
+    this.cdr.detectChanges(); // Forzar actualización de la vista
+  }
+
+  // 🔧 NUEVO: Método para formatear fechas para inputs HTML
+  private formatDateForInput(dateValue: any): string {
+    if (!dateValue) return '';
+    
+    try {
+      let date: Date;
+      
+      if (dateValue instanceof Date) {
+        date = dateValue;
+      } else if (typeof dateValue === 'string') {
+        date = new Date(dateValue);
+      } else if (typeof dateValue === 'number') {
+        date = new Date(dateValue);
+      } else {
+        console.warn('⚠️ Formato de fecha no reconocido:', dateValue);
+        return '';
+      }
+      
+      if (Number.isNaN(date.getTime())) {
+        console.warn('⚠️ Fecha inválida:', dateValue);
+        return '';
+      }
+      
+      // Formatear como YYYY-MM-DD para input[type="date"]
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      console.error('❌ Error formateando fecha:', dateValue, error);
+      return '';
+    }
+  }
+
+  private handleUserDetailsError(error: any, endpointUrl: string, rol: string) {
+    console.error(`❌ Error cargando detalles del ${rol}:`, error);
+    console.error('🔍 URL que falló:', endpointUrl);
+    console.error('🔍 Status del error:', error.status);
+    console.error('🔍 Mensaje del error:', error.message);
+    
+    // Si falla, mantenemos los datos básicos que ya tenemos
+    this.errorMessage = `No se pudieron cargar todos los detalles del usuario. Endpoint: ${endpointUrl}`;
+    
+    // Limpiar el mensaje después de unos segundos
+    setTimeout(() => {
+      this.errorMessage = '';
+    }, 8000);
+  }
+
+  // Primer paso: mostrar confirmación
+  confirmUserChanges() {
+    // Verificar si tenemos token de autorización
+    this.checkAuthToken();
+    
+    // Validar campos obligatorios según el tipo de usuario
+    let requiredFields: string[] = ['nombre', 'apellidos', 'email'];
+    
+    // Agregar campos específicos según el rol
+    if (this.editUserForm.rol === 'Administrador') {
+      requiredFields.push('departamento');
+    } else if (this.editUserForm.rol === 'Gestor') {
+      requiredFields.push('alias');
+    }
+    // Para Visualizadores, solo nombre, apellidos y email son obligatorios
+
+    const emptyFields = requiredFields.filter(field => !this.editUserForm[field]?.trim());
+    
+    if (emptyFields.length > 0) {
+      this.errorMessage = `Complete los siguientes campos obligatorios: ${emptyFields.join(', ')}`;
+      return;
+    }
+
+    // Mostrar confirmación
+    this.showEditConfirmation = true;
+    this.resetMessages();
+  }
+
+  // Segundo paso: confirmar cambios
+  async saveUserChanges() {
+    if (!this.editingUser || this.isUpdating) return;
+
+    this.isUpdating = true;
+    this.resetMessages();
+
+    try {
+      // 🔧 ESTRATEGIA SIMPLIFICADA: Enviar solo campos esenciales y validados
+      console.log('📋 Formulario completo antes de enviar:', this.editUserForm);
+      
+      // Preparar datos base (campos que sabemos que existen en todos los DTOs)
+      let updateData: any = {
+        nombre: this.editUserForm.nombre,
+        apellidos: this.editUserForm.apellidos,
+        email: this.editUserForm.email,
+        foto: this.editUserForm.foto || 'perfil1.png' // Valor por defecto
+      };
+      
+      // Agregar SOLO los campos específicos que están en los DTOs del backend
+      if (this.editUserForm.rol === 'Administrador') {
+        if (this.editUserForm.departamento) {
+          updateData.departamento = this.editUserForm.departamento;
+        }
+        // ✅ Agregar campo bloqueado para Administradores
+        updateData.bloqueado = this.editUserForm.bloqueado || false;
+        console.log('👤 Datos de Administrador completos:', updateData);
+        
+      } else if (this.editUserForm.rol === 'Gestor') {
+        if (this.editUserForm.alias) {
+          updateData.alias = this.editUserForm.alias;
+        }
+        if (this.editUserForm.especialidad) {
+          // El DTO del backend usa "campoespecializacion"
+          updateData.campoespecializacion = this.editUserForm.especialidad;
+        }
+        if (this.editUserForm.descripcion) {
+          updateData.descripcion = this.editUserForm.descripcion;
+        }
+        if (this.editUserForm.tipocontenidovideooaudio) {
+          updateData.tipocontenidovideooaudio = this.editUserForm.tipocontenidovideooaudio;
+        }
+        // ✅ Agregar campo bloqueado para Gestores
+        updateData.bloqueado = this.editUserForm.bloqueado || false;
+        console.log('👤 Datos de Gestor completos:', updateData);
+        
+      } else if (this.editUserForm.rol === 'Visualizador') {
+        if (this.editUserForm.alias) {
+          updateData.alias = this.editUserForm.alias;
+        }
+        if (this.editUserForm.fechanac) {
+          // Convertir a Date object
+          updateData.fechanac = new Date(this.editUserForm.fechanac);
+        }
+        // ✅ AGREGAR VIP para Visualizadores (campo importante que faltaba)
+        if (this.editUserForm.vip !== undefined) {
+          updateData.vip = this.editUserForm.vip;
+        }
+        // ✅ Agregar campo bloqueado para Visualizadores
+        updateData.bloqueado = this.editUserForm.bloqueado || false;
+        console.log('👤 Datos de Visualizador completos:', updateData);
+      }
+
+      // Remover campos undefined/null para evitar errores en el backend
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] === undefined || updateData[key] === null || updateData[key] === '') {
+          delete updateData[key];
+        }
+      });
+
+      console.log('🚀 Datos FINALES (limpiados) a enviar:', updateData);
+      console.log('🎯 Rol:', this.editUserForm.rol);
+      console.log('📊 Cantidad de campos:', Object.keys(updateData).length);
+
+      // SIMPLIFICADO: Usar un solo método para todos los tipos de usuario
+      let updatedUser: any;
+      updatedUser = await firstValueFrom(this.adminService.updateUser(this.editUserForm.id, updateData));
+      
+      console.log('✅ Respuesta de actualización:', updatedUser);
+      
+      // ESTRATEGIA SIMPLIFICADA: Asumir que la respuesta ES directamente los datos actualizados
+      let userData: any;
+      if (updatedUser && typeof updatedUser === 'object') {
+        userData = updatedUser;
+        console.log('📦 Usando datos directos de la respuesta:', userData);
+      } else {
+        console.warn('⚠️ Respuesta inesperada, usando datos enviados como fallback');
+        userData = updateData; // Usar los datos que enviamos como fallback
+      }
+      
+      if (userData) {
+        // Actualizar el usuario en la lista local
+        const index = this.usuarios.findIndex(u => u.id === this.editingUser?.id);
+        if (index !== -1) {
+          this.usuarios[index] = { ...this.usuarios[index], ...userData };
+          this.aplicarFiltros();
+        }
+
+        this.successMessage = `Usuario ${this.editUserForm.nombre} ${this.editUserForm.apellidos} actualizado correctamente`;
+        
+        // Mantener el modal abierto pero mostrar los datos actualizados
+        this.editUserForm = {
+          ...this.editUserForm,
+          ...userData
+        };
+        
+        // Mapear campos específicos si es necesario
+        if (this.editUserForm.rol === 'Gestor' && userData.campoespecializacion) {
+          this.editUserForm.especialidad = userData.campoespecializacion;
+        }
+        
+        this.showEditConfirmation = false;
+
+        // Limpiar mensaje después de 3 segundos
+        setTimeout(() => {
+          this.successMessage = '';
+        }, 3000);
+      }
+
+    } catch (error: any) {
+      console.error('❌ Error actualizando usuario:', error);
+      console.error('🔍 Detalles del error:', error.error);
+      console.error('🔍 Status:', error.status);
+      this.errorMessage = error.error?.message || 'Error al actualizar el usuario';
+      this.showEditConfirmation = false;
+    } finally {
+      this.isUpdating = false;
+    }
+  }
+
+  cancelUserChanges() {
+    this.showEditConfirmation = false;
+  }
+
+  getUserTypeDisplayName(rol: string): string {
+    switch (rol) {
+      case 'Administrador':
+        return 'Administrador';
+      case 'Gestor':
+        return 'Gestor de Contenido';
+      case 'Visualizador':
+      default:
+        return 'Visualizador';
+    }
+  }
+
+  // ============================================
+  // MÉTODO PARA VERIFICAR TOKEN DE AUTENTICACIÓN
+  // ============================================
+  
+  private checkAuthToken() {
+    if (isPlatformBrowser(this.platformId)) {
+      const token = sessionStorage.getItem('authToken') || 
+                    localStorage.getItem('authToken') || 
+                    sessionStorage.getItem('token');
+      
+      if (token) {
+        console.log('✅ Token de autorización encontrado:', token.substring(0, 20) + '...');
+      } else {
+        console.warn('⚠️ No se encontró token de autorización');
+        // Generar token de prueba temporal si es necesario
+        const testToken = 'test-token-' + Date.now();
+        sessionStorage.setItem('authToken', testToken);
+        console.log('🧪 Token de prueba generado:', testToken);
+      }
+    }
   }
 }

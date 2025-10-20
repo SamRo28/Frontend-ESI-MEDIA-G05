@@ -15,6 +15,8 @@ export class VideoUploadComponent {
   videoForm: FormGroup;
   isUploading = false;
   uploadMessage = '';
+  uploadSuccess = false;
+  showUploadConfirmation = false;
 
   // Tags predefinidos para video
   availableVideoTags = [
@@ -96,46 +98,68 @@ export class VideoUploadComponent {
 
   onSubmit() {
     if (this.videoForm.valid) {
-      this.isUploading = true;
-      this.uploadMessage = '';
+      // Mostrar modal de confirmación antes de subir
+      this.showUploadConfirmation = true;
+    }
+  }
+
+  // Método para cancelar la subida
+  cancelUpload() {
+    this.showUploadConfirmation = false;
+  }
+
+  // Método para confirmar y proceder con la subida
+  confirmUpload() {
+    this.showUploadConfirmation = false;
+    this.isUploading = true;
+    this.uploadSuccess = false;
+    this.uploadMessage = 'Subiendo información del video...';
+    
+    const minutos = Number(this.videoForm.value.minutos) || 0;
+    const segundos = Number(this.videoForm.value.segundos) || 0;
+    const formValues = this.videoForm.value; // Guardar todos los valores
+      
+      // BLOQUEAR FORMULARIO COMPLETO
+      this.videoForm.disable();
 
       // Usar selectedTags directamente (ya están como array)
       const tagsArray = this.selectedTags.length > 0 ? this.selectedTags : [];
 
-      // Convertir minutos y segundos a total de segundos
-      const totalSegundos = (Number(this.videoForm.value.minutos) * 60) + Number(this.videoForm.value.segundos);
+      // Convertir minutos y segundos a total de segundos con validación
+      const totalSegundos = (minutos * 60) + segundos;
 
       const videoData: VideoUploadData = {
-        titulo: this.videoForm.value.titulo,
-        descripcion: this.videoForm.value.descripcion || undefined,
+        titulo: formValues.titulo,
+        descripcion: formValues.descripcion || undefined,
         tags: tagsArray,
-        duracion: totalSegundos, // Backend espera duración en segundos
-        vip: this.videoForm.value.vip,
-        edadVisualizacion: Number(this.videoForm.value.edadVisualizacion),
-        fechaDisponibleHasta: this.videoForm.value.fechaDisponibleHasta 
-          ? new Date(this.videoForm.value.fechaDisponibleHasta) 
+        duracion: totalSegundos > 0 ? totalSegundos : 1, // Mínimo 1 segundo
+        vip: formValues.vip,
+        edadVisualizacion: Number(formValues.edadVisualizacion),
+        fechaDisponibleHasta: formValues.fechaDisponibleHasta && formValues.fechaDisponibleHasta.trim() !== ''
+          ? new Date(formValues.fechaDisponibleHasta) 
           : undefined,
-        visible: this.videoForm.value.visible,
-        url: this.videoForm.value.url,
-        resolucion: this.videoForm.value.resolucion,
-        caratula: this.videoForm.value.caratula || undefined
+        visible: formValues.visible,
+        url: formValues.url,
+        resolucion: formValues.resolucion,
+        caratula: formValues.caratula || undefined
       };
 
       this.contentService.uploadVideo(videoData).subscribe({
         next: (response: UploadResponse) => {
           this.isUploading = false;
           if (response.success) {
-            this.uploadMessage = `✅ ${response.message}`;
-            // COMENTADO: Para mejor UX, el usuario puede elegir cuándo navegar
-            // setTimeout(() => {
-            //   this.router.navigate(['/home']);
-            // }, 2000);
+            this.uploadSuccess = true;
+            this.uploadMessage = '¡Video subido exitosamente! 🎉';
           } else {
-            this.uploadMessage = `❌ ${response.message}`;
+            this.uploadSuccess = false;
+            this.uploadMessage = `❌ Error: ${response.message}`;
+            this.videoForm.enable();
           }
         },
         error: (error: any) => {
           this.isUploading = false;
+          this.uploadSuccess = false;
+          this.videoForm.enable();
           console.error('Error uploading video:', error);
           
           // Manejo específico de errores HTTP según el backend
@@ -157,9 +181,11 @@ export class VideoUploadComponent {
           }
         }
       });
-    } else {
-      this.uploadMessage = '❌ Por favor, completa todos los campos obligatorios correctamente';
-    }
+  }
+
+  // Método para volver al dashboard después del éxito
+  backToDashboard() {
+    this.router.navigate(['/gestor-dashboard']);
   }
 
   // Helper methods para mostrar errores
@@ -330,6 +356,15 @@ export class VideoUploadComponent {
                          'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
     
     if (!allowedKeys.includes(key)) {
+      event.preventDefault();
+    }
+  }
+
+  // Prevenir entrada de teclado en campos de fecha (solo permitir selector)
+  preventKeyboardInput(event: KeyboardEvent): void {
+    // Permitir solo teclas de navegación y funcionales, no letras/números
+    const allowedKeys = ['Tab', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Delete', 'Backspace'];
+    if (!allowedKeys.includes(event.key)) {
       event.preventDefault();
     }
   }
