@@ -4,20 +4,22 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { UserService } from '../../userService';
 import { isPlatformBrowser } from '@angular/common';
-import { Session } from 'inspector/promises';
-import { allowedNodeEnvironmentFlags } from 'process';
+// Eliminar imports de Node no usados para evitar problemas en build web
 
 @Component({
   selector: 'app-login',
   imports: [RouterLink, FormsModule, CommonModule],
   templateUrl: './login.html',
-  styleUrl: './login.css'
+  styleUrls: ['./login.css']
 })
 export class Login {
   loginForm: any;
   email: string = '';
   password: string = '';
   errorMsg: string = '';
+
+  // Compatibilidad con la plantilla que usa "loginError"
+  get loginError(): string { return this.errorMsg; }
 
   constructor(
     private router: Router, 
