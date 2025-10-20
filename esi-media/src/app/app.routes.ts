@@ -12,6 +12,7 @@ import { Fa2CodeGuard } from './guards/fa2code.guard';
 import { Fa3CodeGuard } from './guards/fa3code.guard';
 import { RegistroVisualizadorComponent } from './registro-visualizador/registro-visualizador.component';
 import { VisuDashboard } from './visu-dashboard/visu-dashboard';
+import { GestorDashboardComponent } from './gestor-dashboard/gestor-dashboard';
 
 export const routes: Routes = [
   {
@@ -61,5 +62,9 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     component: VisuDashboard
+  },
+  {
+    path: 'gestor-dashboard',
+    component: GestorDashboardComponent
   }
 ];

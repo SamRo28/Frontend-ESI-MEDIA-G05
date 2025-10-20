@@ -220,7 +220,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                           </svg>
                         </button>
-                        <button class="p-1 hover:bg-gray-100 rounded" title="Editar">
+                        <button (click)="openEditUserModal(usuario)" class="p-1 hover:bg-gray-100 rounded" title="Editar">
                           <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                           </svg>
@@ -1155,6 +1155,483 @@
             </svg>
             {{ isDeleting ? 'Eliminando...' : 'Eliminar Usuario' }}
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Edición de Usuario -->
+  <div *ngIf="showEditUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm" (click)="closeEditUserModal()">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <!-- Header del modal -->
+      <div class="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div>
+          <h3 class="text-xl font-bold text-gray-900">Editar {{ getUserTypeDisplayName(editUserForm.rol) }}</h3>
+          <p class="text-sm text-gray-600 mt-1">Modifica los datos del usuario seleccionado</p>
+        </div>
+        <button (click)="closeEditUserModal()" class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg p-2 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Contenido del modal -->
+      <div class="p-6">
+        <!-- Mensajes de éxito/error -->
+        <div *ngIf="successMessage" class="mb-4 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-lg flex items-center gap-3">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+          </svg>
+          {{ successMessage }}
+        </div>
+
+        <div *ngIf="errorMessage" class="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg flex items-center gap-3">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+          </svg>
+          {{ errorMessage }}
+        </div>
+
+        <!-- Información del usuario (solo lectura) -->
+        <div class="mb-6 p-4 bg-gray-50 rounded-lg border">
+          <h4 class="text-sm font-semibold text-gray-700 mb-3">Información del Usuario</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="text-gray-500">Tipo de Usuario:</span>
+              <span class="ml-2 font-medium">{{ getUserTypeDisplayName(editUserForm.rol) }}</span>
+            </div>
+            <div>
+              <span class="text-gray-500">Email:</span>
+              <span class="ml-2 font-medium">{{ editUserForm.email }}</span>
+            </div>
+            <div>
+              <span class="text-gray-500">ID:</span>
+              <span class="ml-2 font-mono text-xs">{{ editUserForm.id }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulario de edición ESPECÍFICO POR TIPO DE USUARIO -->
+        <form *ngIf="!showEditConfirmation" class="space-y-6">
+
+          <!-- Formulario para ADMINISTRADORES -->
+          <div *ngIf="editUserForm.rol === 'Administrador'">
+            <!-- Nombre y Apellidos -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="editUserForm.nombre" 
+                  name="nombre"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Nombre del administrador">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Apellidos <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="editUserForm.apellidos" 
+                  name="apellidos"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Apellidos del administrador">
+              </div>
+            </div>
+
+            <!-- Email (solo lectura) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Email (No editable)
+              </label>
+              <input 
+                type="email" 
+                [value]="editUserForm.email"
+                readonly
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+            </div>
+
+            <!-- Departamento -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Departamento <span class="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                [(ngModel)]="editUserForm.departamento" 
+                name="departamento"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Departamento del administrador">
+            </div>
+
+            <!-- Foto de Perfil -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Foto de Perfil
+              </label>
+              <div class="grid grid-cols-4 gap-3">
+                <div *ngFor="let foto of fotosDisponibles" 
+                     (click)="editUserForm.foto = foto.id"
+                     [class]="editUserForm.foto === foto.id 
+                       ? 'cursor-pointer rounded-lg border-2 border-blue-500 bg-blue-50 p-2 transition-all' 
+                       : 'cursor-pointer rounded-lg border-2 border-gray-200 hover:border-gray-300 p-2 transition-all'">
+                  <img [src]="'/' + foto.id" [alt]="foto.nombre" class="w-full h-16 object-cover rounded">
+                  <p class="text-xs text-center mt-1 text-gray-600">{{ foto.nombre }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Formulario para GESTORES DE CONTENIDO -->
+          <div *ngIf="editUserForm.rol === 'Gestor'">
+            <!-- Nombre y Apellidos -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="editUserForm.nombre" 
+                  name="nombre"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Nombre del gestor">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Apellidos <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="editUserForm.apellidos" 
+                  name="apellidos"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Apellidos del gestor">
+              </div>
+            </div>
+
+            <!-- Email (solo lectura) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Email (No editable)
+              </label>
+              <input 
+                type="email" 
+                [value]="editUserForm.email"
+                readonly
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+            </div>
+
+            <!-- Campos específicos para GESTORES -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Alias <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="editUserForm.alias" 
+                  name="alias"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Alias único del gestor">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Especialidad
+                </label>
+                <select 
+                  [(ngModel)]="editUserForm.especialidad" 
+                  name="especialidad"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <option value="">Seleccionar especialidad</option>
+                  <option value="Música">Música</option>
+                  <option value="Películas">Películas y Cinema</option>
+                  <option value="Documentales">Documentales</option>
+                  <option value="Podcasts">Podcasts</option>
+                  <option value="Series">Series de TV</option>
+                  <option value="Entretenimiento">Entretenimiento General</option>
+                  <option value="Educativo">Contenido Educativo</option>
+                  <option value="Deportes">Deportes</option>
+                  <option value="Noticias">Noticias y Actualidad</option>
+                  <option value="Tecnología">Tecnología</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Descripción -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Descripción
+              </label>
+              <textarea 
+                [(ngModel)]="editUserForm.descripcion" 
+                name="descripcion"
+                rows="3"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                placeholder="Descripción del gestor"></textarea>
+            </div>
+
+            <!-- Tipo de contenido (solo lectura) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Tipo de contenido (Solo lectura)
+              </label>
+              <input 
+                type="text" 
+                [value]="editUserForm.tipocontenidovideooaudio || 'No especificado'"
+                readonly
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+            </div>
+
+            <!-- Foto de Perfil -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Foto de Perfil
+              </label>
+              <div class="grid grid-cols-4 gap-3">
+                <div *ngFor="let foto of fotosDisponibles" 
+                     (click)="editUserForm.foto = foto.id"
+                     [class]="editUserForm.foto === foto.id 
+                       ? 'cursor-pointer rounded-lg border-2 border-blue-500 bg-blue-50 p-2 transition-all' 
+                       : 'cursor-pointer rounded-lg border-2 border-gray-200 hover:border-gray-300 p-2 transition-all'">
+                  <img [src]="'/' + foto.id" [alt]="foto.nombre" class="w-full h-16 object-cover rounded">
+                  <p class="text-xs text-center mt-1 text-gray-600">{{ foto.nombre }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Estado de bloqueo (solo lectura) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Estado (Solo lectura)
+              </label>
+              <input 
+                type="text" 
+                [value]="editUserForm.bloqueado ? 'Bloqueado' : 'Activo'"
+                readonly
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+            </div>
+
+            <!-- Fecha de registro (solo lectura) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Fecha de registro (Solo lectura)
+              </label>
+              <input 
+                type="text" 
+                [value]="editUserForm.fecharegistro ? (editUserForm.fecharegistro | date:'dd/MM/yyyy') : 'No disponible'"
+                readonly
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+            </div>
+          </div>
+
+          <!-- Formulario para VISUALIZADORES -->
+          <div *ngIf="editUserForm.rol === 'Visualizador'">
+            <!-- Nombre y Apellidos -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="editUserForm.nombre" 
+                  name="nombre"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Nombre del visualizador">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Apellidos <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="editUserForm.apellidos" 
+                  name="apellidos"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Apellidos del visualizador">
+              </div>
+            </div>
+
+            <!-- Email (solo lectura) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Email (No editable)
+              </label>
+              <input 
+                type="email" 
+                [value]="editUserForm.email"
+                readonly
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+            </div>
+
+            <!-- Campos específicos para VISUALIZADORES -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Alias
+                </label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="editUserForm.alias" 
+                  name="alias"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Alias del visualizador">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Fecha de nacimiento
+                </label>
+                <input 
+                  type="date" 
+                  [(ngModel)]="editUserForm.fechanac" 
+                  name="fechanac"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              </div>
+            </div>
+
+            <!-- Foto de Perfil -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Foto de Perfil
+              </label>
+              <div class="grid grid-cols-4 gap-3">
+                <div *ngFor="let foto of fotosDisponibles" 
+                     (click)="editUserForm.foto = foto.id"
+                     [class]="editUserForm.foto === foto.id 
+                       ? 'cursor-pointer rounded-lg border-2 border-blue-500 bg-blue-50 p-2 transition-all' 
+                       : 'cursor-pointer rounded-lg border-2 border-gray-200 hover:border-gray-300 p-2 transition-all'">
+                  <img [src]="'/' + foto.id" [alt]="foto.nombre" class="w-full h-16 object-cover rounded">
+                  <p class="text-xs text-center mt-1 text-gray-600">{{ foto.nombre }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Campos de solo lectura para VISUALIZADORES -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Estado (Solo lectura)
+                </label>
+                <input 
+                  type="text" 
+                  [value]="editUserForm.bloqueado ? 'Bloqueado' : 'Activo'"
+                  readonly
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Estado VIP (Solo lectura)
+                </label>
+                <input 
+                  type="text" 
+                  [value]="editUserForm.vip ? 'VIP' : 'Estándar'"
+                  readonly
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+              </div>
+            </div>
+
+            <!-- Fecha de registro (solo lectura) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Fecha de registro (Solo lectura)
+              </label>
+              <input 
+                type="text" 
+                [value]="editUserForm.fecharegistro ? (editUserForm.fecharegistro | date:'dd/MM/yyyy') : 'No disponible'"
+                readonly
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+            </div>
+          </div>
+
+          <!-- Botones de acción (primera confirmación) -->
+          <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+            <button 
+              type="button"
+              (click)="closeEditUserModal()"
+              class="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
+              Cancelar
+            </button>
+            <button 
+              type="button"
+              (click)="confirmUserChanges()"
+              class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              Confirmar Cambios
+            </button>
+          </div>
+        </form>
+
+        <!-- Confirmación de cambios (doble validación) -->
+        <div *ngIf="showEditConfirmation" class="space-y-6">
+          <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div class="flex items-start gap-3">
+              <svg class="w-6 h-6 text-amber-600 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+              <div>
+                <h4 class="text-lg font-semibold text-amber-800 mb-2">¿Confirmar cambios en el usuario?</h4>
+                <p class="text-amber-700 text-sm mb-4">
+                  Estás a punto de actualizar los datos de <strong>{{ editUserForm.nombre }} {{ editUserForm.apellidos }}</strong>. 
+                  Esta acción modificará la información del usuario en el sistema.
+                </p>
+                
+                <!-- Resumen de cambios -->
+                <div class="bg-white rounded-lg p-3 border border-amber-200">
+                  <h5 class="font-medium text-amber-800 mb-2">Resumen de cambios:</h5>
+                  <div class="space-y-1 text-sm">
+                    <div><span class="text-gray-600">Nombre:</span> <span class="font-medium">{{ editUserForm.nombre }}</span></div>
+                    <div><span class="text-gray-600">Apellidos:</span> <span class="font-medium">{{ editUserForm.apellidos }}</span></div>
+                    <div *ngIf="editUserForm.departamento"><span class="text-gray-600">Departamento:</span> <span class="font-medium">{{ editUserForm.departamento }}</span></div>
+                    <div *ngIf="editUserForm.apodo"><span class="text-gray-600">Apodo:</span> <span class="font-medium">{{ editUserForm.apodo }}</span></div>
+                    <div>
+                      <span class="text-gray-600">Estado:</span> 
+                      <span [class]="editUserForm.bloqueado ? 'font-medium text-red-600' : 'font-medium text-green-600'">
+                        {{ editUserForm.bloqueado ? 'Bloqueado' : 'Activo' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botones de doble confirmación -->
+          <div class="flex justify-end gap-3">
+            <button 
+              type="button"
+              (click)="cancelUserChanges()"
+              [disabled]="isUpdating"
+              class="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-colors">
+              Cancelar
+            </button>
+            <button 
+              type="button"
+              (click)="saveUserChanges()"
+              [disabled]="isUpdating"
+              class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center gap-2">
+              <svg *ngIf="isUpdating" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <svg *ngIf="!isUpdating" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              {{ isUpdating ? 'Guardando...' : 'Sí, Guardar Cambios' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
