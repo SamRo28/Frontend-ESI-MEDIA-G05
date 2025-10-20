@@ -79,7 +79,8 @@ export class AdminDashboardComponent implements OnInit {
     hasNumber: false,
     hasSpecialChar: false,
     noStartsWithUpperCase: false,
-    passwordsMatch: false
+    passwordsMatch: false,
+    notContainsUsername: true // Por defecto true hasta que se ingrese un nombre
   };
 
   // Fotos de perfil disponibles
@@ -218,6 +219,7 @@ export class AdminDashboardComponent implements OnInit {
       if (!this.passwordValidation.hasNumber) errores.push('al menos un número');
       if (!this.passwordValidation.hasSpecialChar) errores.push('al menos un carácter especial (!@#$%^&*...)');
       if (!this.passwordValidation.passwordsMatch) errores.push('las contraseñas deben coincidir');
+      if (!this.passwordValidation.notContainsUsername) errores.push('no debe contener el nombre de usuario');
       
       this.errorMessage = `❌ La contraseña no cumple con la política de seguridad: ${errores.join(', ')}`;
       return;
@@ -464,6 +466,7 @@ export class AdminDashboardComponent implements OnInit {
   validatePassword() {
     const password = this.newUser.contrasenia;
     const confirmPassword = this.newUser.repetirContrasenia;
+    const nombre = this.newUser.nombre.trim();
     
     // Validar longitud mínima (8 caracteres)
     this.passwordValidation.minLength = password.length >= 8;
@@ -485,6 +488,14 @@ export class AdminDashboardComponent implements OnInit {
     
     // Validar que las contraseñas coincidan
     this.passwordValidation.passwordsMatch = password.length > 0 && password === confirmPassword;
+    
+    // Validar que la contraseña NO contenga el nombre de usuario (insensible a mayúsculas)
+    if (nombre.length > 0 && password.length > 0) {
+      this.passwordValidation.notContainsUsername = !password.toLowerCase().includes(nombre.toLowerCase());
+    } else {
+      // Si no hay nombre o contraseña, consideramos válido este criterio
+      this.passwordValidation.notContainsUsername = true;
+    }
   }
 
   // Verificar si la contraseña es válida
@@ -495,7 +506,8 @@ export class AdminDashboardComponent implements OnInit {
            this.passwordValidation.hasNumber &&
            this.passwordValidation.hasSpecialChar &&
            this.passwordValidation.noStartsWithUpperCase &&
-           this.passwordValidation.passwordsMatch;
+           this.passwordValidation.passwordsMatch &&
+           this.passwordValidation.notContainsUsername;
   }
 
   // Métodos de filtrado

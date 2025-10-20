@@ -344,6 +344,7 @@
                         Nombre <span class="text-red-500">*</span>
                       </label>
                       <input type="text" id="nombre" [(ngModel)]="newUser.nombre" name="nombre"
+                        (ngModelChange)="validatePassword()"
                         [class]="'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('nombre') ? 'field-error' : 'border-gray-300 focus:ring-blue-500')"
                         placeholder="Juan" required />
                     </div>
@@ -443,6 +444,11 @@
                             <span [class.hidden]="!passwordValidation.passwordsMatch">✓</span>
                             <span [class.hidden]="passwordValidation.passwordsMatch">•</span>
                             Las contraseñas deben coincidir
+                          </li>
+                          <li [class.text-green-600]="passwordValidation.notContainsUsername" [class.font-semibold]="passwordValidation.notContainsUsername">
+                            <span [class.hidden]="!passwordValidation.notContainsUsername">✓</span>
+                            <span [class.hidden]="passwordValidation.notContainsUsername">•</span>
+                            No debe contener el nombre de usuario
                           </li>
                         </ul>
                       </div>
@@ -546,6 +552,7 @@
                       id="gestorNombre"
                       [(ngModel)]="newUser.nombre"
                       name="gestorNombre"
+                      (ngModelChange)="validatePassword()"
                       required
                       [class.border-red-500]="fieldsWithError.includes('nombre')"
                       [class.border-green-500]="newUser.nombre && !fieldsWithError.includes('nombre')"
@@ -778,6 +785,11 @@
                           <span [class.hidden]="!passwordValidation.passwordsMatch">✓</span>
                           <span [class.hidden]="passwordValidation.passwordsMatch">•</span>
                           Las contraseñas deben coincidir
+                        </li>
+                        <li [class.text-green-600]="passwordValidation.notContainsUsername" [class.font-semibold]="passwordValidation.notContainsUsername">
+                          <span [class.hidden]="!passwordValidation.notContainsUsername">✓</span>
+                          <span [class.hidden]="passwordValidation.notContainsUsername">•</span>
+                          No debe contener el nombre de usuario
                         </li>
                       </ul>
                     </div>
