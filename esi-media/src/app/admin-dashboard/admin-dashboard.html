@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-gray-50">
+﻿﻿<div class="min-h-screen bg-gray-50">
   <!-- Header -->
   <header class="dashboard-header shadow-md">
     <div class="flex h-16 items-center justify-between px-6 max-w-7xl mx-auto">
@@ -8,7 +8,7 @@
           <span class="text-2xl font-bold text-white">ESIMedia</span>
         </div>
 
-        <nav class="flex gap-1">
+                <nav class="flex gap-1">
           <button (click)="setActiveTab('inicio')"
             [ngClass]="activeTab === 'inicio' ? 'bg-blue-700 text-white' : 'text-blue-100 hover:text-white hover:bg-blue-600'"
             class="nav-button px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2">
@@ -17,15 +17,17 @@
             </svg>
             Inicio
           </button>
-          <button (click)="setActiveTab('usuarios')"
-            [ngClass]="activeTab === 'usuarios' ? 'bg-blue-700 text-white' : 'text-blue-100 hover:text-white hover:bg-blue-600'"          <button (click)="setActiveTab(''contenidos'')"
+          <button (click)="setActiveTab('contenidos')"
             [ngClass]="activeTab === 'contenidos' ? 'bg-blue-700 text-white' : 'text-blue-100 hover:text-white hover:bg-blue-600'"
             class="nav-button px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M4 8h16M4 12h16" />
             </svg>
             Contenidos
-          </button>            class="nav-button px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2">
+          </button>
+          <button (click)="setActiveTab('usuarios')"
+            [ngClass]="activeTab === 'usuarios' ? 'bg-blue-700 text-white' : 'text-blue-100 hover:text-white hover:bg-blue-600'"
+            class="nav-button px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
             </svg>
@@ -74,29 +76,79 @@
               <p class="text-gray-600 mt-1">Listado de contenidos (solo lectura)</p>
             </div>
           </div>
-          <div class="flex items-center gap-3 bg-white p-4 rounded-lg shadow-sm border">
-            <div class="relative flex-1">
-              <input type="text" [(ngModel)]="busquedaContenido" (input)="onBusquedaContenidoChange()"
-                class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                placeholder="Buscar por t�tulo o gestor">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-2 mb-1">
+            <div class="flex flex-col md:flex-row gap-2 items-start md:items-center justify-between">
+              <!-- Buscador por TÍTULO/TIPO/GESTOR -->
+              <div class="flex-1 min-w-0">
+                <label for="busquedaContenido" class="block text-xs font-medium text-gray-700 mb-0.5">
+                  Buscar por TÍTULO, TIPO o GESTOR
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    id="busquedaContenido"
+                    [(ngModel)]="busquedaContenido"
+                    (input)="onBusquedaContenidoChange()"
+                    class="w-full pl-9 pr-4 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm"
+                    placeholder="Escribe para buscar contenidos..."
+                  />
+                </div>
+              </div>
+
+              <!-- Filtro por TIPO -->
+              <div class="min-w-0">
+                <label for="filtroTipoContenido" class="block text-xs font-medium text-gray-700 mb-0.5">
+                  Filtrar por TIPO
+                </label>
+                <select
+                  id="filtroTipoContenido"
+                  [(ngModel)]="filtroTipoContenido"
+                  (change)="onFiltroTipoContenidoChange()"
+                  class="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-white text-sm">
+                  <option value="Todos">Todos los TIPOs</option>
+                  <option value="Audio">Audio</option>
+                  <option value="Video">Video</option>
+                </select>
+              </div>
+
+              <!-- Botón limpiar filtros -->
+              <div class="flex items-end">
+                <button
+                  (click)="limpiarFiltrosContenidos()"
+                  class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all flex items-center gap-1">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                  Limpiar
+                </button>
+              </div>
             </div>
-            <select [(ngModel)]="filtroTipoContenido" (change)="onFiltroTipoContenidoChange()"
-              class="px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
-              <option>Todos</option>
-              <option>Audio</option>
-              <option>Video</option>
-            </select>
-            <button (click)="limpiarFiltrosContenidos()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">Limpiar</button>
+
+            <!-- Contador de resultados -->
+            <div class="mt-0.5 text-xs text-gray-600 flex items-center gap-1">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4"></path>
+              </svg>
+              Mostrando {{ contenidosFiltrados.length || 0 }} de {{ contenidos.length || 0 }} contenidos
+              <span *ngIf="filtroTipoContenido !== 'Todos' || busquedaContenido" class="text-blue-600 font-medium text-xs">
+                (filtrado)
+              </span>
+            </div>
           </div>
           <div class="table-container">
             <div class="overflow-x-auto">
               <table class="min-w-full">
                 <thead class="bg-gray-50">
                   <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">T�tulo</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Tipo</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Gestor</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Acciones</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">TÍTULO</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">TIPO</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">GESTOR</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">ACCIONES</th>
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-100">
@@ -111,12 +163,12 @@
                       </span>
                     </td>
                     <td class="px-4 py-3">
-                      <div class="text-sm text-gray-700">{{ c.gestorNombre || '�' }}</div>
+                      <div class="text-sm text-gray-700">{{ c.gestorNombre || '-' }}</div>
                     </td>
                     <td class="px-4 py-3">
                       <div class="flex gap-1">
                         <button type="button" (click)="verDetalleContenido(c)" class="p-1 hover:bg-gray-100 rounded" title="Ver detalles">
-                          <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                           </svg>
@@ -139,24 +191,24 @@
                 <ng-container *ngIf="detalleContenido && !loadingContenido">
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <div class="text-xs text-gray-500">T�tulo</div>
+                      <div class="text-xs text-gray-500">TÍTULO</div>
                       <div class="font-medium">{{ detalleContenido.titulo }}</div>
                     </div>
                     <div>
-                      <div class="text-xs text-gray-500">Tipo</div>
+                      <div class="text-xs text-gray-500">TIPO</div>
                       <div class="font-medium">{{ detalleContenido.tipo }}</div>
                     </div>
                     <div class="md:col-span-2">
-                      <div class="text-xs text-gray-500">Descripci�n</div>
-                      <div class="font-medium">{{ detalleContenido.descripcion || '�' }}</div>
+                      <div class="text-xs text-gray-500">Descripci�n</div>
+                      <div class="font-medium">{{ detalleContenido.descripcion || '�' }}</div>
                     </div>
                     <div>
-                      <div class="text-xs text-gray-500">Duraci�n (min)</div>
+                      <div class="text-xs text-gray-500">Duraci�n (min)</div>
                       <div class="font-medium">{{ detalleContenido.duracion }}</div>
                     </div>
                     <div *ngIf="detalleContenido.tipo === 'Video'">
-                      <div class="text-xs text-gray-500">Resoluci�n</div>
-                      <div class="font-medium">{{ detalleContenido.resolucion || '�' }}</div>
+                      <div class="text-xs text-gray-500">Resoluci�n</div>
+                      <div class="font-medium">{{ detalleContenido.resolucion || '�' }}</div>
                     </div>
                     <div>
                       <div class="text-xs text-gray-500">Estado</div>
@@ -172,10 +224,10 @@
                     </div>
                     <div>
                       <div class="text-xs text-gray-500">VIP</div>
-                      <div class="font-medium">{{ detalleContenido.vip ? 'S�' : 'No' }}</div>
+                      <div class="font-medium">{{ detalleContenido.vip ? 'S�' : 'No' }}</div>
                     </div>
                     <div>
-                      <div class="text-xs text-gray-500">Restricci�n edad</div>
+                      <div class="text-xs text-gray-500">Restricci�n edad</div>
                       <div class="font-medium">{{ detalleContenido.edadMinima }}</div>
                     </div>
                   </div>
@@ -258,7 +310,7 @@
                   class="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-white text-sm">
                   <option value="Todos">Todos los roles</option>
                   <option value="Administrador">Administradores</option>
-                  <option value="Gestor">Gestores</option>
+                  <option value="Gestor">GESTORes</option>
                   <option value="Visualizador">Visualizadores</option>
                 </select>
               </div>
@@ -299,7 +351,7 @@
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Email</th>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Rol</th>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Estado</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Acciones</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">ACCIONES</th>
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-100">
@@ -446,7 +498,7 @@
                 <div *ngIf="!isSuccess">
                   <!-- Selección de rol -->
                   <div class="mb-4">
-                  <p class="block text-sm font-medium text-gray-700 mb-2">Tipo de Usuario</p>
+                  <p class="block text-sm font-medium text-gray-700 mb-2">TIPO de Usuario</p>
                   <div class="grid grid-cols-2 gap-2">
                     <button type="button" 
                       (click)="onRoleChange('Administrador')"
@@ -458,7 +510,7 @@
                       (click)="onRoleChange('Gestor')"
                       [ngClass]="newUser.rol === 'Gestor' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'"
                       class="px-3 py-2 rounded text-sm font-medium">
-                      Gestor
+                      GESTOR
                     </button>
                   </div>
                 </div>
@@ -575,23 +627,23 @@
                   </div>
                 </form>
 
-              <!-- Formulario para Gestor de Contenido -->
+              <!-- Formulario para GESTOR de Contenido -->
               <form *ngIf="newUser.rol === 'Gestor'" class="space-y-6">
 
                 <!-- Campos básicos -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div class="space-y-2">
-                    <label for="gestorNombre" class="block text-sm font-medium text-gray-700">Nombre *</label>
+                    <label for="GESTORNombre" class="block text-sm font-medium text-gray-700">Nombre *</label>
                     <input
                       type="text"
-                      id="gestorNombre"
+                      id="GESTORNombre"
                       [(ngModel)]="newUser.nombre"
-                      name="gestorNombre"
+                      name="GESTORNombre"
                       required
                       [class.border-red-500]="fieldsWithError.includes('nombre')"
                       [class.border-green-500]="newUser.nombre && !fieldsWithError.includes('nombre')"
                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                      placeholder="Nombre del gestor">
+                      placeholder="Nombre del GESTOR">
                     <div *ngIf="fieldsWithError.includes('nombre')" class="text-red-600 text-sm flex items-center">
                       <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm8-8a8 8 0 11-16 0 8 8 0 0116 0zM10 8a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2a1 1 0 01-1-1V8z" clip-rule="evenodd"></path>
@@ -601,17 +653,17 @@
                   </div>
 
                   <div class="space-y-2">
-                    <label for="gestorApellidos" class="block text-sm font-medium text-gray-700">Apellidos *</label>
+                    <label for="GESTORApellidos" class="block text-sm font-medium text-gray-700">Apellidos *</label>
                     <input
                       type="text"
-                      id="gestorApellidos"
+                      id="GESTORApellidos"
                       [(ngModel)]="newUser.apellidos"
-                      name="gestorApellidos"
+                      name="GESTORApellidos"
                       required
                       [class.border-red-500]="fieldsWithError.includes('apellidos')"
                       [class.border-green-500]="newUser.apellidos && !fieldsWithError.includes('apellidos')"
                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                      placeholder="Apellidos del gestor">
+                      placeholder="Apellidos del GESTOR">
                     <div *ngIf="fieldsWithError.includes('apellidos')" class="text-red-600 text-sm flex items-center">
                       <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 000 2v4a1 1 0 002 0V7a1 1 0 00-1-1z" clip-rule="evenodd"></path>
@@ -621,7 +673,7 @@
                   </div>
                 </div>
 
-                <!-- Selección de foto de perfil (OBLIGATORIO para Gestor) -->
+                <!-- Selección de foto de perfil (OBLIGATORIO para GESTOR) -->
                 <div class="space-y-2">
                   <label class="block text-sm font-medium text-gray-700">
                     Foto de Perfil <span class="text-red-500">*</span>
@@ -644,12 +696,12 @@
 
                 <!-- Email -->
                 <div class="space-y-2">
-                  <label for="gestorEmail" class="block text-sm font-medium text-gray-700">Email *</label>
+                  <label for="GESTOREmail" class="block text-sm font-medium text-gray-700">Email *</label>
                   <input
                     type="email"
-                    id="gestorEmail"
+                    id="GESTOREmail"
                     [(ngModel)]="newUser.email"
-                    name="gestorEmail"
+                    name="GESTOREmail"
                     required
                     [class.border-red-500]="fieldsWithError.includes('email')"
                     [class.border-green-500]="newUser.email && !fieldsWithError.includes('email')"
@@ -665,13 +717,13 @@
 
                 <!-- Alias único -->
                 <div class="space-y-2">
-                  <label for="gestorAlias" class="block text-sm font-medium text-gray-700">Alias único *</label>
+                  <label for="GESTORAlias" class="block text-sm font-medium text-gray-700">Alias único *</label>
                   <div class="relative">
                     <input
                       type="text"
-                      id="gestorAlias"
+                      id="GESTORAlias"
                       [(ngModel)]="newUser.alias"
-                      name="gestorAlias"
+                      name="GESTORAlias"
                       required
                       [class.border-red-500]="fieldsWithError.includes('alias')"
                       [class.border-green-500]="newUser.alias && !fieldsWithError.includes('alias')"
@@ -694,24 +746,24 @@
 
                 <!-- Descripción -->
                 <div class="space-y-2">
-                  <label for="gestorDescripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
+                  <label for="GESTORDescripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
                   <textarea
-                    id="gestorDescripcion"
+                    id="GESTORDescripcion"
                     [(ngModel)]="newUser.descripcion"
-                    name="gestorDescripcion"
+                    name="GESTORDescripcion"
                     rows="3"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 resize-none"
-                    placeholder="Describe la experiencia y enfoque del gestor de contenido..."></textarea>
+                    placeholder="Describe la experiencia y enfoque del GESTOR de contenido..."></textarea>
                   <p class="text-sm text-gray-600">Opcional: Breve descripción del perfil profesional</p>
                 </div>
 
                 <!-- Especialidad -->
                 <div class="space-y-2">
-                  <label for="gestorEspecialidad" class="block text-sm font-medium text-gray-700">Especialidad *</label>
+                  <label for="GESTOREspecialidad" class="block text-sm font-medium text-gray-700">Especialidad *</label>
                   <select
-                    id="gestorEspecialidad"
+                    id="GESTOREspecialidad"
                     [(ngModel)]="newUser.especialidad"
-                    name="gestorEspecialidad"
+                    name="GESTOREspecialidad"
                     required
                     [class.border-red-500]="fieldsWithError.includes('especialidad')"
                     [class.border-green-500]="newUser.especialidad && !fieldsWithError.includes('especialidad')"
@@ -736,9 +788,9 @@
                   </div>
                 </div>
 
-                <!-- Tipo de contenido -->
+                <!-- TIPO de contenido -->
                 <fieldset class="space-y-2">
-                  <legend class="block text-sm font-medium text-gray-700">Tipo de contenido preferido *</legend>
+                  <legend class="block text-sm font-medium text-gray-700">TIPO de contenido preferido *</legend>
                   <div class="flex gap-4">
                     <label class="flex items-center space-x-2 cursor-pointer">
                       <input
@@ -771,19 +823,19 @@
                     <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 000 2v4a1 1 0 002 0V7a1 1 0 00-1-1z" clip-rule="evenodd"></path>
                     </svg>
-                    Selecciona un tipo de contenido
+                    Selecciona un TIPO de contenido
                   </div>
                 </fieldset>
 
                 <!-- Contraseñas -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div class="space-y-2">
-                    <label for="gestorContrasenia" class="block text-sm font-medium text-gray-700">Contraseña *</label>
+                    <label for="GESTORContrasenia" class="block text-sm font-medium text-gray-700">Contraseña *</label>
                     <input
                       type="password"
-                      id="gestorContrasenia"
+                      id="GESTORContrasenia"
                       [(ngModel)]="newUser.contrasenia"
-                      name="gestorContrasenia"
+                      name="GESTORContrasenia"
                       required
                       [class.border-red-500]="fieldsWithError.includes('contrasenia')"
                       [class.border-green-500]="newUser.contrasenia && !fieldsWithError.includes('contrasenia')"
@@ -798,12 +850,12 @@
                   </div>
 
                   <div class="space-y-2">
-                    <label for="gestorRepetirContrasenia" class="block text-sm font-medium text-gray-700">Repetir Contraseña *</label>
+                    <label for="GESTORRepetirContrasenia" class="block text-sm font-medium text-gray-700">Repetir Contraseña *</label>
                     <input
                       type="password"
-                      id="gestorRepetirContrasenia"
+                      id="GESTORRepetirContrasenia"
                       [(ngModel)]="newUser.repetirContrasenia"
-                      name="gestorRepetirContrasenia"
+                      name="GESTORRepetirContrasenia"
                       required
                       [class.border-red-500]="fieldsWithError.includes('repetirContrasenia')"
                       [class.border-green-500]="newUser.repetirContrasenia && !fieldsWithError.includes('repetirContrasenia')"
@@ -833,7 +885,7 @@
                     <svg *ngIf="!isCreating" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"></path>
                     </svg>
-                    <span>{{isCreating ? 'Creando...' : 'Crear Gestor'}}</span>
+                    <span>{{isCreating ? 'Creando...' : 'Crear GESTOR'}}</span>
                   </button>
                 </div>
               </form>
@@ -913,9 +965,9 @@
             </div>
           </div>
 
-          <!-- Acciones rápidas -->
+          <!-- ACCIONES rápidas -->
           <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-            <h2 class="text-2xl font-semibold text-gray-900 mb-6 text-center">Acciones Rápidas</h2>
+            <h2 class="text-2xl font-semibold text-gray-900 mb-6 text-center">ACCIONES Rápidas</h2>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <button (click)="setActiveTab('usuarios')" 
                   class="flex items-center gap-3 p-3 border border-gray-200 rounded hover:bg-gray-50">
@@ -1148,7 +1200,7 @@
                 <p class="text-gray-900">{{ perfilDetalle.especialidad || '-' }}</p>
               </div>
               <div class="p-4 bg-white border border-gray-200 rounded-lg md:col-span-2">
-                <label class="block text-sm font-semibold text-gray-700 mb-1">Tipo de Contenido</label>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">TIPO de Contenido</label>
                 <p class="text-gray-900">{{ perfilDetalle.tipoContenido || '-' }}</p>
               </div>
               <div class="p-4 bg-white border border-gray-200 rounded-lg md:col-span-2">
@@ -1389,4 +1441,9 @@
       </div>
     </div>
   </div>
+
+
+
+
+
 
