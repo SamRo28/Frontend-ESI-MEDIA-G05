@@ -70,6 +70,23 @@
   font-size: 16px;
 }
 
+/* Detalle de Contenido: estilo de tarjetas como en detalle de perfil */
+.fixed.inset-0 .grid.grid-cols-1.md\:grid-cols-2.gap-4 > div {
+  padding: 1rem;
+  background: #ffffff;
+  border: 1px solid #e5e7eb; /* gray-200 */
+  border-radius: 0.5rem; /* rounded-lg */
+}
+
+.fixed.inset-0 .grid.grid-cols-1.md\:grid-cols-2.gap-4 > div .text-xs.text-gray-500 {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.fixed.inset-0 .grid.grid-cols-1.md\:grid-cols-2.gap-4 > div .font-medium a {
+  color: #2563eb; /* text-blue-600 */
+}
+
 .badge {
   display: inline-block;
   padding: 4px 12px;
@@ -195,3 +212,20 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+/* Modal de Contenido: overlay con desenfoque y cabecera estilo */
+.content-modal-overlay {
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+.content-modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+/* Tarjetas del detalle de contenido, como en detalle de perfil */
+.content-detail-grid > div {
+  padding: 1rem;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+.content-detail-grid > div .text-xs.text-gray-500 { margin-bottom: 0.25rem; display:block; }
+.content-detail-grid a { color: #2563eb; }

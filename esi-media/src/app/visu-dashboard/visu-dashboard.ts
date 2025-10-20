@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 
 interface Star {
@@ -9,7 +10,8 @@ interface Star {
 
 @Component({
   selector: 'app-visu-dashboard',
-  imports: [],
+  standalone: true,
+  imports: [CommonModule],
   templateUrl: './visu-dashboard.html',
   styleUrl: './visu-dashboard.css'
 })
