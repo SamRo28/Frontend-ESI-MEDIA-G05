@@ -17,6 +17,8 @@ export class AudioUploadComponent {
   isUploading = false;
   uploadMessage = '';
   fileError = ''; // Error específico del archivo
+  uploadSuccess = false; // Nueva propiedad para controlar el éxito
+  showUploadConfirmation = false;
   
   // Tags predefinidos para audio
   availableAudioTags = [
@@ -129,47 +131,67 @@ export class AudioUploadComponent {
 
   onSubmit() {
     if (this.audioForm.valid && this.selectedFile) {
-      this.isUploading = true;
-      this.uploadMessage = 'Preparando datos para subir...';
+      // Mostrar modal de confirmación antes de subir
+      this.showUploadConfirmation = true;
+    }
+  }
+
+  // Método para cancelar la subida
+  cancelUpload() {
+    this.showUploadConfirmation = false;
+  }
+
+  // Método para confirmar y proceder con la subida
+  confirmUpload() {
+    this.showUploadConfirmation = false;
+    this.isUploading = true;
+    this.uploadSuccess = false;
+    this.uploadMessage = 'Subiendo archivo de audio...';
+    
+    const minutos = Number(this.audioForm.value.minutos) || 0;
+    const segundos = Number(this.audioForm.value.segundos) || 0;
+    const formValues = this.audioForm.value; // Guardar todos los valores
+      
+      // BLOQUEAR FORMULARIO COMPLETO
+      this.audioForm.disable();
 
       // Usar selectedTags directamente (ya están como array)
       const tagsArray = this.selectedTags.length > 0 ? this.selectedTags : [];
 
       // Convertir minutos y segundos a total de segundos con validación
-      const minutos = Number(this.audioForm.value.minutos) || 0;
-      const segundos = Number(this.audioForm.value.segundos) || 0;
       const totalSegundos = (minutos * 60) + segundos;
 
       const audioData: AudioUploadData = {
-        titulo: this.audioForm.value.titulo,
-        descripcion: this.audioForm.value.descripcion || undefined,
+        titulo: formValues.titulo,
+        descripcion: formValues.descripcion || undefined,
         tags: tagsArray,
         duracion: totalSegundos > 0 ? totalSegundos : 1, // Mínimo 1 segundo
-        vip: this.audioForm.value.vip,
-        edadVisualizacion: Number(this.audioForm.value.edadVisualizacion) || 0,
-        fechaDisponibleHasta: this.audioForm.value.fechaDisponibleHasta 
-          ? new Date(this.audioForm.value.fechaDisponibleHasta) 
+        vip: formValues.vip,
+        edadVisualizacion: Number(formValues.edadVisualizacion) || 0,
+        fechaDisponibleHasta: formValues.fechaDisponibleHasta && formValues.fechaDisponibleHasta.trim() !== ''
+          ? new Date(formValues.fechaDisponibleHasta) 
           : undefined,
-        visible: this.audioForm.value.visible,
-        archivo: this.selectedFile,
-        caratula: this.audioForm.value.caratula || undefined
+        visible: formValues.visible,
+        archivo: this.selectedFile!,
+        caratula: formValues.caratula || undefined
       };
 
       this.contentService.uploadAudio(audioData).subscribe({
         next: (response: UploadResponse) => {
           this.isUploading = false;
           if (response.success) {
-            this.uploadMessage = `✅ ${response.message}`;
-            // Mostrar botón para ir a home o subir otro audio
-            // setTimeout(() => {
-            //   this.router.navigate(['/home']);
-            // }, 2000);
+            this.uploadSuccess = true;
+            this.uploadMessage = '¡Audio subido exitosamente! 🎉';
           } else {
-            this.uploadMessage = `❌ ${response.message}`;
+            this.uploadSuccess = false;
+            this.uploadMessage = `❌ Error: ${response.message}`;
+            this.audioForm.enable();
           }
         },
         error: (error: any) => {
           this.isUploading = false;
+          this.uploadSuccess = false;
+          this.audioForm.enable();
           console.error('Error uploading audio:', error);
           
           // Manejo específico de errores HTTP según el backend
@@ -197,9 +219,11 @@ export class AudioUploadComponent {
           }
         }
       });
-    } else {
-      this.uploadMessage = '❌ Por favor, completa todos los campos obligatorios correctamente';
-    }
+  }
+
+  // Método para volver al dashboard después del éxito
+  backToDashboard() {
+    this.router.navigate(['/gestor-dashboard']);
   }
 
   // Helper methods para mostrar errores
@@ -365,6 +389,27 @@ export class AudioUploadComponent {
     
     if (!allowedKeys.includes(key)) {
       event.preventDefault();
+    }
+  }
+
+  // Prevenir entrada de teclado en campos de fecha (solo permitir selector)
+  preventKeyboardInput(event: KeyboardEvent): void {
+    // Permitir solo teclas de navegación y funcionales, no letras/números
+    const allowedKeys = ['Tab', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Delete', 'Backspace'];
+    if (!allowedKeys.includes(event.key)) {
+      event.preventDefault();
+    }
+  }
+
+  // Obtener texto descriptivo para edad de visualización
+  getEdadVisualizacionText(edad: string): string {
+    switch(edad) {
+      case 'TP':
+        return 'Todo Público';
+      case '18':
+        return '+18 (Adultos)';
+      default:
+        return edad || 'No especificado';
     }
   }
 }

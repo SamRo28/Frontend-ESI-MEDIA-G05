@@ -107,15 +107,22 @@ export class Fa2Qr implements OnInit {
 
   this.userService.verify2FACode(email, this.verificationCode).subscribe({
     next: (res: any) => {
-      const wants2fa = window.confirm('Registro completado. ¿Deseas activar la autenticación en 2 pasos (2FA) ahora?');
 
-        if (wants2fa) {
-          // Redirigir a la página de configuración de 2FA
-          this.router.navigate(['3verification'], { state: { allowFa3Code: true } });
-        } else {
-          // Si el usuario no quiere 2FA, redirigir a la página principal o login
-          // Ajusta la ruta según la estructura de rutas de la aplicación
-          this.router.navigate(['/dashboard']);
+      if(sessionStorage.getItem('currentUserClass') !== 'visualizador'){
+          this.router.navigate(['3verification'], { state: { allowFa3Code: true }
+          });
+      }
+      else{
+        const wants2fa = window.confirm('Registro completado. ¿Deseas activar la autenticación en 2 pasos (2FA) ahora?');
+
+          if (wants2fa) {
+            // Redirigir a la página de configuración de 2FA
+            this.router.navigate(['3verification'], { state: { allowFa3Code: true } });
+          } else {
+            // Si el usuario no quiere 2FA, redirigir a la página principal o login
+            // Ajusta la ruta según la estructura de rutas de la aplicación
+            this.router.navigate(['/dashboard']);
+          }
         }
     },
     error: (err: any) => {
