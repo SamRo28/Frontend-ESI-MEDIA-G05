@@ -93,6 +93,7 @@
     font-family: inherit;
     transition: all 0.3s;
     outline: none;
+    width: 100%;
 }
 
 .form-input::placeholder { color: rgba(255, 255, 255, 0.4); }
@@ -135,6 +136,53 @@
         position: relative; /* permitir scroll y que la rueda funcione */
         width: 100%;
     }
+    
+/* Estilos para el contenedor de input de contraseña con el botón de ojo */
+.password-input-container {
+  position: relative;
+  display: flex;
+  width: 100%;
+}
+
+.password-input-container .form-input {
+  width: 100%;
+  padding-right: 48px; /* Aumentar el padding derecho para dejar espacio al ícono */
+}
+
+.password-toggle {
+  position: absolute;
+  right: 20px; /* Ajustado para alinearse con el margen derecho */
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  z-index: 2;
+  transition: color 0.2s ease;
+  border-radius: 50%;
+}
+
+.password-toggle:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.eye-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.password-toggle:hover .eye-icon {
+  opacity: 1;
+}
 
 /* Estilos para botones genéricos */
 .btn{ 
@@ -283,6 +331,40 @@
   background-color: rgba(255, 50, 50, 0.1);
   border-radius: 6px;
   border-left: 3px solid #ff5252;
+}
+
+/* Estilos para los requisitos de la contraseña */
+.password-requirements, .password-match {
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.requirement {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.requirement .icon {
+  margin-right: 8px;
+  font-weight: bold;
+}
+
+.requirement.met {
+  color: #4ade80;
+  background-color: rgba(74, 222, 128, 0.1);
+}
+
+.requirement.unmet {
+  color: #ff7070;
+  background-color: rgba(255, 112, 112, 0.05);
+}
+
+.requirement.met .icon {
+  color: #4ade80;
 }
 
 @keyframes fadeIn {

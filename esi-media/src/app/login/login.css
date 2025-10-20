@@ -356,3 +356,32 @@
         font-size: 13px;
     }
 }
+
+/* Mensaje de error de login */
+.login-error {
+    margin-top: 20px;
+    background: rgba(239, 68, 68, 0.15);
+    color: #ff6b6b;
+    border: 2px solid rgba(239, 68, 68, 0.4);
+    padding: 14px 18px;
+    border-radius: 12px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    animation: errorShake 0.5s ease-in-out;
+}
+
+.login-error svg {
+    flex-shrink: 0;
+}
+
+@keyframes errorShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}

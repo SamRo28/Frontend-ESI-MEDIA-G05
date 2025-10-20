@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, timeout, catchError, throwError } from 'rxjs';
+
+import { Observable, timeout, catchError, throwError, switchMap } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 // Interfaces para usuarios básicos
@@ -184,14 +185,51 @@ export class AdminService {
     );
   }
 
+  /**
+   * Elimina un usuario y su contraseña asociada.
+   * Primero obtiene los datos del usuario para encontrar el ID de la contraseña,
+   * luego elimina la contraseña y finalmente elimina el usuario.
+   */
   deleteUser(userId: string): Observable<any> {
-    const url = `${this.apiUrl}/users/${userId}`;
-    console.log('AdminService: Eliminando usuario:', userId);
+    // URLs para las peticiones
+    const userUrl = `${this.apiUrl}/users/${userId}`;
     
-    // Usamos directamente el endpoint del backend que ya maneja la eliminación de contraseña
-    return this.http.delete(url).pipe(
-      timeout(5000), // Reducir el timeout a 5 segundos es suficiente
-      catchError((error) => {
+    console.log('AdminService: Iniciando proceso de eliminación para usuario:', userId);
+    
+    // Paso 1: Primero obtenemos los datos del usuario para conseguir el ID de la contraseña
+    return this.http.get<any>(`${this.apiUrl}/users/${userId}`).pipe(
+      switchMap(usuario => {
+        // Verificamos si el usuario tiene contraseña y obtenemos su ID
+        if (usuario && usuario.contrasenia && usuario.contrasenia.id) {
+          const passwordId = usuario.contrasenia.id;
+          console.log('Encontrada contraseña con ID:', passwordId);
+          
+          // Paso 2: Eliminamos la contraseña primero
+          return this.http.delete(`${this.apiUrl}/contrasenias/${passwordId}`).pipe(
+            switchMap(() => {
+              console.log('Contraseña eliminada correctamente, procediendo a eliminar el usuario');
+              // Paso 3: Si la eliminación de la contraseña fue exitosa, eliminamos el usuario
+              return this.http.delete(userUrl);
+            }),
+            catchError(error => {
+              // Si hay error al eliminar la contraseña, intentamos eliminar el usuario de todas formas
+              console.error('Error al eliminar la contraseña:', error);
+              console.log('Intentando eliminar el usuario a pesar del error en la contraseña');
+              return this.http.delete(userUrl);
+            })
+          );
+        } else {
+          // Si el usuario no tiene contraseña, solo lo eliminamos a él
+          console.log('Usuario no tiene contraseña asociada o no se pudo encontrar su ID');
+          return this.http.delete(userUrl);
+        }
+      }),
+      
+      // Establecemos un timeout para toda la operación
+      timeout(10000),
+      
+      // Manejo de errores en la obtención de datos del usuario o eliminación del usuario
+      catchError(error => {
         console.error('Error en el proceso de eliminación:', error);
         return this.handleError(error);
       })

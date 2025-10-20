@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, Inject, PLATFORM_ID, NgZone } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -70,6 +70,17 @@ export class AdminDashboardComponent implements OnInit {
   
   // Propiedades para manejar errores de validación
   fieldsWithError: string[] = [];
+  
+  // Validación de contraseña en tiempo real
+  passwordValidation = {
+    minLength: false,
+    hasUpperCase: false,
+    hasLowerCase: false,
+    hasNumber: false,
+    hasSpecialChar: false,
+    noStartsWithUpperCase: false,
+    passwordsMatch: false
+  };
 
   // Fotos de perfil disponibles
   fotosDisponibles = [
@@ -83,15 +94,23 @@ export class AdminDashboardComponent implements OnInit {
     private adminService: AdminService,
     private cdr: ChangeDetectorRef,
     private router: Router,
+    private ngZone: NgZone,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   ngOnInit() {
-    // Cargar información del usuario actual desde localStorage (solo en el navegador)
+    // Cargar información del usuario actual desde sessionStorage (solo en el navegador)
     if (isPlatformBrowser(this.platformId)) {
-      const userStr = localStorage.getItem('currentUser');
+      const userStr = sessionStorage.getItem('user');
       if (userStr) {
-        this.currentUser = JSON.parse(userStr);
+        try {
+          this.currentUser = JSON.parse(userStr);
+          console.log('✅ Usuario cargado desde sessionStorage:', this.currentUser);
+        } catch (e) {
+          console.error('❌ Error al parsear usuario desde sessionStorage:', e);
+        }
+      } else {
+        console.warn('⚠️ No se encontró usuario en sessionStorage');
       }
     }
     
@@ -184,14 +203,23 @@ export class AdminDashboardComponent implements OnInit {
       return;
     }
 
-    // Validar contraseñas coincidentes
-    console.log('✅ COMPONENTE: Validación contraseñas - contrasenia:', this.newUser.contrasenia);
-    console.log('✅ COMPONENTE: Validación contraseñas - repetirContrasenia:', this.newUser.repetirContrasenia);
+    // Validar política de contraseñas
+    this.validatePassword();
     
-    if (this.newUser.contrasenia !== this.newUser.repetirContrasenia) {
-      console.log('❌ COMPONENTE: Validación falló - contraseñas no coinciden');
+    if (!this.isPasswordValid()) {
+      console.log('❌ COMPONENTE: Validación falló - política de contraseñas no cumplida');
       this.fieldsWithError = ['contrasenia', 'repetirContrasenia'];
-      this.errorMessage = '❌ Las contraseñas no coinciden. Verifique que ambas contraseñas sean idénticas.';
+      
+      const errores = [];
+      if (!this.passwordValidation.minLength) errores.push('mínimo 8 caracteres');
+      if (!this.passwordValidation.noStartsWithUpperCase) errores.push('no debe comenzar con mayúscula');
+      if (!this.passwordValidation.hasUpperCase) errores.push('al menos una letra mayúscula');
+      if (!this.passwordValidation.hasLowerCase) errores.push('al menos una letra minúscula');
+      if (!this.passwordValidation.hasNumber) errores.push('al menos un número');
+      if (!this.passwordValidation.hasSpecialChar) errores.push('al menos un carácter especial (!@#$%^&*...)');
+      if (!this.passwordValidation.passwordsMatch) errores.push('las contraseñas deben coincidir');
+      
+      this.errorMessage = `❌ La contraseña no cumple con la política de seguridad: ${errores.join(', ')}`;
       return;
     }
 
@@ -272,26 +300,29 @@ export class AdminDashboardComponent implements OnInit {
         // Extraer el nombre de la respuesta del servidor o usar el del formulario
         const nombreCreado = response?.nombre || this.newUser.nombre;
         
-        // CAMBIOS CRÍTICOS DE ESTADO
-        console.log('🔄 CAMBIANDO ESTADOS:');
-        console.log('  isCreating:', this.isCreating, '-> false');
-        console.log('  isSuccess:', this.isSuccess, '-> true');
-        
-        this.isCreating = false;
-        this.isSuccess = true;
-        
-        // Mensaje de éxito específico por rol
-        const tipoUsuario = this.newUser.rol === 'Gestor' ? 'Gestor de Contenido' : 'Administrador';
-        this.successMessage = `¡${tipoUsuario} "${nombreCreado}" creado exitosamente!`;
-        
-        console.log('✅ ESTADOS ACTUALIZADOS:');
-        console.log('  isCreating:', this.isCreating);
-        console.log('  isSuccess:', this.isSuccess);
-        console.log('  successMessage:', this.successMessage);
-        
-        // FORZAR DETECCIÓN DE CAMBIOS
-        this.cdr.detectChanges();
-        console.log('🎉 Detección de cambios ejecutada - debería mostrar pantalla de éxito');
+        // Ejecutar cambios de estado dentro de la zona de Angular
+        this.ngZone.run(() => {
+          // CAMBIOS CRÍTICOS DE ESTADO
+          console.log('🔄 CAMBIANDO ESTADOS dentro de NgZone:');
+          console.log('  isCreating:', this.isCreating, '-> false');
+          console.log('  isSuccess:', this.isSuccess, '-> true');
+          
+          this.isCreating = false;
+          this.isSuccess = true;
+          
+          // Mensaje de éxito específico por rol
+          const tipoUsuario = this.newUser.rol === 'Gestor' ? 'Gestor de Contenido' : 'Administrador';
+          this.successMessage = `¡${tipoUsuario} "${nombreCreado}" creado exitosamente!`;
+          
+          console.log('✅ ESTADOS ACTUALIZADOS:');
+          console.log('  isCreating:', this.isCreating);
+          console.log('  isSuccess:', this.isSuccess);
+          console.log('  successMessage:', this.successMessage);
+          
+          // FORZAR DETECCIÓN DE CAMBIOS
+          this.cdr.detectChanges();
+          console.log('🎉 Detección de cambios ejecutada - debería mostrar pantalla de éxito');
+        });
       },
       error: (error: any) => {
         console.error('❌ Error completo al crear usuario:', error);
@@ -300,10 +331,13 @@ export class AdminDashboardComponent implements OnInit {
         console.log('🌐 URL completa:', error.url);
         
         clearTimeout(backupTimeout); // Cancelar timeout de respaldo
-        this.isCreating = false;
-        this.cdr.detectChanges(); // Forzar actualización en errores también
         
-        let mensajeError = 'Error desconocido';
+        // Ejecutar cambios de error dentro de la zona de Angular
+        this.ngZone.run(() => {
+          this.isCreating = false;
+          this.cdr.detectChanges(); // Forzar actualización en errores también
+        
+          let mensajeError = 'Error desconocido';
         
         // Detectar específicamente errores de CORS o conexión
         if (error.status === 0 && error.error?.message?.includes('Failed to fetch')) {
@@ -346,6 +380,7 @@ export class AdminDashboardComponent implements OnInit {
         setTimeout(() => {
           this.errorMessage = '';
         }, 10000);
+        }); // Cierre de ngZone.run()
       }
     });
   }
@@ -423,6 +458,44 @@ export class AdminDashboardComponent implements OnInit {
 
   getUsuariosBloqueados(): number {
     return this.usuarios.filter(u => u.bloqueado).length;
+  }
+
+  // Validación de contraseña en tiempo real
+  validatePassword() {
+    const password = this.newUser.contrasenia;
+    const confirmPassword = this.newUser.repetirContrasenia;
+    
+    // Validar longitud mínima (8 caracteres)
+    this.passwordValidation.minLength = password.length >= 8;
+    
+    // Validar que tenga al menos una mayúscula
+    this.passwordValidation.hasUpperCase = /[A-Z]/.test(password);
+    
+    // Validar que tenga al menos una minúscula
+    this.passwordValidation.hasLowerCase = /[a-z]/.test(password);
+    
+    // Validar que tenga al menos un número
+    this.passwordValidation.hasNumber = /[0-9]/.test(password);
+    
+    // Validar que tenga al menos un carácter especial
+    this.passwordValidation.hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+    
+    // Validar que NO empiece con mayúscula
+    this.passwordValidation.noStartsWithUpperCase = password.length > 0 && !/^[A-Z]/.test(password);
+    
+    // Validar que las contraseñas coincidan
+    this.passwordValidation.passwordsMatch = password.length > 0 && password === confirmPassword;
+  }
+
+  // Verificar si la contraseña es válida
+  isPasswordValid(): boolean {
+    return this.passwordValidation.minLength &&
+           this.passwordValidation.hasUpperCase &&
+           this.passwordValidation.hasLowerCase &&
+           this.passwordValidation.hasNumber &&
+           this.passwordValidation.hasSpecialChar &&
+           this.passwordValidation.noStartsWithUpperCase &&
+           this.passwordValidation.passwordsMatch;
   }
 
   // Métodos de filtrado
@@ -508,8 +581,8 @@ export class AdminDashboardComponent implements OnInit {
         // Actualizar currentUser con la respuesta del servidor
         this.currentUser = { ...this.currentUser, ...response };
         
-        // Actualizar también en localStorage
-        localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+        // Actualizar también en sessionStorage (key 'user')
+        sessionStorage.setItem('user', JSON.stringify(this.currentUser));
         
         this.successMessage = 'Perfil actualizado correctamente en la base de datos';
         setTimeout(() => {
@@ -525,9 +598,14 @@ export class AdminDashboardComponent implements OnInit {
 
   logout() {
     if (isPlatformBrowser(this.platformId)) {
-      // Limpiar localStorage
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('sessionToken');
+      // Limpiar sessionStorage (usando las keys correctas)
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('email');
+      sessionStorage.removeItem('currentUserClass');
+      
+      // Limpiar currentUser del componente
+      this.currentUser = null;
       
       // Mostrar mensaje y redirigir
       this.successMessage = 'Sesión cerrada';
