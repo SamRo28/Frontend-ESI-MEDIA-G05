@@ -240,6 +240,17 @@
     font-weight: 500;
 }
 
+/* Error message styled like input but red */
+.form-error {
+    background: rgba(239, 68, 68, 0.08); /* light red tint */
+    border: 2px solid rgba(239, 68, 68, 0.8);
+    border-radius: 12px;
+    padding: 16px 20px;
+    font-size: 15px;
+    color: #fecaca; /* soft red text on dark bg */
+    font-weight: 600;
+}
+
 /* Social Login */
 .social-login {
     display: flex;

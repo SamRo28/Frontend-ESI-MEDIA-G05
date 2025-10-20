@@ -45,6 +45,8 @@ export class AdminDashboardComponent implements OnInit {
   accionBloqueo: 'bloquear' | 'desbloquear' = 'bloquear';
   loadingBloqueo = false;
   errorBloqueo = '';
+  // Doble confirmación de bloqueo/desbloqueo
+  confirmBloqueoStep: 1 | 2 = 1;
   
   // Filtros
   filtroRol = 'Todos'; // 'Todos', 'Administrador', 'Gestor', 'Visualizador'
@@ -785,6 +787,7 @@ export class AdminDashboardComponent implements OnInit {
     this.accionBloqueo = usuario.bloqueado ? 'desbloquear' : 'bloquear';
     this.showBloqueoModal = true;
     this.errorBloqueo = '';
+    this.confirmBloqueoStep = 1;
   }
 
   /**
@@ -792,6 +795,12 @@ export class AdminDashboardComponent implements OnInit {
    */
   confirmarBloqueo() {
     if (!this.usuarioABloquear) return;
+
+    // Primera pulsación: mostrar aviso y pedir confirmación con un segundo clic
+    if (this.confirmBloqueoStep === 1) {
+      this.confirmBloqueoStep = 2;
+      return;
+    }
 
     const adminId = this.obtenerAdminId();
     if (!adminId) {
@@ -884,4 +893,5 @@ export class AdminDashboardComponent implements OnInit {
     return primerAdmin?.id || null;
   }
 }
+
 

@@ -1210,6 +1210,13 @@
               </div>
             </div>
 
+            <!-- Advertencia de doble confirmación -->
+            <div *ngIf="confirmBloqueoStep === 2" class="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg mb-4">
+              <p class="text-sm font-medium">
+                ¿Estás seguro de {{ accionBloqueo }} este usuario? Pulsa de nuevo para confirmar.
+              </p>
+            </div>
+
             <!-- Mensaje de error -->
             <div *ngIf="errorBloqueo" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
               <p class="text-sm font-medium">{{ errorBloqueo }}</p>
@@ -1248,7 +1255,9 @@
               <path *ngIf="accionBloqueo === 'desbloquear'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                 d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
             </svg>
-            {{ loadingBloqueo ? 'Procesando...' : (accionBloqueo === 'bloquear' ? 'Bloquear Usuario' : 'Desbloquear Usuario') }}
+            {{ loadingBloqueo ? 'Procesando...' : (confirmBloqueoStep === 1 
+              ? (accionBloqueo === 'bloquear' ? 'Bloquear Usuario' : 'Desbloquear Usuario') 
+              : (accionBloqueo === 'bloquear' ? 'Confirmar Bloqueo' : 'Confirmar Desbloqueo')) }}
           </button>
         </div>
       </div>
