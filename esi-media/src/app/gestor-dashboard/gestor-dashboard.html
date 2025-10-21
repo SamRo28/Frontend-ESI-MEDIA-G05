@@ -1,0 +1,103 @@
+<!-- Particles Background -->
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+
+<!-- Gradient Background -->
+<div class="gradient-bg"></div>
+
+<div class="dashboard-container">
+  <!-- Header estilo Home -->
+  <header class="dashboard-header">
+    <div class="header-content">
+      <div class="logo-section">
+        <h1 class="logo-text">
+          <span class="logo-esi">ESI</span><span class="logo-media">Media</span>
+        </h1>
+        <div class="welcome-section">
+          <p class="welcome-text">¡Bienvenido, <span class="user-name">{{ userName }}</span>!</p>
+          <span class="role-badge">Gestor de Contenido</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn-provisional" (click)="navigateToVideoUpload()">
+          🎬 Subir Video (PROVISIONAL)
+        </button>
+        <button class="btn-upload-header" (click)="navigateToUpload()">
+          ⬆️ Subir Contenido
+        </button>
+        <button class="btn-nav" (click)="goToHome()">
+          🏠 Inicio
+        </button>
+        <button class="btn-logout" (click)="logout()">
+          🚪 Cerrar Sesión
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    
+    <!-- Hero Section con Acciones -->
+    <section class="hero-actions">
+      <div class="hero-content">
+        <div class="hero-badge">
+          Panel de Control
+        </div>
+        <h1 class="hero-title">Gestión de Contenido</h1>
+        <p class="hero-subtitle">Sube y administra contenido multimedia para la plataforma ESI Media</p>
+        
+        <!-- Información del Dashboard -->
+        <div class="dashboard-info">
+          <p class="info-text">
+            Utiliza el botón "Subir Contenido" en la barra superior para agregar nuevo contenido multimedia.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tips y Guías Rápidas -->
+    <section class="tips-section">
+      <div class="tips-content">
+        <h2 class="tips-title">💡 Guía Rápida</h2>
+        <div class="tips-grid">
+          <div class="tip-card">
+            <div class="tip-icon">🎵</div>
+            <h4>Subida de Audio</h4>
+            <ul>
+              <li>Formato: Solo MP3</li>
+              <li>Tamaño máximo: 2MB</li>
+              <li>Duración: Hasta 10 minutos</li>
+              <li>Calidad recomendada: 128kbps</li>
+            </ul>
+          </div>
+          
+          <div class="tip-card">
+            <div class="tip-icon">🎬</div>
+            <h4>Subida de Video</h4>
+            <ul>
+              <li>Formato: URLs válidas</li>
+              <li>Plataformas: YouTube, Vimeo</li>
+              <li>Duración: Hasta 4 horas</li>
+              <li>Resoluciones soportadas</li>
+            </ul>
+          </div>
+          
+          <div class="tip-card">
+            <div class="tip-icon">�️</div>
+            <h4>Clasificación</h4>
+            <ul>
+              <li>Selecciona tags apropiados</li>
+              <li>Define la edad mínima</li>
+              <li>Configura la visibilidad</li>
+              <li>Añade descripción detallada</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>

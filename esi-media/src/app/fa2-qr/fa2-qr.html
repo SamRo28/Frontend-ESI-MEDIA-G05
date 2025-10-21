@@ -1,0 +1,156 @@
+<div class="gradient-bg"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+
+<div class="back-button">
+    <a href="#" class="btn-back">
+        ← Volver
+    </a>
+</div>
+
+<div class="qr-container">
+    <div class="logo-container">
+        <svg class="logo" viewBox="0 0 280 50" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#a855f7;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+                </linearGradient>
+                <filter id="glow">
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
+            <path d="M 8 18 Q 6 15 6 22 L 6 30 Q 6 32 8 32 L 10 32 Q 12 32 12 30 L 12 22 Q 12 20 10 20 L 8 20" 
+                  fill="url(#logoGradient)" filter="url(#glow)"/>
+            <path d="M 40 18 Q 42 15 42 22 L 42 30 Q 42 32 40 32 L 38 32 Q 36 32 36 30 L 36 22 Q 36 20 38 20 L 40 20" 
+                  fill="url(#logoGradient)" filter="url(#glow)"/>
+            <path d="M 12 18 Q 24 8 36 18" 
+                  stroke="url(#logoGradient)" stroke-width="2" fill="none" stroke-linecap="round" filter="url(#glow)"/>
+            <rect x="16" y="12" width="16" height="28" rx="4" ry="4" 
+                  fill="none" stroke="url(#logoGradient)" stroke-width="2" filter="url(#glow)"/>
+            <path d="M 29 22 Q 27 20 24 20 Q 20 20 20 24 L 20 36 Q 20 40 24 40 Q 27 40 29 38" 
+                  stroke="url(#logoGradient)" stroke-width="2.5" fill="none" stroke-linecap="round" filter="url(#glow)"/>
+            <path d="M 22 24 L 22 36 L 28 30 Z" fill="url(#logoGradient)" filter="url(#glow)"/>
+            <text x="50" y="34" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="white" filter="url(#glow)">EsiMedia</text>
+        </svg>
+    </div>
+
+    <div class="qr-card">
+        <div class="qr-header">
+            <div class="security-badge">
+                <span class="badge-icon">🔐</span>
+                <span class="badge-text">Autenticación de Dos Factores</span>
+            </div>
+            <h1 class="qr-title">Configurar Google Authenticator</h1>
+            <p class="qr-subtitle">
+                Escanea el código QR con tu aplicación de autenticación<br>
+                para agregar una capa extra de seguridad a tu cuenta
+            </p>
+        </div>
+
+        <div class="steps-container">
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-text">Descarga Google Authenticator en tu dispositivo móvil</div>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-text">Abre la aplicación y selecciona "Escanear código QR"</div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-text">Escanea el código mostrado a continuación</div>
+            </div>
+        </div>
+
+        <div class="qr-code-container">
+            <div class="qr-code-wrapper">
+                <!-- Aquí va el código QR generado dinámicamente -->
+                <div class="qr-placeholder">
+                    <!-- Mantener la imagen en el DOM mientras carga para capturar eventos -->
+                    <img [src]="qrCodeUrl" alt="QR Code" class="qr-image" (load)="onQrLoad()" (error)="onQrError($event)" *ngIf="qrCodeUrl">
+                    <!-- Debug: mostrar enlace directo a la URL del QR para probar si el navegador la carga -->
+
+                    <div class="qr-loading" *ngIf="!qrVisible">
+                        <div class="spinner"></div>
+                        <p>Generando código QR...</p>
+                    </div>
+                </div>
+            </div>
+            <p class="qr-helper-text">Apunta tu cámara al código QR</p>
+        </div>
+
+        <div class="divider">
+            <div class="divider-line"></div>
+            <span class="divider-text">O introduce manualmente</span>
+            <div class="divider-line"></div>
+        </div>
+
+        <div class="manual-code-section">
+            <p class="manual-label">Clave secreta:</p>
+            <div class="secret-key-container">
+                <code class="secret-key">{{ secretKey }}</code>
+                <button class="btn-copy" (click)="copySecretKey()" [class.copied]="isCopied">
+                    <span *ngIf="!isCopied">📋</span>
+                    <span *ngIf="isCopied">✓</span>
+                </button>
+            </div>
+            <p class="manual-helper">Introduce esta clave manualmente en Google Authenticator</p>
+        </div>
+
+        <div class="verification-section">
+            <p class="verification-label">Verificar código de autenticación:</p>
+            <form (ngSubmit)="verifyCode()">
+                <div class="code-input-container">
+                    <input 
+                        type="text" 
+                        class="code-input" 
+                        placeholder="000000"
+                        [(ngModel)]="verificationCode"
+                        name="verificationCode"
+                        maxlength="6"
+                        pattern="[0-9]*"
+                        required
+                    >
+                </div>
+                <p class="verification-helper">Introduce el código de 6 dígitos de tu aplicación</p>
+                <button type="submit" class="btn-verify">
+                    Verificar y Activar
+                </button>
+            </form>
+        </div>
+
+        <div class="info-box">
+            <div class="info-icon">💡</div>
+            <p class="info-text">
+                <strong>Importante:</strong> Guarda la clave secreta en un lugar seguro. 
+                La necesitarás si cambias de dispositivo o pierdes acceso a tu autenticador.
+            </p>
+        </div>
+
+        <div class="apps-section">
+            <p class="apps-title">Aplicaciones compatibles:</p>
+            <div class="apps-list">
+                <div class="app-item">
+                    <span class="app-icon">📱</span>
+                    <span class="app-name">Google Authenticator</span>
+                </div>
+                <div class="app-item">
+                    <span class="app-icon">🔑</span>
+                    <span class="app-name">Microsoft Authenticator</span>
+                </div>
+                <div class="app-item">
+                    <span class="app-icon">🛡️</span>
+                    <span class="app-name">Authy</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -3,11 +3,15 @@ import { Token } from './token';
 import { Contrasenia } from './contrasenia';
 
 export class Usuario {
-    protected nombre: string;
-    protected apellidos: string;
-    protected email: string;
-    protected foto: any;
-    protected bloqueado: boolean;
+    id?: string;
+    nombre: string;
+    apellidos: string;
+    email: string;
+    foto: any;
+    bloqueado: boolean;
+    rol?: string;
+    apodo?: string;
+    departamento?: string;
     public codigos_recuperacion_: Codigo_recuperacion[] = [];
     public sesions_token_: Token[] = [];
     public contrasenia?: Contrasenia;

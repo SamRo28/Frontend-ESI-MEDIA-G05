@@ -1,0 +1,447 @@
+<!-- Header del componente -->
+<div class="min-h-screen bg-gray-50">
+  <div class="bg-white border-b border-gray-200 px-6 py-4">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Gestión de Usuarios</h1>
+          <p class="text-sm text-gray-600 mt-1">Administra todos los tipos de usuarios del sistema</p>
+        </div>
+        <div class="flex gap-3">
+          <button 
+            (click)="refreshData()" 
+            [disabled]="loading"
+            class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Actualizar
+          </button>
+          <button 
+            (click)="exportUsers()"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            Exportar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mensajes globales -->
+  <div class="max-w-7xl mx-auto px-6 py-4" *ngIf="successMessage || errorMessage">
+    <div *ngIf="successMessage" class="mb-4 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-lg flex items-center gap-3">
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+      </svg>
+      {{ successMessage }}
+    </div>
+    
+    <div *ngIf="errorMessage" class="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg flex items-center gap-3">
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+      </svg>
+      {{ errorMessage }}
+    </div>
+  </div>
+
+  <!-- Navegación de pestañas -->
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="border-b border-gray-200">
+      <nav class="-mb-px flex space-x-8">
+        <button 
+          *ngFor="let tab of tabs"
+          (click)="setActiveTab(tab.id)"
+          [class]="activeTab === tab.id 
+            ? 'border-blue-500 text-blue-600 bg-blue-50' 
+            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+          class="whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm rounded-t-lg transition-colors flex items-center gap-2">
+          
+          <!-- Iconos para cada pestaña -->
+          <svg *ngIf="tab.icon === 'eye'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+          </svg>
+          
+          <svg *ngIf="tab.icon === 'cog'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+          
+          <svg *ngIf="tab.icon === 'shield'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+          </svg>
+          
+          {{ tab.label }}
+          <span class="bg-gray-100 text-gray-600 py-1 px-2 rounded-full text-xs font-medium">{{ tab.count }}</span>
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="max-w-7xl mx-auto px-6 py-6">
+    <!-- Barra de búsqueda -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex-1">
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+            <input
+              type="text"
+              [(ngModel)]="searchTerm"
+              (input)="onSearchChange()"
+              placeholder="Buscar por nombre, apellidos, email o apodo..."
+              class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          </div>
+        </div>
+        <button 
+          *ngIf="searchTerm"
+          (click)="clearSearch()"
+          class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+          Limpiar
+        </button>
+      </div>
+      
+      <div class="mt-2 text-sm text-gray-600">
+        Mostrando {{ filteredUsers.length }} {{ getTypeLabel().toLowerCase() }}{{ filteredUsers.length !== 1 ? 's' : '' }}
+        <span *ngIf="searchTerm"> que coinciden con "{{ searchTerm }}"</span>
+      </div>
+    </div>
+
+    <!-- Indicador de carga -->
+    <div *ngIf="loading" class="flex items-center justify-center py-12">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <span class="ml-3 text-gray-600">Cargando usuarios...</span>
+    </div>
+
+    <!-- Tabla de usuarios -->
+    <div *ngIf="!loading" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departamento</th>
+              <th *ngIf="activeTab !== 'administradores'" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apodo</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr *ngFor="let user of filteredUsers" class="hover:bg-gray-50">
+              <!-- Usuario (foto + nombre) -->
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0 h-10 w-10">
+                    <img *ngIf="user.foto" [src]="'/' + user.foto" [alt]="user.nombre" 
+                         class="h-10 w-10 rounded-full object-cover">
+                    <div *ngIf="!user.foto" 
+                         class="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
+                      <span class="text-sm font-medium text-white">
+                        {{ user.nombre.charAt(0).toUpperCase() }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900">
+                      {{ user.nombre }} {{ user.apellidos }}
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Email -->
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ user.email }}
+              </td>
+
+              <!-- Departamento -->
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ user.departamento }}
+              </td>
+
+              <!-- Apodo (solo para gestores y visualizadores) -->
+              <td *ngIf="activeTab !== 'administradores'" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <span *ngIf="user.apodo" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                  &#64;{{ user.apodo }}
+                </span>
+                <span *ngIf="!user.apodo" class="text-gray-400 italic">Sin apodo</span>
+              </td>
+
+              <!-- Estado -->
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span [class]="getStatusColor(user)" 
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
+                  <span [class]="user.bloqueado ? 'bg-red-400' : 'bg-green-400'" 
+                        class="w-1.5 h-1.5 rounded-full mr-1.5"></span>
+                  {{ getStatusText(user) }}
+                </span>
+              </td>
+
+              <!-- Acciones -->
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <div class="flex justify-end gap-2">
+                  <!-- Ver detalles -->
+                  <button 
+                    (click)="openEditModal(user)"
+                    class="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Ver/Editar detalles">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                  </button>
+
+                  <!-- Alternar estado -->
+                  <button 
+                    (click)="toggleUserStatus(user)"
+                    [class]="user.bloqueado 
+                      ? 'text-green-600 hover:text-green-900 hover:bg-green-50' 
+                      : 'text-red-600 hover:text-red-900 hover:bg-red-50'"
+                    class="p-2 rounded-lg transition-colors"
+                    [title]="user.bloqueado ? 'Desbloquear usuario' : 'Bloquear usuario'">
+                    <svg *ngIf="user.bloqueado" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
+                    </svg>
+                    <svg *ngIf="!user.bloqueado" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                  </button>
+
+                  <!-- Eliminar -->
+                  <button 
+                    (click)="openDeleteModal(user)"
+                    class="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Eliminar usuario">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mensaje cuando no hay usuarios -->
+      <div *ngIf="filteredUsers.length === 0" class="text-center py-12">
+        <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+        </svg>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">
+          No se encontraron {{ getTypeLabel().toLowerCase() }}s
+        </h3>
+        <p class="text-gray-500">
+          <span *ngIf="searchTerm">No hay usuarios que coincidan con tu búsqueda.</span>
+          <span *ngIf="!searchTerm">No hay {{ getTypeLabel().toLowerCase() }}s registrados en el sistema.</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Paginación -->
+    <div *ngIf="!loading && totalPages > 1" class="mt-6 flex items-center justify-between">
+      <div class="text-sm text-gray-700">
+        Página {{ currentPage + 1 }} de {{ totalPages }}
+      </div>
+      <div class="flex gap-2">
+        <button 
+          (click)="previousPage()"
+          [disabled]="currentPage === 0"
+          class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+          Anterior
+        </button>
+        <button 
+          (click)="nextPage()"
+          [disabled]="currentPage >= totalPages - 1"
+          class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+          Siguiente
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de edición -->
+<div *ngIf="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" (click)="closeEditModal()">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+    <!-- Header del modal -->
+    <div class="flex items-center justify-between p-6 border-b border-gray-200">
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900">Editar {{ getTypeLabel() }}</h3>
+        <p class="text-sm text-gray-600">Modifica la información del usuario</p>
+      </div>
+      <button (click)="closeEditModal()" class="text-gray-400 hover:text-gray-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Contenido del modal -->
+    <div class="p-6">
+      <form (ngSubmit)="saveUserChanges()" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Nombre -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+            <input 
+              type="text"
+              [(ngModel)]="editForm.nombre"
+              name="nombre"
+              [readonly]="!canEditField('nombre')"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100">
+          </div>
+
+          <!-- Apellidos -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Apellidos</label>
+            <input 
+              type="text"
+              [(ngModel)]="editForm.apellidos"
+              name="apellidos"
+              [readonly]="!canEditField('apellidos')"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100">
+          </div>
+        </div>
+
+        <!-- Email (solo lectura) -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+          <input 
+            type="email"
+            [value]="editForm.email"
+            readonly
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500">
+          <p class="text-xs text-gray-500 mt-1">El email no se puede modificar</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Departamento -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Departamento</label>
+            <input 
+              type="text"
+              [(ngModel)]="editForm.departamento"
+              name="departamento"
+              [readonly]="!canEditField('departamento')"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          </div>
+
+          <!-- Apodo (si aplica) -->
+          <div *ngIf="activeTab !== 'administradores'">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Apodo</label>
+            <input 
+              type="text"
+              [(ngModel)]="editForm.apodo"
+              name="apodo"
+              [readonly]="!canEditField('apodo')"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Sin apodo">
+          </div>
+        </div>
+
+        <!-- Estado -->
+        <div>
+          <label class="flex items-center">
+            <input 
+              type="checkbox"
+              [(ngModel)]="editForm.bloqueado"
+              name="bloqueado"
+              class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+            <span class="ml-2 text-sm font-medium text-gray-700">Usuario bloqueado</span>
+          </label>
+          <p class="text-xs text-gray-500 mt-1">Los usuarios bloqueados no pueden acceder al sistema</p>
+        </div>
+
+        <!-- Botones del modal -->
+        <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+          <button 
+            type="button"
+            (click)="closeEditModal()"
+            class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
+            Cancelar
+          </button>
+          <button 
+            type="submit"
+            [disabled]="processing"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2">
+            <svg *ngIf="processing" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ processing ? 'Guardando...' : 'Guardar Cambios' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmación de eliminación -->
+<div *ngIf="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" (click)="closeDeleteModal()">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md" (click)="$event.stopPropagation()">
+    <!-- Header del modal -->
+    <div class="bg-red-600 text-white p-6 rounded-t-xl">
+      <h3 class="text-lg font-semibold">Confirmar Eliminación</h3>
+      <p class="text-red-100 text-sm mt-1">Esta acción no se puede deshacer</p>
+    </div>
+
+    <!-- Contenido del modal -->
+    <div class="p-6">
+      <div class="flex items-center justify-center mb-4">
+        <div class="bg-red-100 rounded-full p-3">
+          <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+          </svg>
+        </div>
+      </div>
+
+      <div *ngIf="userToDelete" class="text-center mb-6">
+        <h4 class="text-lg font-semibold text-gray-900 mb-2">¿Eliminar este {{ getTypeLabel().toLowerCase() }}?</h4>
+        <div class="bg-gray-50 p-4 rounded-lg mb-4">
+          <div class="flex items-center justify-center gap-3">
+            <img *ngIf="userToDelete.foto" [src]="'/' + userToDelete.foto" [alt]="userToDelete.nombre" 
+                 class="w-12 h-12 rounded-full object-cover">
+            <div *ngIf="!userToDelete.foto" 
+                 class="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">
+              <span class="text-white font-semibold">{{ userToDelete.nombre.charAt(0).toUpperCase() }}</span>
+            </div>
+            <div class="text-left">
+              <p class="font-semibold text-gray-900">{{ userToDelete.nombre }} {{ userToDelete.apellidos }}</p>
+              <p class="text-sm text-gray-600">{{ userToDelete.email }}</p>
+            </div>
+          </div>
+        </div>
+        <p class="text-gray-500 text-sm">Se eliminarán todos los datos asociados a este usuario.</p>
+      </div>
+
+      <!-- Botones del modal -->
+      <div class="flex justify-end gap-3">
+        <button 
+          (click)="closeDeleteModal()"
+          [disabled]="processing"
+          class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-colors">
+          Cancelar
+        </button>
+        <button 
+          (click)="confirmDelete()"
+          [disabled]="processing"
+          class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center gap-2">
+          <svg *ngIf="processing" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          {{ processing ? 'Eliminando...' : 'Eliminar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

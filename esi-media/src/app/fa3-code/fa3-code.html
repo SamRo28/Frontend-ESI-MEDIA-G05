@@ -1,0 +1,69 @@
+<div class="verification-container">
+  <button class="back-button">
+    ← Volver al inicio
+  </button>
+
+  <div class="verification-card">
+    <div class="lock-icon">🔐</div>
+    
+    <h1 class="title">Verificación de Correo</h1>
+    
+    <p class="subtitle">
+      Introduce el código de 6 dígitos que hemos enviado a tu correo electrónico
+    </p>
+
+    <div class="code-inputs">
+      <input 
+        type="text" 
+        class="code-input" 
+        maxlength="1" 
+        #input1
+        (input)="onInput($event, input1, input2)"
+        (keydown)="onKeyDown($event, null, input1)">
+      <input 
+        type="text" 
+        class="code-input" 
+        maxlength="1"
+        #input2
+        (input)="onInput($event, input2, input3)"
+        (keydown)="onKeyDown($event, input1, input2)">
+      <input 
+        type="text" 
+        class="code-input" 
+        maxlength="1"
+        #input3
+        (input)="onInput($event, input3, input4)"
+        (keydown)="onKeyDown($event, input2, input3)">
+      <input 
+        type="text" 
+        class="code-input" 
+        maxlength="1"
+        #input4
+        (input)="onInput($event, input4, input5)"
+        (keydown)="onKeyDown($event, input3, input4)">
+      <input 
+        type="text" 
+        class="code-input" 
+        maxlength="1"
+        #input5
+        (input)="onInput($event, input5, input6)"
+        (keydown)="onKeyDown($event, input4, input5)">
+      <input 
+        type="text" 
+        class="code-input" 
+        maxlength="1"
+        #input6
+        (input)="onInput($event, input6, null)"
+        (keydown)="onKeyDown($event, input5, input6)">
+    </div>
+
+    <button class="verify-button" (click)="verifyCode()">
+      Verificar Código
+    </button>
+
+    <div class="resend-section">
+      <span class="resend-text">¿No recibiste el código?</span>
+      <a href="#" class="resend-link">Reenviar código</a>
+    </div>
+  </div>
+</div>
