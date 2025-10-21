@@ -14,23 +14,14 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
   if (req.url.includes('localhost:8080/gestor')) {
     
     // Determinar qué token usar según el endpoint
-    let mockToken: string;
+    let mockToken: string = sessionStorage.getItem('token') || '';
     
-    if (req.url.includes('/audio/subir')) {
-      // Token para gestor de audio (nueva notación)
-      mockToken = 'mock-token-audio-new';
-    } else if (req.url.includes('/video/subir')) {
-      // Token para gestor de video (nueva notación)  
-      mockToken = 'mock-token-video-new';
-    } else {
-      // Token por defecto (audio)
-      mockToken = 'mock-token-audio-new';
-    }
+    
     
     // Agregar el header de autorización
     const authReq = req.clone({
       setHeaders: {
-        Authorization: `Bearer ${mockToken}`
+        Authorization: `${mockToken}`
       }
     });
     
