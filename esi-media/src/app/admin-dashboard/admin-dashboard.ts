@@ -1,8 +1,9 @@
-import { Component, OnInit, ChangeDetectorRef, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, Inject, PLATFORM_ID, NgZone } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AdminService, Usuario } from '../services/admin.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -28,6 +29,20 @@ export class AdminDashboardComponent implements OnInit {
     email: '',
     foto: ''
   };
+  
+  // Modal de confirmación para eliminar usuario
+  showDeleteModal = false;
+  usuarioAEliminar: Usuario | null = null;
+  
+  // Modal de edición de usuario
+  showEditUserModal = false;
+  editingUser: Usuario | null = null;
+  editUserForm: any = {};
+  
+  // Estados para doble confirmación
+  showEditConfirmation = false;
+  showUploadConfirmation = false;
+  showCreateConfirmation = false;
   
   // Filtros
   filtroRol = 'Todos'; // 'Todos', 'Administrador', 'Gestor', 'Visualizador'
@@ -55,6 +70,18 @@ export class AdminDashboardComponent implements OnInit {
   
   // Propiedades para manejar errores de validación
   fieldsWithError: string[] = [];
+  
+  // Validación de contraseña en tiempo real
+  passwordValidation = {
+    minLength: false,
+    hasUpperCase: false,
+    hasLowerCase: false,
+    hasNumber: false,
+    hasSpecialChar: false,
+    noStartsWithUpperCase: false,
+    passwordsMatch: false,
+    notContainsUsername: true // Por defecto true hasta que se ingrese un nombre
+  };
 
   // Fotos de perfil disponibles
   fotosDisponibles = [
@@ -68,15 +95,23 @@ export class AdminDashboardComponent implements OnInit {
     private adminService: AdminService,
     private cdr: ChangeDetectorRef,
     private router: Router,
+    private ngZone: NgZone,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
 
   ngOnInit() {
-    // Cargar información del usuario actual desde localStorage (solo en el navegador)
+    // Cargar información del usuario actual desde sessionStorage (solo en el navegador)
     if (isPlatformBrowser(this.platformId)) {
-      const userStr = localStorage.getItem('currentUser');
+      const userStr = sessionStorage.getItem('user');
       if (userStr) {
-        this.currentUser = JSON.parse(userStr);
+        try {
+          this.currentUser = JSON.parse(userStr);
+          console.log('✅ Usuario cargado desde sessionStorage:', this.currentUser);
+        } catch (e) {
+          console.error('❌ Error al parsear usuario desde sessionStorage:', e);
+        }
+      } else {
+        console.warn('⚠️ No se encontró usuario en sessionStorage');
       }
     }
     
@@ -84,6 +119,9 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   loadUsuarios() {
+    // Limpiar cualquier mensaje de error anterior
+    this.errorMessage = '';
+    
     this.adminService.getUsuarios().subscribe({
       next: (usuarios) => {
         this.usuarios = usuarios;
@@ -92,6 +130,13 @@ export class AdminDashboardComponent implements OnInit {
       error: (error: any) => {
         console.error('Error al cargar usuarios:', error);
         this.errorMessage = 'Error al cargar la lista de usuarios';
+        
+        // Intentar recargar después de un tiempo si hay un error temporal
+        setTimeout(() => {
+          if (this.usuarios.length === 0) {
+            this.loadUsuarios();
+          }
+        }, 3000);
       }
     });
   }
@@ -159,14 +204,24 @@ export class AdminDashboardComponent implements OnInit {
       return;
     }
 
-    // Validar contraseñas coincidentes
-    console.log('✅ COMPONENTE: Validación contraseñas - contrasenia:', this.newUser.contrasenia);
-    console.log('✅ COMPONENTE: Validación contraseñas - repetirContrasenia:', this.newUser.repetirContrasenia);
+    // Validar política de contraseñas
+    this.validatePassword();
     
-    if (this.newUser.contrasenia !== this.newUser.repetirContrasenia) {
-      console.log('❌ COMPONENTE: Validación falló - contraseñas no coinciden');
+    if (!this.isPasswordValid()) {
+      console.log('❌ COMPONENTE: Validación falló - política de contraseñas no cumplida');
       this.fieldsWithError = ['contrasenia', 'repetirContrasenia'];
-      this.errorMessage = '❌ Las contraseñas no coinciden. Verifique que ambas contraseñas sean idénticas.';
+      
+      const errores = [];
+      if (!this.passwordValidation.minLength) errores.push('mínimo 8 caracteres');
+      if (!this.passwordValidation.noStartsWithUpperCase) errores.push('no debe comenzar con mayúscula');
+      if (!this.passwordValidation.hasUpperCase) errores.push('al menos una letra mayúscula');
+      if (!this.passwordValidation.hasLowerCase) errores.push('al menos una letra minúscula');
+      if (!this.passwordValidation.hasNumber) errores.push('al menos un número');
+      if (!this.passwordValidation.hasSpecialChar) errores.push('al menos un carácter especial (!@#$%^&*...)');
+      if (!this.passwordValidation.passwordsMatch) errores.push('las contraseñas deben coincidir');
+      if (!this.passwordValidation.notContainsUsername) errores.push('no debe contener el nombre de usuario');
+      
+      this.errorMessage = `❌ La contraseña no cumple con la política de seguridad: ${errores.join(', ')}`;
       return;
     }
 
@@ -247,26 +302,29 @@ export class AdminDashboardComponent implements OnInit {
         // Extraer el nombre de la respuesta del servidor o usar el del formulario
         const nombreCreado = response?.nombre || this.newUser.nombre;
         
-        // CAMBIOS CRÍTICOS DE ESTADO
-        console.log('🔄 CAMBIANDO ESTADOS:');
-        console.log('  isCreating:', this.isCreating, '-> false');
-        console.log('  isSuccess:', this.isSuccess, '-> true');
-        
-        this.isCreating = false;
-        this.isSuccess = true;
-        
-        // Mensaje de éxito específico por rol
-        const tipoUsuario = this.newUser.rol === 'Gestor' ? 'Gestor de Contenido' : 'Administrador';
-        this.successMessage = `¡${tipoUsuario} "${nombreCreado}" creado exitosamente!`;
-        
-        console.log('✅ ESTADOS ACTUALIZADOS:');
-        console.log('  isCreating:', this.isCreating);
-        console.log('  isSuccess:', this.isSuccess);
-        console.log('  successMessage:', this.successMessage);
-        
-        // FORZAR DETECCIÓN DE CAMBIOS
-        this.cdr.detectChanges();
-        console.log('🎉 Detección de cambios ejecutada - debería mostrar pantalla de éxito');
+        // Ejecutar cambios de estado dentro de la zona de Angular
+        this.ngZone.run(() => {
+          // CAMBIOS CRÍTICOS DE ESTADO
+          console.log('🔄 CAMBIANDO ESTADOS dentro de NgZone:');
+          console.log('  isCreating:', this.isCreating, '-> false');
+          console.log('  isSuccess:', this.isSuccess, '-> true');
+          
+          this.isCreating = false;
+          this.isSuccess = true;
+          
+          // Mensaje de éxito específico por rol
+          const tipoUsuario = this.newUser.rol === 'Gestor' ? 'Gestor de Contenido' : 'Administrador';
+          this.successMessage = `¡${tipoUsuario} "${nombreCreado}" creado exitosamente!`;
+          
+          console.log('✅ ESTADOS ACTUALIZADOS:');
+          console.log('  isCreating:', this.isCreating);
+          console.log('  isSuccess:', this.isSuccess);
+          console.log('  successMessage:', this.successMessage);
+          
+          // FORZAR DETECCIÓN DE CAMBIOS
+          this.cdr.detectChanges();
+          console.log('🎉 Detección de cambios ejecutada - debería mostrar pantalla de éxito');
+        });
       },
       error: (error: any) => {
         console.error('❌ Error completo al crear usuario:', error);
@@ -275,10 +333,13 @@ export class AdminDashboardComponent implements OnInit {
         console.log('🌐 URL completa:', error.url);
         
         clearTimeout(backupTimeout); // Cancelar timeout de respaldo
-        this.isCreating = false;
-        this.cdr.detectChanges(); // Forzar actualización en errores también
         
-        let mensajeError = 'Error desconocido';
+        // Ejecutar cambios de error dentro de la zona de Angular
+        this.ngZone.run(() => {
+          this.isCreating = false;
+          this.cdr.detectChanges(); // Forzar actualización en errores también
+        
+          let mensajeError = 'Error desconocido';
         
         // Detectar específicamente errores de CORS o conexión
         if (error.status === 0 && error.error?.message?.includes('Failed to fetch')) {
@@ -321,6 +382,7 @@ export class AdminDashboardComponent implements OnInit {
         setTimeout(() => {
           this.errorMessage = '';
         }, 10000);
+        }); // Cierre de ngZone.run()
       }
     });
   }
@@ -398,6 +460,54 @@ export class AdminDashboardComponent implements OnInit {
 
   getUsuariosBloqueados(): number {
     return this.usuarios.filter(u => u.bloqueado).length;
+  }
+
+  // Validación de contraseña en tiempo real
+  validatePassword() {
+    const password = this.newUser.contrasenia;
+    const confirmPassword = this.newUser.repetirContrasenia;
+    const nombre = this.newUser.nombre.trim();
+    
+    // Validar longitud mínima (8 caracteres)
+    this.passwordValidation.minLength = password.length >= 8;
+    
+    // Validar que tenga al menos una mayúscula
+    this.passwordValidation.hasUpperCase = /[A-Z]/.test(password);
+    
+    // Validar que tenga al menos una minúscula
+    this.passwordValidation.hasLowerCase = /[a-z]/.test(password);
+    
+    // Validar que tenga al menos un número
+    this.passwordValidation.hasNumber = /[0-9]/.test(password);
+    
+    // Validar que tenga al menos un carácter especial
+    this.passwordValidation.hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+    
+    // Validar que NO empiece con mayúscula
+    this.passwordValidation.noStartsWithUpperCase = password.length > 0 && !/^[A-Z]/.test(password);
+    
+    // Validar que las contraseñas coincidan
+    this.passwordValidation.passwordsMatch = password.length > 0 && password === confirmPassword;
+    
+    // Validar que la contraseña NO contenga el nombre de usuario (insensible a mayúsculas)
+    if (nombre.length > 0 && password.length > 0) {
+      this.passwordValidation.notContainsUsername = !password.toLowerCase().includes(nombre.toLowerCase());
+    } else {
+      // Si no hay nombre o contraseña, consideramos válido este criterio
+      this.passwordValidation.notContainsUsername = true;
+    }
+  }
+
+  // Verificar si la contraseña es válida
+  isPasswordValid(): boolean {
+    return this.passwordValidation.minLength &&
+           this.passwordValidation.hasUpperCase &&
+           this.passwordValidation.hasLowerCase &&
+           this.passwordValidation.hasNumber &&
+           this.passwordValidation.hasSpecialChar &&
+           this.passwordValidation.noStartsWithUpperCase &&
+           this.passwordValidation.passwordsMatch &&
+           this.passwordValidation.notContainsUsername;
   }
 
   // Métodos de filtrado
@@ -483,8 +593,8 @@ export class AdminDashboardComponent implements OnInit {
         // Actualizar currentUser con la respuesta del servidor
         this.currentUser = { ...this.currentUser, ...response };
         
-        // Actualizar también en localStorage
-        localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+        // Actualizar también en sessionStorage (key 'user')
+        sessionStorage.setItem('user', JSON.stringify(this.currentUser));
         
         this.successMessage = 'Perfil actualizado correctamente en la base de datos';
         setTimeout(() => {
@@ -500,9 +610,14 @@ export class AdminDashboardComponent implements OnInit {
 
   logout() {
     if (isPlatformBrowser(this.platformId)) {
-      // Limpiar localStorage
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('sessionToken');
+      // Limpiar sessionStorage (usando las keys correctas)
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('email');
+      sessionStorage.removeItem('currentUserClass');
+      
+      // Limpiar currentUser del componente
+      this.currentUser = null;
       
       // Mostrar mensaje y redirigir
       this.successMessage = 'Sesión cerrada';
@@ -512,4 +627,473 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
+  // Métodos para la eliminación de usuarios
+  openDeleteModal(usuario: Usuario) {
+    this.usuarioAEliminar = usuario;
+    this.showDeleteModal = true;
+  }
+
+  closeDeleteModal() {
+    this.showDeleteModal = false;
+    this.usuarioAEliminar = null;
+    this.isDeleting = false; // Asegurar que el flag de eliminación se resetea
+    
+    // Forzar la detección de cambios para asegurar que Angular actualiza la vista
+    this.cdr.detectChanges();
+    
+    // Doble comprobación para asegurar que el modal se cierra
+    setTimeout(() => {
+      if (this.showDeleteModal) {
+        console.log("Forzando cierre del modal");
+        this.showDeleteModal = false;
+        this.cdr.detectChanges();
+      }
+    }, 100);
+  }
+
+  // Variable para evitar múltiples clics
+  isDeleting = false;
+  isUpdating = false;
+
+  deleteUser() {
+    if (!this.usuarioAEliminar || this.isDeleting) return;
+    
+    const userId = this.usuarioAEliminar.id; 
+    const nombreUsuario = this.usuarioAEliminar.nombre;
+    const apellidosUsuario = this.usuarioAEliminar.apellidos;
+    
+    if (!userId) {
+      this.errorMessage = 'Error: ID de usuario no disponible';
+      this.closeDeleteModal();
+      return;
+    }
+    
+    // Activar flag para prevenir múltiples clics
+    this.isDeleting = true;
+    
+    // CAMBIO IMPORTANTE: Cerrar el modal ANTES de la llamada al API
+    // Esto garantiza que el modal se cierre independientemente de la respuesta del servidor
+    // Guardar referencia local del usuario y sus datos
+    const tempId = userId;
+    const tempNombre = nombreUsuario;
+    const tempApellidos = apellidosUsuario;
+    
+    // Cerrar el modal inmediatamente
+    this.showDeleteModal = false;
+    
+    // Realizar la llamada al backend para eliminar el usuario
+    this.adminService.deleteUser(tempId).subscribe({
+      next: (response: any) => {
+        console.log('Usuario eliminado correctamente:', response);
+        
+        // Actualizar la lista después de la eliminación exitosa
+        this.usuarios = this.usuarios.filter(u => u.id !== tempId);
+        this.aplicarFiltros();
+        
+        // Limpiar la referencia al usuario eliminado
+        this.usuarioAEliminar = null;
+        
+        // Mostrar mensaje de éxito
+        this.successMessage = `Usuario ${tempNombre} ${tempApellidos} eliminado correctamente`;
+        
+        // Limpiar mensaje después de unos segundos
+        setTimeout(() => {
+          this.successMessage = '';
+        }, 3000);
+      },
+      error: (error) => {
+        console.error('Error al eliminar usuario:', error);
+        
+        // Asegurar que el modal esté cerrado y la referencia limpia
+        this.usuarioAEliminar = null;
+        
+        // Mostrar mensaje de error
+        this.errorMessage = `Error al eliminar el usuario ${tempNombre}. Inténtelo de nuevo.`;
+        
+        // Recargar la lista de usuarios para asegurarnos de que está actualizada
+        this.loadUsuarios();
+        
+        // Limpiar mensaje después de unos segundos
+        setTimeout(() => {
+          this.errorMessage = '';
+        }, 5000);
+      },
+      complete: () => {
+        // Restablecer flag de eliminación siempre
+        this.isDeleting = false;
+        
+        // Forzar detección de cambios
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // ============================================
+  // MÉTODOS DE EDICIÓN DE USUARIOS
+  // ============================================
+
+  openEditUserModal(usuario: Usuario) {
+    this.editingUser = usuario;
+    
+    // Mostrar modal inmediatamente con datos básicos
+    this.showEditUserModal = true;
+    this.showEditConfirmation = false;
+    this.resetMessages();
+    
+    // Preparar formulario con datos básicos primero
+    this.editUserForm = {
+      id: usuario.id,
+      nombre: usuario.nombre,
+      apellidos: usuario.apellidos,
+      email: usuario.email,
+      foto: usuario.foto,
+      departamento: usuario.departamento || '',
+      rol: usuario.rol || 'Visualizador',
+      bloqueado: usuario.bloqueado,
+      alias: '',
+      especialidad: '',
+      descripcion: '',
+      tipocontenidovideooaudio: '',
+      fecharegistro: null,
+      fechanac: '',
+      vip: false
+    };
+    
+    // Cargar datos específicos según el tipo de usuario
+    this.loadUserDetails(usuario.id!, usuario.rol || 'Visualizador');
+  }
+
+  closeEditUserModal() {
+    this.showEditUserModal = false;
+    this.showEditConfirmation = false;
+    this.editingUser = null;
+    this.editUserForm = {};
+    this.resetMessages();
+  }
+
+  // NUEVO: Cargar detalles completos del usuario según su tipo
+  private loadUserDetails(userId: string, rol: string) {
+    console.log(`🔍 Cargando detalles completos para usuario ${userId} con rol ${rol}`);
+    console.log('🎯 NUEVA ESTRATEGIA: Usando endpoints genéricos /users/${id}');
+    
+    switch (rol) {
+      case 'Administrador':
+        console.log('🌐 Conectando con endpoint: /users/' + userId);
+        this.adminService.getAdministradorById(userId).subscribe({
+          next: (response) => this.processUserDetails(response, 'Administrador'),
+          error: (error) => this.handleUserDetailsError(error, '/users', 'Administrador')
+        });
+        break;
+      case 'Gestor':
+        console.log('🌐 Conectando con endpoint: /users/' + userId);
+        this.adminService.getGestorById(userId).subscribe({
+          next: (response) => this.processUserDetails(response, 'Gestor'),
+          error: (error) => this.handleUserDetailsError(error, '/users', 'Gestor')
+        });
+        break;
+      case 'Visualizador':
+      default:
+        console.log('🌐 Conectando con endpoint: /users/' + userId);
+        this.adminService.getVisualizadorById(userId).subscribe({
+          next: (response) => this.processUserDetails(response, 'Visualizador'),
+          error: (error) => this.handleUserDetailsError(error, '/users', 'Visualizador')
+        });
+        break;
+    }
+  }
+
+  private processUserDetails(response: any, rol: string) {
+    console.log(`✅ Respuesta del backend para ${rol}:`, response);
+    
+    let userDetails: any;
+    
+    // ESTRATEGIA SIMPLIFICADA: Asumir que la respuesta ES directamente los datos del usuario
+    if (response && typeof response === 'object') {
+      userDetails = response;
+      console.log('📦 Usando datos directos del usuario:', userDetails);
+    } else {
+      console.warn('⚠️ Respuesta inesperada:', response);
+      this.errorMessage = 'Error: no se pudieron cargar los datos del usuario';
+      return;
+    }
+    
+    console.log('📋 Campos disponibles en la respuesta:', Object.keys(userDetails));
+    
+    // Actualizar el formulario con TODOS los datos disponibles
+    this.editUserForm = {
+      ...this.editUserForm,
+      ...userDetails
+    };
+    
+    // Mapeos específicos para campos que pueden tener nombres diferentes
+    if (userDetails.campoespecializacion) {
+      this.editUserForm.especialidad = userDetails.campoespecializacion;
+    }
+    
+    // 🔧 ARREGLO DE FECHAS: Convertir fechas al formato YYYY-MM-DD para inputs HTML
+    if (userDetails.fechaNac || userDetails.fechanac) {
+      const fechaNac = userDetails.fechaNac || userDetails.fechanac;
+      this.editUserForm.fechanac = this.formatDateForInput(fechaNac);
+      console.log('📅 Fecha nacimiento procesada:', fechaNac, '→', this.editUserForm.fechanac);
+    }
+    
+    if (userDetails.fechaRegistro || userDetails.fecharegistro) {
+      const fechaRegistro = userDetails.fechaRegistro || userDetails.fecharegistro;
+      this.editUserForm.fecharegistro = this.formatDateForInput(fechaRegistro);
+      console.log('📅 Fecha registro procesada:', fechaRegistro, '→', this.editUserForm.fecharegistro);
+    }
+    
+    if (userDetails.alias) {
+      this.editUserForm.alias = userDetails.alias;
+    }
+    
+    console.log('📝 Formulario final actualizado:', this.editUserForm);
+    this.cdr.detectChanges(); // Forzar actualización de la vista
+  }
+
+  // 🔧 NUEVO: Método para formatear fechas para inputs HTML
+  private formatDateForInput(dateValue: any): string {
+    if (!dateValue) return '';
+    
+    try {
+      let date: Date;
+      
+      if (dateValue instanceof Date) {
+        date = dateValue;
+      } else if (typeof dateValue === 'string') {
+        date = new Date(dateValue);
+      } else if (typeof dateValue === 'number') {
+        date = new Date(dateValue);
+      } else {
+        console.warn('⚠️ Formato de fecha no reconocido:', dateValue);
+        return '';
+      }
+      
+      if (Number.isNaN(date.getTime())) {
+        console.warn('⚠️ Fecha inválida:', dateValue);
+        return '';
+      }
+      
+      // Formatear como YYYY-MM-DD para input[type="date"]
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      console.error('❌ Error formateando fecha:', dateValue, error);
+      return '';
+    }
+  }
+
+  private handleUserDetailsError(error: any, endpointUrl: string, rol: string) {
+    console.error(`❌ Error cargando detalles del ${rol}:`, error);
+    console.error('🔍 URL que falló:', endpointUrl);
+    console.error('🔍 Status del error:', error.status);
+    console.error('🔍 Mensaje del error:', error.message);
+    
+    // Si falla, mantenemos los datos básicos que ya tenemos
+    this.errorMessage = `No se pudieron cargar todos los detalles del usuario. Endpoint: ${endpointUrl}`;
+    
+    // Limpiar el mensaje después de unos segundos
+    setTimeout(() => {
+      this.errorMessage = '';
+    }, 8000);
+  }
+
+  // Primer paso: mostrar confirmación
+  confirmUserChanges() {
+    // Verificar si tenemos token de autorización
+    this.checkAuthToken();
+    
+    // Validar campos obligatorios según el tipo de usuario
+    let requiredFields: string[] = ['nombre', 'apellidos', 'email'];
+    
+    // Agregar campos específicos según el rol
+    if (this.editUserForm.rol === 'Administrador') {
+      requiredFields.push('departamento');
+    } else if (this.editUserForm.rol === 'Gestor') {
+      requiredFields.push('alias');
+    }
+    // Para Visualizadores, solo nombre, apellidos y email son obligatorios
+
+    const emptyFields = requiredFields.filter(field => !this.editUserForm[field]?.trim());
+    
+    if (emptyFields.length > 0) {
+      this.errorMessage = `Complete los siguientes campos obligatorios: ${emptyFields.join(', ')}`;
+      return;
+    }
+
+    // Mostrar confirmación
+    this.showEditConfirmation = true;
+    this.resetMessages();
+  }
+
+  // Segundo paso: confirmar cambios
+  async saveUserChanges() {
+    if (!this.editingUser || this.isUpdating) return;
+
+    this.isUpdating = true;
+    this.resetMessages();
+
+    try {
+      // 🔧 ESTRATEGIA SIMPLIFICADA: Enviar solo campos esenciales y validados
+      console.log('📋 Formulario completo antes de enviar:', this.editUserForm);
+      
+      // Preparar datos base (campos que sabemos que existen en todos los DTOs)
+      let updateData: any = {
+        nombre: this.editUserForm.nombre,
+        apellidos: this.editUserForm.apellidos,
+        email: this.editUserForm.email,
+        foto: this.editUserForm.foto || 'perfil1.png' // Valor por defecto
+      };
+      
+      // Agregar SOLO los campos específicos que están en los DTOs del backend
+      if (this.editUserForm.rol === 'Administrador') {
+        if (this.editUserForm.departamento) {
+          updateData.departamento = this.editUserForm.departamento;
+        }
+        // ✅ Agregar campo bloqueado para Administradores
+        updateData.bloqueado = this.editUserForm.bloqueado || false;
+        console.log('👤 Datos de Administrador completos:', updateData);
+        
+      } else if (this.editUserForm.rol === 'Gestor') {
+        if (this.editUserForm.alias) {
+          updateData.alias = this.editUserForm.alias;
+        }
+        if (this.editUserForm.especialidad) {
+          // El DTO del backend usa "campoespecializacion"
+          updateData.campoespecializacion = this.editUserForm.especialidad;
+        }
+        if (this.editUserForm.descripcion) {
+          updateData.descripcion = this.editUserForm.descripcion;
+        }
+        if (this.editUserForm.tipocontenidovideooaudio) {
+          updateData.tipocontenidovideooaudio = this.editUserForm.tipocontenidovideooaudio;
+        }
+        // ✅ Agregar campo bloqueado para Gestores
+        updateData.bloqueado = this.editUserForm.bloqueado || false;
+        console.log('👤 Datos de Gestor completos:', updateData);
+        
+      } else if (this.editUserForm.rol === 'Visualizador') {
+        if (this.editUserForm.alias) {
+          updateData.alias = this.editUserForm.alias;
+        }
+        if (this.editUserForm.fechanac) {
+          // Convertir a Date object
+          updateData.fechanac = new Date(this.editUserForm.fechanac);
+        }
+        // ✅ AGREGAR VIP para Visualizadores (campo importante que faltaba)
+        if (this.editUserForm.vip !== undefined) {
+          updateData.vip = this.editUserForm.vip;
+        }
+        // ✅ Agregar campo bloqueado para Visualizadores
+        updateData.bloqueado = this.editUserForm.bloqueado || false;
+        console.log('👤 Datos de Visualizador completos:', updateData);
+      }
+
+      // Remover campos undefined/null para evitar errores en el backend
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] === undefined || updateData[key] === null || updateData[key] === '') {
+          delete updateData[key];
+        }
+      });
+
+      console.log('🚀 Datos FINALES (limpiados) a enviar:', updateData);
+      console.log('🎯 Rol:', this.editUserForm.rol);
+      console.log('📊 Cantidad de campos:', Object.keys(updateData).length);
+
+      // SIMPLIFICADO: Usar un solo método para todos los tipos de usuario
+      let updatedUser: any;
+      updatedUser = await firstValueFrom(this.adminService.updateUser(this.editUserForm.id, updateData));
+      
+      console.log('✅ Respuesta de actualización:', updatedUser);
+      
+      // ESTRATEGIA SIMPLIFICADA: Asumir que la respuesta ES directamente los datos actualizados
+      let userData: any;
+      if (updatedUser && typeof updatedUser === 'object') {
+        userData = updatedUser;
+        console.log('📦 Usando datos directos de la respuesta:', userData);
+      } else {
+        console.warn('⚠️ Respuesta inesperada, usando datos enviados como fallback');
+        userData = updateData; // Usar los datos que enviamos como fallback
+      }
+      
+      if (userData) {
+        // Actualizar el usuario en la lista local
+        const index = this.usuarios.findIndex(u => u.id === this.editingUser?.id);
+        if (index !== -1) {
+          this.usuarios[index] = { ...this.usuarios[index], ...userData };
+          this.aplicarFiltros();
+        }
+
+        this.successMessage = `Usuario ${this.editUserForm.nombre} ${this.editUserForm.apellidos} actualizado correctamente`;
+        
+        // Mantener el modal abierto pero mostrar los datos actualizados
+        this.editUserForm = {
+          ...this.editUserForm,
+          ...userData
+        };
+        
+        // Mapear campos específicos si es necesario
+        if (this.editUserForm.rol === 'Gestor' && userData.campoespecializacion) {
+          this.editUserForm.especialidad = userData.campoespecializacion;
+        }
+        
+        this.showEditConfirmation = false;
+
+        // Limpiar mensaje después de 3 segundos
+        setTimeout(() => {
+          this.successMessage = '';
+        }, 3000);
+      }
+
+    } catch (error: any) {
+      console.error('❌ Error actualizando usuario:', error);
+      console.error('🔍 Detalles del error:', error.error);
+      console.error('🔍 Status:', error.status);
+      this.errorMessage = error.error?.message || 'Error al actualizar el usuario';
+      this.showEditConfirmation = false;
+    } finally {
+      this.isUpdating = false;
+    }
+  }
+
+  cancelUserChanges() {
+    this.showEditConfirmation = false;
+  }
+
+  getUserTypeDisplayName(rol: string): string {
+    switch (rol) {
+      case 'Administrador':
+        return 'Administrador';
+      case 'Gestor':
+        return 'Gestor de Contenido';
+      case 'Visualizador':
+      default:
+        return 'Visualizador';
+    }
+  }
+
+  // ============================================
+  // MÉTODO PARA VERIFICAR TOKEN DE AUTENTICACIÓN
+  // ============================================
+  
+  private checkAuthToken() {
+    if (isPlatformBrowser(this.platformId)) {
+      const token = sessionStorage.getItem('authToken') || 
+                    localStorage.getItem('authToken') || 
+                    sessionStorage.getItem('token');
+      
+      if (token) {
+        console.log('✅ Token de autorización encontrado:', token.substring(0, 20) + '...');
+      } else {
+        console.warn('⚠️ No se encontró token de autorización');
+        // Generar token de prueba temporal si es necesario
+        const testToken = 'test-token-' + Date.now();
+        sessionStorage.setItem('authToken', testToken);
+        console.log('🧪 Token de prueba generado:', testToken);
+      }
+    }
+  }
 }

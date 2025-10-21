@@ -80,12 +80,19 @@
             </div>
           </div>
 
-          <!-- Mensaje de éxito en la vista principal -->
+          <!-- Mensajes de éxito/error en la vista principal -->
           <div *ngIf="successMessage && !showForm" class="mb-3 p-3 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-lg flex items-start gap-3">
             <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
             </svg>
             <span>{{ successMessage }}</span>
+          </div>
+          
+          <div *ngIf="errorMessage && !showForm" class="mb-3 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg flex items-start gap-3">
+            <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+            </svg>
+            <span>{{ errorMessage }}</span>
           </div>
 
           <!-- Filtros y Búsqueda -->
@@ -213,12 +220,12 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                           </svg>
                         </button>
-                        <button class="p-1 hover:bg-gray-100 rounded" title="Editar">
+                        <button (click)="openEditUserModal(usuario)" class="p-1 hover:bg-gray-100 rounded" title="Editar">
                           <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                           </svg>
                         </button>
-                        <button class="p-1 hover:bg-gray-100 rounded" title="Eliminar">
+                        <button class="p-1 hover:bg-gray-100 rounded" title="Eliminar" (click)="openDeleteModal(usuario)">
                           <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                           </svg>
@@ -231,7 +238,7 @@
             </div>
           </div>
 
-          <!-- Si no hay usuarios -->
+                  <!-- Si no hay usuarios -->
           <div *ngIf="usuariosFiltrados.length === 0 && usuarios.length > 0" class="text-center py-16 bg-white rounded-lg border border-gray-200">
             <svg class="w-20 h-20 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -281,7 +288,9 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
                   </div>
-                  <h4 class="text-xl font-bold text-gray-900 mb-3">¡Administrador Creado!</h4>
+                  <h4 class="text-xl font-bold text-gray-900 mb-3">
+                    {{ newUser.rol === 'Gestor' ? '¡Gestor de Contenido Creado!' : '¡Administrador Creado!' }}
+                  </h4>
                   <p class="text-gray-600 mb-6">{{ successMessage }}</p>
                   <div class="flex gap-3 justify-center">
                     <button (click)="resetMessages()" 
@@ -335,6 +344,7 @@
                         Nombre <span class="text-red-500">*</span>
                       </label>
                       <input type="text" id="nombre" [(ngModel)]="newUser.nombre" name="nombre"
+                        (ngModelChange)="validatePassword()"
                         [class]="'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('nombre') ? 'field-error' : 'border-gray-300 focus:ring-blue-500')"
                         placeholder="Juan" required />
                     </div>
@@ -390,13 +400,69 @@
                     </div>
                   </div>
 
+                  <!-- Política de contraseñas -->
+                  <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <div class="flex items-start gap-2">
+                      <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                      </svg>
+                      <div>
+                        <h4 class="text-sm font-semibold text-blue-900 mb-2">Política de Contraseñas Seguras</h4>
+                        <p class="text-xs text-blue-800 mb-2">La contraseña debe cumplir con los siguientes requisitos:</p>
+                        <ul class="text-xs text-blue-700 space-y-1">
+                          <li [class.text-green-600]="passwordValidation.minLength" [class.font-semibold]="passwordValidation.minLength">
+                            <span [class.hidden]="!passwordValidation.minLength">✓</span>
+                            <span [class.hidden]="passwordValidation.minLength">•</span>
+                            Mínimo 8 caracteres
+                          </li>
+                          <li [class.text-green-600]="passwordValidation.noStartsWithUpperCase" [class.font-semibold]="passwordValidation.noStartsWithUpperCase">
+                            <span [class.hidden]="!passwordValidation.noStartsWithUpperCase">✓</span>
+                            <span [class.hidden]="passwordValidation.noStartsWithUpperCase">•</span>
+                            No debe comenzar con letra mayúscula
+                          </li>
+                          <li [class.text-green-600]="passwordValidation.hasUpperCase" [class.font-semibold]="passwordValidation.hasUpperCase">
+                            <span [class.hidden]="!passwordValidation.hasUpperCase">✓</span>
+                            <span [class.hidden]="passwordValidation.hasUpperCase">•</span>
+                            Al menos una letra mayúscula (A-Z)
+                          </li>
+                          <li [class.text-green-600]="passwordValidation.hasLowerCase" [class.font-semibold]="passwordValidation.hasLowerCase">
+                            <span [class.hidden]="!passwordValidation.hasLowerCase">✓</span>
+                            <span [class.hidden]="passwordValidation.hasLowerCase">•</span>
+                            Al menos una letra minúscula (a-z)
+                          </li>
+                          <li [class.text-green-600]="passwordValidation.hasNumber" [class.font-semibold]="passwordValidation.hasNumber">
+                            <span [class.hidden]="!passwordValidation.hasNumber">✓</span>
+                            <span [class.hidden]="passwordValidation.hasNumber">•</span>
+                            Al menos un número (0-9)
+                          </li>
+                          <li [class.text-green-600]="passwordValidation.hasSpecialChar" [class.font-semibold]="passwordValidation.hasSpecialChar">
+                            <span [class.hidden]="!passwordValidation.hasSpecialChar">✓</span>
+                            <span [class.hidden]="passwordValidation.hasSpecialChar">•</span>
+                            Al menos un carácter especial (!@#$%^&amp;*()_+-=...)
+                          </li>
+                          <li [class.text-green-600]="passwordValidation.passwordsMatch" [class.font-semibold]="passwordValidation.passwordsMatch">
+                            <span [class.hidden]="!passwordValidation.passwordsMatch">✓</span>
+                            <span [class.hidden]="passwordValidation.passwordsMatch">•</span>
+                            Las contraseñas deben coincidir
+                          </li>
+                          <li [class.text-green-600]="passwordValidation.notContainsUsername" [class.font-semibold]="passwordValidation.notContainsUsername">
+                            <span [class.hidden]="!passwordValidation.notContainsUsername">✓</span>
+                            <span [class.hidden]="passwordValidation.notContainsUsername">•</span>
+                            No debe contener el nombre de usuario
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-group">
                       <label for="contrasenia" class="block text-sm font-semibold text-gray-700 mb-2">
                         Contraseña <span class="text-red-500">*</span>
                       </label>
                       <input type="password" id="contrasenia" [(ngModel)]="newUser.contrasenia" name="contrasenia"
-                        [class]="'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('contrasenia') ? 'field-error' : 'border-gray-300 focus:ring-blue-500')"
+                        (ngModelChange)="validatePassword()"
+                        [class]="'w-full px-4 py-2.5 border-2 rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('contrasenia') ? 'border-red-500 bg-red-50' : 'border-gray-300 focus:ring-blue-500')"
                         placeholder="••••••••" required />
                     </div>
 
@@ -405,7 +471,8 @@
                         Confirmar Contraseña <span class="text-red-500">*</span>
                       </label>
                       <input type="password" id="repetirContrasenia" [(ngModel)]="newUser.repetirContrasenia" name="repetirContrasenia"
-                        [class]="'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('repetirContrasenia') ? 'field-error' : 'border-gray-300 focus:ring-blue-500')"
+                        (ngModelChange)="validatePassword()"
+                        [class]="'w-full px-4 py-2.5 border-2 rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('repetirContrasenia') ? 'border-red-500 bg-red-50' : 'border-gray-300 focus:ring-blue-500')"
                         placeholder="••••••••" required />
                     </div>
                   </div>
@@ -442,7 +509,41 @@
               <!-- Formulario para Gestor de Contenido -->
               <form *ngIf="newUser.rol === 'Gestor'" class="space-y-6">
 
-                <!-- Campos básicos -->
+                <!-- Vista de éxito para Gestor -->
+                <div *ngIf="isSuccess" class="text-center py-8">
+                  <div class="w-20 h-20 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </div>
+                  <h4 class="text-xl font-bold text-gray-900 mb-3">¡Gestor de Contenido Creado!</h4>
+                  <p class="text-gray-600 mb-6">{{ successMessage }}</p>
+                  <div class="flex gap-3 justify-center">
+                    <button (click)="resetMessages()" 
+                      class="px-6 py-2.5 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition-all">
+                      Crear Otro
+                    </button>
+                    <button (click)="exitForm()" 
+                      class="px-6 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-all flex items-center gap-2">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                      </svg>
+                      Salir
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Mensaje de error para Gestor -->
+                <div *ngIf="errorMessage && !isSuccess" class="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg flex items-start gap-3">
+                  <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                  </svg>
+                  <span class="text-sm">{{ errorMessage }}</span>
+                </div>
+
+                <!-- Formulario principal del Gestor (solo si no está en estado de éxito) -->
+                <div *ngIf="!isSuccess">
+                  <!-- Campos básicos -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div class="space-y-2">
                     <label for="gestorNombre" class="block text-sm font-medium text-gray-700">Nombre *</label>
@@ -451,6 +552,7 @@
                       id="gestorNombre"
                       [(ngModel)]="newUser.nombre"
                       name="gestorNombre"
+                      (ngModelChange)="validatePassword()"
                       required
                       [class.border-red-500]="fieldsWithError.includes('nombre')"
                       [class.border-green-500]="newUser.nombre && !fieldsWithError.includes('nombre')"
@@ -639,47 +741,100 @@
                   </div>
                 </fieldset>
 
+                <!-- Política de contraseñas para Gestor -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <div class="flex items-start gap-2">
+                    <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                    </svg>
+                    <div>
+                      <h4 class="text-sm font-semibold text-blue-900 mb-2">Política de Contraseñas Seguras</h4>
+                      <p class="text-xs text-blue-800 mb-2">La contraseña debe cumplir con los siguientes requisitos:</p>
+                      <ul class="text-xs text-blue-700 space-y-1">
+                        <li [class.text-green-600]="passwordValidation.minLength" [class.font-semibold]="passwordValidation.minLength">
+                          <span [class.hidden]="!passwordValidation.minLength">✓</span>
+                          <span [class.hidden]="passwordValidation.minLength">•</span>
+                          Mínimo 8 caracteres
+                        </li>
+                        <li [class.text-green-600]="passwordValidation.noStartsWithUpperCase" [class.font-semibold]="passwordValidation.noStartsWithUpperCase">
+                          <span [class.hidden]="!passwordValidation.noStartsWithUpperCase">✓</span>
+                          <span [class.hidden]="passwordValidation.noStartsWithUpperCase">•</span>
+                          No debe comenzar con letra mayúscula
+                        </li>
+                        <li [class.text-green-600]="passwordValidation.hasUpperCase" [class.font-semibold]="passwordValidation.hasUpperCase">
+                          <span [class.hidden]="!passwordValidation.hasUpperCase">✓</span>
+                          <span [class.hidden]="passwordValidation.hasUpperCase">•</span>
+                          Al menos una letra mayúscula (A-Z)
+                        </li>
+                        <li [class.text-green-600]="passwordValidation.hasLowerCase" [class.font-semibold]="passwordValidation.hasLowerCase">
+                          <span [class.hidden]="!passwordValidation.hasLowerCase">✓</span>
+                          <span [class.hidden]="passwordValidation.hasLowerCase">•</span>
+                          Al menos una letra minúscula (a-z)
+                        </li>
+                        <li [class.text-green-600]="passwordValidation.hasNumber" [class.font-semibold]="passwordValidation.hasNumber">
+                          <span [class.hidden]="!passwordValidation.hasNumber">✓</span>
+                          <span [class.hidden]="passwordValidation.hasNumber">•</span>
+                          Al menos un número (0-9)
+                        </li>
+                        <li [class.text-green-600]="passwordValidation.hasSpecialChar" [class.font-semibold]="passwordValidation.hasSpecialChar">
+                          <span [class.hidden]="!passwordValidation.hasSpecialChar">✓</span>
+                          <span [class.hidden]="passwordValidation.hasSpecialChar">•</span>
+                          Al menos un carácter especial (!@#$%^&amp;*()_+-=...)
+                        </li>
+                        <li [class.text-green-600]="passwordValidation.passwordsMatch" [class.font-semibold]="passwordValidation.passwordsMatch">
+                          <span [class.hidden]="!passwordValidation.passwordsMatch">✓</span>
+                          <span [class.hidden]="passwordValidation.passwordsMatch">•</span>
+                          Las contraseñas deben coincidir
+                        </li>
+                        <li [class.text-green-600]="passwordValidation.notContainsUsername" [class.font-semibold]="passwordValidation.notContainsUsername">
+                          <span [class.hidden]="!passwordValidation.notContainsUsername">✓</span>
+                          <span [class.hidden]="passwordValidation.notContainsUsername">•</span>
+                          No debe contener el nombre de usuario
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Contraseñas -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div class="space-y-2">
-                    <label for="gestorContrasenia" class="block text-sm font-medium text-gray-700">Contraseña *</label>
+                    <label for="gestorContrasenia" class="block text-sm font-semibold text-gray-700 mb-2">
+                      Contraseña <span class="text-red-500">*</span>
+                    </label>
                     <input
                       type="password"
                       id="gestorContrasenia"
                       [(ngModel)]="newUser.contrasenia"
                       name="gestorContrasenia"
+                      (ngModelChange)="validatePassword()"
                       required
-                      [class.border-red-500]="fieldsWithError.includes('contrasenia')"
-                      [class.border-green-500]="newUser.contrasenia && !fieldsWithError.includes('contrasenia')"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                      placeholder="Contraseña segura">
-                    <div *ngIf="fieldsWithError.includes('contrasenia')" class="text-red-600 text-sm flex items-center">
-                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 000 2v4a1 1 0 002 0V7a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                      </svg>
-                      Contraseña obligatoria
-                    </div>
+                      [class]="'w-full px-4 py-2.5 border-2 rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('contrasenia') ? 'border-red-500 bg-red-50' : 'border-gray-300 focus:ring-blue-500')"
+                      placeholder="••••••••">
                   </div>
 
                   <div class="space-y-2">
-                    <label for="gestorRepetirContrasenia" class="block text-sm font-medium text-gray-700">Repetir Contraseña *</label>
+                    <label for="gestorRepetirContrasenia" class="block text-sm font-semibold text-gray-700 mb-2">
+                      Confirmar Contraseña <span class="text-red-500">*</span>
+                    </label>
                     <input
                       type="password"
                       id="gestorRepetirContrasenia"
                       [(ngModel)]="newUser.repetirContrasenia"
                       name="gestorRepetirContrasenia"
+                      (ngModelChange)="validatePassword()"
                       required
-                      [class.border-red-500]="fieldsWithError.includes('repetirContrasenia')"
-                      [class.border-green-500]="newUser.repetirContrasenia && !fieldsWithError.includes('repetirContrasenia')"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                      placeholder="Confirmar contraseña">
-                    <div *ngIf="fieldsWithError.includes('repetirContrasenia')" class="text-red-600 text-sm flex items-center">
-                      <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 000 2v4a1 1 0 002 0V7a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                      </svg>
-                      Las contraseñas no coinciden
-                    </div>
+                      [class]="'w-full px-4 py-2.5 border-2 rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('repetirContrasenia') ? 'border-red-500 bg-red-50' : 'border-gray-300 focus:ring-blue-500')"
+                      placeholder="••••••••">
                   </div>
+                </div>
+
+                <!-- Mensaje de error justo encima de los botones -->
+                <div *ngIf="errorMessage" class="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-start gap-2">
+                  <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                  </svg>
+                  <span class="text-sm">{{ errorMessage }}</span>
                 </div>
 
                 <!-- Botones -->
@@ -700,6 +855,7 @@
                     <span>{{isCreating ? 'Creando...' : 'Crear Gestor'}}</span>
                   </button>
                 </div>
+                </div> <!-- Cierre de *ngIf="!isSuccess" para formulario de Gestor -->
               </form>
             </div>
           </div>
@@ -913,6 +1069,570 @@
           </svg>
           Guardar Cambios
         </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal de Confirmación para Eliminar Usuario -->
+  <div *ngIf="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm" (click)="closeDeleteModal()">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4" (click)="$event.stopPropagation()">
+      <div class="relative"> <!-- Contenedor con posición relativa para permitir botón de cerrar absoluto -->
+        <!-- Botón cerrar absoluto en esquina superior derecha -->
+        <button 
+          (click)="closeDeleteModal()" 
+          class="absolute top-3 right-3 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 focus:outline-none"
+          aria-label="Cerrar">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+        
+        <!-- Header del Modal -->
+        <div class="bg-gradient-to-r from-red-600 to-red-800 text-white p-6 rounded-t-xl">
+          <h2 class="text-2xl font-bold">Eliminar Usuario</h2>
+          <p class="text-red-100 text-sm mt-1">Esta acción no se puede deshacer</p>
+        </div>
+
+        <!-- Contenido del Modal -->
+        <div class="p-6 space-y-4">
+          <div class="flex items-center justify-center">
+            <div class="bg-red-100 rounded-full p-4">
+              <svg class="w-16 h-16 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+            </div>
+          </div>
+
+          <div class="text-center">
+            <h3 class="text-lg font-bold text-gray-900 mb-2">¿Deseas eliminar el siguiente usuario?</h3>
+            <div *ngIf="usuarioAEliminar" class="bg-gray-50 p-4 rounded-lg mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                  <img *ngIf="usuarioAEliminar.foto" [src]="'/' + usuarioAEliminar.foto" [alt]="usuarioAEliminar.nombre" class="w-full h-full object-cover">
+                  <div *ngIf="!usuarioAEliminar.foto" class="w-full h-full bg-blue-600 text-white flex items-center justify-center font-bold">
+                    {{ usuarioAEliminar.nombre.charAt(0).toUpperCase() }}
+                  </div>
+                </div>
+                <div class="text-left">
+                  <p class="font-bold text-gray-900">{{ usuarioAEliminar.nombre }} {{ usuarioAEliminar.apellidos }}</p>
+                  <p class="text-sm text-gray-600">{{ usuarioAEliminar.email }}</p>
+                  <span class="inline-flex items-center px-2 py-1 mt-1 text-xs font-medium rounded"
+                      [ngClass]="{
+                        'bg-amber-100 text-amber-700': usuarioAEliminar.rol === 'Administrador',
+                        'bg-blue-100 text-blue-700': usuarioAEliminar.rol === 'Gestor',
+                        'bg-gray-100 text-gray-700': usuarioAEliminar.rol === 'Visualizador'
+                      }">
+                      {{ usuarioAEliminar.rol || 'Visualizador' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p class="text-gray-500 mb-4">Esta acción eliminará permanentemente al usuario del sistema y todos sus datos asociados.</p>
+          </div>
+        </div>
+        
+        <!-- Footer del Modal -->
+        <div class="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end gap-3">
+          <button 
+            (click)="closeDeleteModal()"
+            [disabled]="isDeleting"
+            class="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+            Cancelar
+          </button>
+          <button 
+            (click)="deleteUser(); $event.preventDefault(); $event.stopPropagation();"
+            [disabled]="isDeleting"
+            class="px-5 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+            id="btn-eliminar-usuario">
+            <!-- Icono de carga cuando está eliminando -->
+            <svg *ngIf="isDeleting" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <!-- Icono de papelera cuando no está eliminando -->
+            <svg *ngIf="!isDeleting" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            {{ isDeleting ? 'Eliminando...' : 'Eliminar Usuario' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Edición de Usuario -->
+  <div *ngIf="showEditUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm" (click)="closeEditUserModal()">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+      <!-- Header del modal -->
+      <div class="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div>
+          <h3 class="text-xl font-bold text-gray-900">Editar {{ getUserTypeDisplayName(editUserForm.rol) }}</h3>
+          <p class="text-sm text-gray-600 mt-1">Modifica los datos del usuario seleccionado</p>
+        </div>
+        <button (click)="closeEditUserModal()" class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg p-2 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Contenido del modal -->
+      <div class="p-6">
+        <!-- Mensajes de éxito/error -->
+        <div *ngIf="successMessage" class="mb-4 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-lg flex items-center gap-3">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+          </svg>
+          {{ successMessage }}
+        </div>
+
+        <div *ngIf="errorMessage" class="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg flex items-center gap-3">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+          </svg>
+          {{ errorMessage }}
+        </div>
+
+        <!-- Información del usuario (solo lectura) -->
+        <div class="mb-6 p-4 bg-gray-50 rounded-lg border">
+          <h4 class="text-sm font-semibold text-gray-700 mb-3">Información del Usuario</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <span class="text-gray-500">Tipo de Usuario:</span>
+              <span class="ml-2 font-medium">{{ getUserTypeDisplayName(editUserForm.rol) }}</span>
+            </div>
+            <div>
+              <span class="text-gray-500">Email:</span>
+              <span class="ml-2 font-medium">{{ editUserForm.email }}</span>
+            </div>
+            <div>
+              <span class="text-gray-500">ID:</span>
+              <span class="ml-2 font-mono text-xs">{{ editUserForm.id }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulario de edición ESPECÍFICO POR TIPO DE USUARIO -->
+        <form *ngIf="!showEditConfirmation" class="space-y-6">
+
+          <!-- Formulario para ADMINISTRADORES -->
+          <div *ngIf="editUserForm.rol === 'Administrador'">
+            <!-- Nombre y Apellidos -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="editUserForm.nombre" 
+                  name="nombre"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Nombre del administrador">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Apellidos <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="editUserForm.apellidos" 
+                  name="apellidos"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Apellidos del administrador">
+              </div>
+            </div>
+
+            <!-- Email (solo lectura) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Email (No editable)
+              </label>
+              <input 
+                type="email" 
+                [value]="editUserForm.email"
+                readonly
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+            </div>
+
+            <!-- Departamento -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Departamento <span class="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                [(ngModel)]="editUserForm.departamento" 
+                name="departamento"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Departamento del administrador">
+            </div>
+
+            <!-- Foto de Perfil -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Foto de Perfil
+              </label>
+              <div class="grid grid-cols-4 gap-3">
+                <div *ngFor="let foto of fotosDisponibles" 
+                     (click)="editUserForm.foto = foto.id"
+                     [class]="editUserForm.foto === foto.id 
+                       ? 'cursor-pointer rounded-lg border-2 border-blue-500 bg-blue-50 p-2 transition-all' 
+                       : 'cursor-pointer rounded-lg border-2 border-gray-200 hover:border-gray-300 p-2 transition-all'">
+                  <img [src]="'/' + foto.id" [alt]="foto.nombre" class="w-full h-16 object-cover rounded">
+                  <p class="text-xs text-center mt-1 text-gray-600">{{ foto.nombre }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Formulario para GESTORES DE CONTENIDO -->
+          <div *ngIf="editUserForm.rol === 'Gestor'">
+            <!-- Nombre y Apellidos -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="editUserForm.nombre" 
+                  name="nombre"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Nombre del gestor">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Apellidos <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="editUserForm.apellidos" 
+                  name="apellidos"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Apellidos del gestor">
+              </div>
+            </div>
+
+            <!-- Email (solo lectura) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Email (No editable)
+              </label>
+              <input 
+                type="email" 
+                [value]="editUserForm.email"
+                readonly
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+            </div>
+
+            <!-- Campos específicos para GESTORES -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Alias <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="editUserForm.alias" 
+                  name="alias"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Alias único del gestor">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Especialidad
+                </label>
+                <select 
+                  [(ngModel)]="editUserForm.especialidad" 
+                  name="especialidad"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <option value="">Seleccionar especialidad</option>
+                  <option value="Música">Música</option>
+                  <option value="Películas">Películas y Cinema</option>
+                  <option value="Documentales">Documentales</option>
+                  <option value="Podcasts">Podcasts</option>
+                  <option value="Series">Series de TV</option>
+                  <option value="Entretenimiento">Entretenimiento General</option>
+                  <option value="Educativo">Contenido Educativo</option>
+                  <option value="Deportes">Deportes</option>
+                  <option value="Noticias">Noticias y Actualidad</option>
+                  <option value="Tecnología">Tecnología</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Descripción -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Descripción
+              </label>
+              <textarea 
+                [(ngModel)]="editUserForm.descripcion" 
+                name="descripcion"
+                rows="3"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                placeholder="Descripción del gestor"></textarea>
+            </div>
+
+            <!-- Tipo de contenido (solo lectura) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Tipo de contenido (Solo lectura)
+              </label>
+              <input 
+                type="text" 
+                [value]="editUserForm.tipocontenidovideooaudio || 'No especificado'"
+                readonly
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+            </div>
+
+            <!-- Foto de Perfil -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Foto de Perfil
+              </label>
+              <div class="grid grid-cols-4 gap-3">
+                <div *ngFor="let foto of fotosDisponibles" 
+                     (click)="editUserForm.foto = foto.id"
+                     [class]="editUserForm.foto === foto.id 
+                       ? 'cursor-pointer rounded-lg border-2 border-blue-500 bg-blue-50 p-2 transition-all' 
+                       : 'cursor-pointer rounded-lg border-2 border-gray-200 hover:border-gray-300 p-2 transition-all'">
+                  <img [src]="'/' + foto.id" [alt]="foto.nombre" class="w-full h-16 object-cover rounded">
+                  <p class="text-xs text-center mt-1 text-gray-600">{{ foto.nombre }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Estado de bloqueo (solo lectura) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Estado (Solo lectura)
+              </label>
+              <input 
+                type="text" 
+                [value]="editUserForm.bloqueado ? 'Bloqueado' : 'Activo'"
+                readonly
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+            </div>
+
+            <!-- Fecha de registro (solo lectura) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Fecha de registro (Solo lectura)
+              </label>
+              <input 
+                type="text" 
+                [value]="editUserForm.fecharegistro ? (editUserForm.fecharegistro | date:'dd/MM/yyyy') : 'No disponible'"
+                readonly
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+            </div>
+          </div>
+
+          <!-- Formulario para VISUALIZADORES -->
+          <div *ngIf="editUserForm.rol === 'Visualizador'">
+            <!-- Nombre y Apellidos -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="editUserForm.nombre" 
+                  name="nombre"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Nombre del visualizador">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Apellidos <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="editUserForm.apellidos" 
+                  name="apellidos"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Apellidos del visualizador">
+              </div>
+            </div>
+
+            <!-- Email (solo lectura) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Email (No editable)
+              </label>
+              <input 
+                type="email" 
+                [value]="editUserForm.email"
+                readonly
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+            </div>
+
+            <!-- Campos específicos para VISUALIZADORES -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Alias
+                </label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="editUserForm.alias" 
+                  name="alias"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Alias del visualizador">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Fecha de nacimiento
+                </label>
+                <input 
+                  type="date" 
+                  [(ngModel)]="editUserForm.fechanac" 
+                  name="fechanac"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              </div>
+            </div>
+
+            <!-- Foto de Perfil -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Foto de Perfil
+              </label>
+              <div class="grid grid-cols-4 gap-3">
+                <div *ngFor="let foto of fotosDisponibles" 
+                     (click)="editUserForm.foto = foto.id"
+                     [class]="editUserForm.foto === foto.id 
+                       ? 'cursor-pointer rounded-lg border-2 border-blue-500 bg-blue-50 p-2 transition-all' 
+                       : 'cursor-pointer rounded-lg border-2 border-gray-200 hover:border-gray-300 p-2 transition-all'">
+                  <img [src]="'/' + foto.id" [alt]="foto.nombre" class="w-full h-16 object-cover rounded">
+                  <p class="text-xs text-center mt-1 text-gray-600">{{ foto.nombre }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Campos de solo lectura para VISUALIZADORES -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Estado (Solo lectura)
+                </label>
+                <input 
+                  type="text" 
+                  [value]="editUserForm.bloqueado ? 'Bloqueado' : 'Activo'"
+                  readonly
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Estado VIP (Solo lectura)
+                </label>
+                <input 
+                  type="text" 
+                  [value]="editUserForm.vip ? 'VIP' : 'Estándar'"
+                  readonly
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+              </div>
+            </div>
+
+            <!-- Fecha de registro (solo lectura) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Fecha de registro (Solo lectura)
+              </label>
+              <input 
+                type="text" 
+                [value]="editUserForm.fecharegistro ? (editUserForm.fecharegistro | date:'dd/MM/yyyy') : 'No disponible'"
+                readonly
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+            </div>
+          </div>
+
+          <!-- Botones de acción (primera confirmación) -->
+          <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+            <button 
+              type="button"
+              (click)="closeEditUserModal()"
+              class="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
+              Cancelar
+            </button>
+            <button 
+              type="button"
+              (click)="confirmUserChanges()"
+              class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              Confirmar Cambios
+            </button>
+          </div>
+        </form>
+
+        <!-- Confirmación de cambios (doble validación) -->
+        <div *ngIf="showEditConfirmation" class="space-y-6">
+          <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div class="flex items-start gap-3">
+              <svg class="w-6 h-6 text-amber-600 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+              <div>
+                <h4 class="text-lg font-semibold text-amber-800 mb-2">¿Confirmar cambios en el usuario?</h4>
+                <p class="text-amber-700 text-sm mb-4">
+                  Estás a punto de actualizar los datos de <strong>{{ editUserForm.nombre }} {{ editUserForm.apellidos }}</strong>. 
+                  Esta acción modificará la información del usuario en el sistema.
+                </p>
+                
+                <!-- Resumen de cambios -->
+                <div class="bg-white rounded-lg p-3 border border-amber-200">
+                  <h5 class="font-medium text-amber-800 mb-2">Resumen de cambios:</h5>
+                  <div class="space-y-1 text-sm">
+                    <div><span class="text-gray-600">Nombre:</span> <span class="font-medium">{{ editUserForm.nombre }}</span></div>
+                    <div><span class="text-gray-600">Apellidos:</span> <span class="font-medium">{{ editUserForm.apellidos }}</span></div>
+                    <div *ngIf="editUserForm.departamento"><span class="text-gray-600">Departamento:</span> <span class="font-medium">{{ editUserForm.departamento }}</span></div>
+                    <div *ngIf="editUserForm.apodo"><span class="text-gray-600">Apodo:</span> <span class="font-medium">{{ editUserForm.apodo }}</span></div>
+                    <div>
+                      <span class="text-gray-600">Estado:</span> 
+                      <span [class]="editUserForm.bloqueado ? 'font-medium text-red-600' : 'font-medium text-green-600'">
+                        {{ editUserForm.bloqueado ? 'Bloqueado' : 'Activo' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botones de doble confirmación -->
+          <div class="flex justify-end gap-3">
+            <button 
+              type="button"
+              (click)="cancelUserChanges()"
+              [disabled]="isUpdating"
+              class="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-colors">
+              Cancelar
+            </button>
+            <button 
+              type="button"
+              (click)="saveUserChanges()"
+              [disabled]="isUpdating"
+              class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center gap-2">
+              <svg *ngIf="isUpdating" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <svg *ngIf="!isUpdating" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              {{ isUpdating ? 'Guardando...' : 'Sí, Guardar Cambios' }}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
