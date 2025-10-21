@@ -25,6 +25,8 @@ export class AdminDashboardComponent implements OnInit {
   detalleContenido: ContenidoDetalle | null = null;
   loadingContenido = false;
   errorContenido = '';
+  // Control para cargar contenidos cuando aún no tenemos Admin-ID
+  private pendingLoadContenidos = false;
   
   // InformaciÃ³n del usuario actual
   currentUser: any = null;
@@ -118,6 +120,27 @@ export class AdminDashboardComponent implements OnInit {
     this.adminService.getUsuarios().subscribe({
       next: (usuarios) => {
         this.usuarios = usuarios;
+        // Resolver y persistir Admin-ID si falta
+        try {
+          if (this.currentUser && !((this.currentUser as any).id || (this.currentUser as any)._id)) {
+            const match = this.currentUser?.email ? this.usuarios.find(u => u.email === this.currentUser?.email) : undefined;
+            if (match?.id) {
+              (this.currentUser as any).id = match.id;
+              if (isPlatformBrowser(this.platformId)) {
+                localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+              }
+            }
+          }
+        } catch {}
+
+        // Cargar contenidos si quedó pendiente y ahora hay Admin-ID
+        if (this.activeTab === 'contenidos' && this.pendingLoadContenidos) {
+          const adminId = this.obtenerAdminId();
+          if (adminId) {
+            this.pendingLoadContenidos = false;
+            this.loadContenidos();
+          }
+        }
         this.aplicarFiltros(); // Aplicar filtros despuÃ©s de cargar usuarios
       },
       error: (error: any) => {
@@ -139,7 +162,13 @@ export class AdminDashboardComponent implements OnInit {
     if (tab === 'usuarios') {
       this.loadUsuarios();
     } else if (tab === 'contenidos') {
-      this.loadContenidos();
+      const adminId = this.obtenerAdminId();
+      if (!adminId) {
+        this.pendingLoadContenidos = true;
+        this.loadUsuarios();
+      } else {
+        this.loadContenidos();
+      }
     }
     this.resetMessages();
   }
@@ -154,6 +183,7 @@ export class AdminDashboardComponent implements OnInit {
   // ================= Contenidos (solo lectura) =================
   loadContenidos() {
     this.errorContenido = '';
+    this.loadingContenido = true;
     const adminId = this.obtenerAdminId();
     if (!adminId) {
       this.errorContenido = 'No se pudo identificar al administrador';
@@ -170,6 +200,9 @@ export class AdminDashboardComponent implements OnInit {
         }
         this.contenidos = lista;
         this.aplicarFiltrosContenidos();
+        this.loadingContenido = false;
+        // Forzar render inmediato tras actualizar arrays
+        try { this.cdr.detectChanges(); } catch {}
       },
       error: (err) => {
         console.error('Error al cargar contenidos:', err);
@@ -179,6 +212,7 @@ export class AdminDashboardComponent implements OnInit {
         } catch {
           this.errorContenido = 'Error al cargar contenidos';
         }
+        this.loadingContenido = false;
       }
     });
   }

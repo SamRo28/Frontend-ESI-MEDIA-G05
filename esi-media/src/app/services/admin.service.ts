@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, throwError, timeout } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export interface Usuario {
   id?: string;
@@ -178,6 +179,18 @@ export class AdminService {
     const headers = { 'Admin-ID': adminId };
     return this.http.get<ContenidoResumen[]>(url, { headers }).pipe(
       timeout(5000),
+      map((arr: any) => {
+        if (!Array.isArray(arr)) return arr;
+        return arr.map((it: any) => {
+          const g = it?.gestor ?? {};
+          const nombreDerivado = it?.gestorNombre
+            ?? (g?.nombre || g?.apellidos ? `${g?.nombre ?? ''} ${g?.apellidos ?? ''}`.trim() : undefined)
+            ?? g?.alias
+            ?? it?.alias
+            ?? it?.gestorNombreCompleto;
+          return { ...it, gestorNombre: nombreDerivado ?? it?.gestorNombre ?? '-' } as ContenidoResumen;
+        });
+      }),
       catchError((error) => this.handleError(error))
     );
   }
@@ -264,4 +277,3 @@ export interface Paginado<T> {
   totalPages: number;
   totalElements?: number;
 }
-
