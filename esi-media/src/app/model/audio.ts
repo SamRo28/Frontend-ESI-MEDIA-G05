@@ -7,8 +7,8 @@ export class Audio extends Contenido {
 
     constructor(titulo: string, descripcion: string, etiquetas: string[], tamano: number, esPublico: boolean, esDescargable: boolean,
         fechaCreacion: Date | undefined, fechaPublicacion: Date | undefined, duracion: number, fichero: any, reproducciones: number,
-        gestorId: string, listas: Lista[], visualizadores: Visualizador[]) {
-        super(titulo, descripcion, etiquetas, tamano, esPublico, esDescargable, fechaCreacion, fechaPublicacion, duracion, fichero, reproducciones, gestorId, listas, visualizadores);
+        listas: Lista[], visualizadores: Visualizador[]) {
+        super(titulo, descripcion, etiquetas, tamano, esPublico, esDescargable, fechaCreacion, fechaPublicacion, duracion, fichero, reproducciones, listas, visualizadores);
         this.fichero = fichero;
     }
 
