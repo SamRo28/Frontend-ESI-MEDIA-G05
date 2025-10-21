@@ -17,10 +17,10 @@ export class AudioUploadComponent {
   isUploading = false;
   uploadMessage = '';
   fileError = ''; // Error específico del archivo
-  uploadSuccess = false; // Nueva propiedad para controlar el éxito
+  uploadSuccess = false;
   showUploadConfirmation = false;
   
-  // Tags predefinidos para audio
+  // Tags predefinidos para audios
   availableAudioTags = [
     { value: 'pop', label: 'Pop' },
     { value: 'rock', label: 'Rock' },
@@ -152,10 +152,10 @@ export class AudioUploadComponent {
     const segundos = Number(this.audioForm.value.segundos) || 0;
     const formValues = this.audioForm.value; // Guardar todos los valores
       
-      // BLOQUEAR FORMULARIO COMPLETO
+      // Bloquear formulario completo una vez se decide subir el audio
       this.audioForm.disable();
 
-      // Usar selectedTags directamente (ya están como array)
+      // Usar selectedTags directamente
       const tagsArray = this.selectedTags.length > 0 ? this.selectedTags : [];
 
       // Convertir minutos y segundos a total de segundos con validación
@@ -255,7 +255,7 @@ export class AudioUploadComponent {
     return !hasError && !!(field?.touched);
   }
 
-  // Calcular progreso del formulario para feedback visual
+  // Calcular barra de progreso del formulario para feedback visual
   getFormProgress(): number {
     const basicFields = ['titulo', 'edadVisualizacion'];
     const completedBasicFields = basicFields.filter(field => {
@@ -263,13 +263,11 @@ export class AudioUploadComponent {
       return control && control.valid && control.value !== '';
     });
     
-    // Contar duración como una sola unidad (minutos Y segundos completos)
+    // Contar duración como una sola unidad (minutos Y segundos deben estar completos)
     const durationComplete = this.isFieldComplete('minutos') && this.isFieldComplete('segundos');
     
-    // Contar tags como requerido
     const tagsComplete = this.selectedTags.length > 0;
     
-    // Contar archivo como campo requerido
     const hasFile = this.selectedFile !== null;
         
     const totalRequired = 5; // titulo, edadVisualizacion, duracion (minutos+segundos), tags, archivo
@@ -379,10 +377,9 @@ export class AudioUploadComponent {
     return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
   }
 
-  // Solo permitir números en campos de duración
+  // Solo permitir números en los campos de duración
   onlyNumbers(event: KeyboardEvent): void {
     const key = event.key;
-    // Permitir: números 0-9, backspace, delete, tab, escape, enter, flechas
     const allowedKeys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
                          'Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 
                          'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
@@ -392,9 +389,8 @@ export class AudioUploadComponent {
     }
   }
 
-  // Prevenir entrada de teclado en campos de fecha (solo permitir selector)
+  // Solo permitir el uso del selector de fecha, no entrada manual
   preventKeyboardInput(event: KeyboardEvent): void {
-    // Permitir solo teclas de navegación y funcionales, no letras/números
     const allowedKeys = ['Tab', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Delete', 'Backspace'];
     if (!allowedKeys.includes(event.key)) {
       event.preventDefault();

@@ -18,7 +18,7 @@ export class VideoUploadComponent {
   uploadSuccess = false;
   showUploadConfirmation = false;
 
-  // Tags predefinidos para video
+  // Tags predefinidos para videos
   availableVideoTags = [
     { value: 'cocina', label: 'Cocina' },
     { value: 'programacion', label: 'Programación' },
@@ -117,12 +117,12 @@ export class VideoUploadComponent {
     
     const minutos = Number(this.videoForm.value.minutos) || 0;
     const segundos = Number(this.videoForm.value.segundos) || 0;
-    const formValues = this.videoForm.value; // Guardar todos los valores
+    const formValues = this.videoForm.value;
       
-      // BLOQUEAR FORMULARIO COMPLETO
+      // Bloquear formulario completo una vez se decide subir el video
       this.videoForm.disable();
 
-      // Usar selectedTags directamente (ya están como array)
+      // Usar selectedTags directamente
       const tagsArray = this.selectedTags.length > 0 ? this.selectedTags : [];
 
       // Convertir minutos y segundos a total de segundos con validación
@@ -132,7 +132,7 @@ export class VideoUploadComponent {
         titulo: formValues.titulo,
         descripcion: formValues.descripcion || undefined,
         tags: tagsArray,
-        duracion: totalSegundos > 0 ? totalSegundos : 1, // Mínimo 1 segundo
+        duracion: totalSegundos > 0 ? totalSegundos : 1,
         vip: formValues.vip,
         edadVisualizacion: Number(formValues.edadVisualizacion),
         fechaDisponibleHasta: formValues.fechaDisponibleHasta && formValues.fechaDisponibleHasta.trim() !== ''
@@ -223,7 +223,7 @@ export class VideoUploadComponent {
     return !hasError && !!(field?.touched);
   }
 
-  // Calcular progreso del formulario para feedback visual
+  // Calcular barra de progreso del formulario para feedback visual
   getFormProgress(): number {
     const basicFields = ['titulo', 'url', 'resolucion', 'edadVisualizacion'];
     const completedBasicFields = basicFields.filter(field => {
@@ -231,10 +231,9 @@ export class VideoUploadComponent {
       return control && control.valid && control.value !== '';
     });
     
-    // Contar duración como una sola unidad (minutos Y segundos completos)
+    // Contar duración como una sola unidad (minutos Y segundos deben estar completos para proceder)
     const durationComplete = this.isFieldComplete('minutos') && this.isFieldComplete('segundos');
     
-    // Contar tags como requerido
     const tagsComplete = this.selectedTags.length > 0;
     
     const totalRequired = 6; // titulo, url, resolucion, edadVisualizacion, duracion (minutos+segundos), tags
@@ -347,10 +346,9 @@ export class VideoUploadComponent {
     return `✓ Duración: ${totalMinutos}m ${totalSegundos}s`;
   }
 
-  // Solo permitir números en campos de duración
+  // Solo permitir números en los campos de duración
   onlyNumbers(event: KeyboardEvent): void {
     const key = event.key;
-    // Permitir: números 0-9, backspace, delete, tab, escape, enter, flechas
     const allowedKeys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
                          'Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 
                          'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
@@ -360,9 +358,8 @@ export class VideoUploadComponent {
     }
   }
 
-  // Prevenir entrada de teclado en campos de fecha (solo permitir selector)
+  // Solo permitir el uso del selector de fecha, no entrada manual
   preventKeyboardInput(event: KeyboardEvent): void {
-    // Permitir solo teclas de navegación y funcionales, no letras/números
     const allowedKeys = ['Tab', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Delete', 'Backspace'];
     if (!allowedKeys.includes(event.key)) {
       event.preventDefault();
