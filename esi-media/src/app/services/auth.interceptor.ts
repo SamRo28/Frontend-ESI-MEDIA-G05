@@ -13,7 +13,7 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
     // Determinar qué token usar según el endpoint
     let mockToken: string = sessionStorage.getItem('token') || '';
     
-    
+  
     
     // Agregar el header de autorización
     const authReq = req.clone({

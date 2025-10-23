@@ -37,18 +37,10 @@ export class Login {
         if(response.usuario.twoFactorAutenticationEnabled){
            this.router.navigate(['/2verification'], { state: { allowFa2Code: true } });
         }
-        else if (!response.twoFactorAutenticationEnabled && response.tipo !== 'Visualizador'){
+        else if (!response.usuario.twoFactorAutenticationEnabled && response.tipo !== 'Visualizador'){
           this.router.navigate(['/2fa'], { state: { allowFa2: true } });
         }
         else{
-          const tokens = response.usuario?.sesionstoken;
-          if (Array.isArray(tokens) && tokens.length > 0) {
-          const lastToken = tokens[tokens.length - 1].token;
-          sessionStorage.setItem('token', lastToken);
-        } else if (response.sesionstoken?.token) {
-          // fallback si la API devolviera otra forma
-          sessionStorage.setItem('token', response.sesionstoken.token);
-        }
           
           this.router.navigate(['/dashboard']);
         }
