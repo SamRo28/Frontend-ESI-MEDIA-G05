@@ -251,7 +251,7 @@ export class AdminService {
   }
 
   // ✅ MÉTODO CORREGIDO: Usar endpoints simples que funcionaban antes
-  updateUser(id: string, userData: any): Observable<any> {
+  updateUser(id: string, userData: any, tipo: string): Observable<any> {
     console.log('🔗 Actualizando usuario:', id, userData);
     console.log('🎯 VOLVIENDO a estrategia simple que funcionaba antes');
     
@@ -261,23 +261,8 @@ export class AdminService {
     console.log('📦 Datos enviados:', userData);
     
     // IMPORTANTE: NO usar headers de autorización para estos endpoints
-    return this.http.put<any>(url, userData)
-      .pipe(
-        timeout(10000),
-        catchError((error) => {
-          console.error('❌ Error en PUT /users/' + id + '/profile:', error);
-          console.error('❌ Status:', error.status);
-          console.error('❌ Respuesta del servidor:', error.error);
-          
-          // Si falla /profile, intentar sin /profile
-          console.log('🔄 Intentando sin /profile...');
-          const fallbackUrl = `${this.apiUrl}/users/${id}`;
-          return this.http.put<any>(fallbackUrl, userData).pipe(
-            timeout(10000),
-            catchError(this.handleError)
-          );
-        })
-      );
+    return this.http.put<any>(url, {userData, tipo});
+      
   }
 
   // ====== MÉTODOS ESPECÍFICOS SIMPLIFICADOS ======
@@ -288,8 +273,8 @@ export class AdminService {
   }
 
   updateVisualizador(id: string, visualizador: VisualizadorGestionDTO): Observable<any> {
-    console.log('🔗 Actualizando visualizador (usando endpoint genérico):', id, visualizador);
-    return this.updateUser(id, visualizador);
+
+    return this.updateUser(id, visualizador, "Visualizador");
   }
 
   getGestorById(id: string): Observable<any> {
@@ -299,7 +284,7 @@ export class AdminService {
 
   updateGestor(id: string, gestor: GestorGestionDTO): Observable<any> {
     console.log('🔗 Actualizando gestor (usando endpoint genérico):', id, gestor);
-    return this.updateUser(id, gestor);
+    return this.updateUser(id, gestor, "GestordeContenido");
   }
 
   getAdministradorById(id: string): Observable<any> {
@@ -309,7 +294,7 @@ export class AdminService {
 
   updateAdministrador(id: string, administrador: AdministradorGestionDTO): Observable<any> {
     console.log('🔗 Actualizando administrador (usando endpoint genérico):', id, administrador);
-    return this.updateUser(id, administrador);
+    return this.updateUser(id, administrador, "Administrador");
   }
 
   // ====== MÉTODOS PARA COMPATIBILIDAD CON USER-MANAGEMENT ======

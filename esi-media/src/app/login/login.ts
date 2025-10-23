@@ -42,29 +42,6 @@ export class Login {
         }
         else{
           
-          
-          
-          
-          // ---------
-          // NO TENGO CLARO SI ESTA PARTE DE AQUI DEBERIA SOBRAR, LA HICE RAPIDAMENTE COMO UN PARCHE Y DUDO DE SI SE USA PARA ALGO AHORA
-          
-          if(response.tipo === 'visualizador'){
-            this.router.navigate(['/visualizador']);
-          }
-          else if(response.tipo === 'admin'){
-            this.router.navigate(['/admin-dashboard']);
-          }
-          else if(response.tipo === 'gestor_de_contenido'){
-            this.router.navigate(['/gestor-dashboard']);
-          }
-          else if(response.tipo === 'creador'){
-            this.router.navigate(['/creador-dashboard']);
-          }
-          
-          // ---------
-          
-          
-          sessionStorage.setItem('token', response.sesionstoken.token);
           this.router.navigate(['/dashboard']);
         }
       },

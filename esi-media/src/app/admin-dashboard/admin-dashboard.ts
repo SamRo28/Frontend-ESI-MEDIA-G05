@@ -1005,7 +1005,7 @@ export class AdminDashboardComponent implements OnInit {
 
       // SIMPLIFICADO: Usar un solo método para todos los tipos de usuario
       let updatedUser: any;
-      updatedUser = await firstValueFrom(this.adminService.updateUser(this.editUserForm.id, updateData));
+      updatedUser = await firstValueFrom(this.adminService.updateUser(this.editUserForm.id, updateData, this.editUserForm.rol));
       
       console.log('✅ Respuesta de actualización:', updatedUser);
       
