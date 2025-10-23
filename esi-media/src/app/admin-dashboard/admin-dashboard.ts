@@ -657,10 +657,36 @@ export class AdminDashboardComponent implements OnInit {
 
   deleteUser() {
     if (!this.usuarioAEliminar || this.isDeleting) return;
-    
+
     const userId = this.usuarioAEliminar.id; 
     const nombreUsuario = this.usuarioAEliminar.nombre;
     const apellidosUsuario = this.usuarioAEliminar.apellidos;
+
+    // Evitar que un administrador se elimine a sí mismo
+    try {
+      const currentUserId = this.currentUser?.id || this.currentUser?._id || null;
+      const currentUserEmail = this.currentUser?.email || null;
+
+      if (currentUserId && userId && currentUserId === userId) {
+        this.errorMessage = 'No puedes eliminar tu propia cuenta de administrador.';
+        // Cerrar modal y resetear banderas
+        this.closeDeleteModal();
+        // Limpiar el error después de unos segundos
+        setTimeout(() => { this.errorMessage = ''; }, 5000);
+        return;
+      }
+
+      // También evitar por correo (por si los ids vienen en distinto formato)
+      if (currentUserEmail && this.usuarioAEliminar.email && currentUserEmail === this.usuarioAEliminar.email) {
+        this.errorMessage = 'No puedes eliminar tu propia cuenta de administrador.';
+        this.closeDeleteModal();
+        setTimeout(() => { this.errorMessage = ''; }, 5000);
+        return;
+      }
+    } catch (err) {
+      console.warn('Error comprobando currentUser para auto-eliminación:', err);
+      // En caso de error en la comprobación, continuar con precaución
+    }
     
     if (!userId) {
       this.errorMessage = 'Error: ID de usuario no disponible';
