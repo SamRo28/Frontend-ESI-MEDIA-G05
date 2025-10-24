@@ -18,18 +18,12 @@
         </h1>
         <div class="welcome-section">
           <p class="welcome-text">¡Bienvenido, <span class="user-name">{{ userName }}</span>!</p>
-          <span class="role-badge">Gestor de Contenido</span>
+          <span class="role-badge">Gestor de {{ gestorType === 'video' ? 'Video' : 'Audio' }}</span>
         </div>
       </div>
       <div class="header-actions">
-        <button class="btn-provisional" (click)="navigateToVideoUpload()">
-          🎬 Subir Video (PROVISIONAL)
-        </button>
         <button class="btn-upload-header" (click)="navigateToUpload()">
           ⬆️ Subir Contenido
-        </button>
-        <button class="btn-nav" (click)="goToHome()">
-          🏠 Inicio
         </button>
         <button class="btn-logout" (click)="logout()">
           🚪 Cerrar Sesión
@@ -47,13 +41,13 @@
         <div class="hero-badge">
           Panel de Control
         </div>
-        <h1 class="hero-title">Gestión de Contenido</h1>
-        <p class="hero-subtitle">Sube y administra contenido multimedia para la plataforma ESI Media</p>
+        <h1 class="hero-title">Gestión de Contenido {{ gestorType === 'video' ? 'Video' : 'Audio' }}</h1>
+        <p class="hero-subtitle">Sube y administra contenido {{ gestorType === 'video' ? 'de video' : 'de audio' }} para la plataforma ESI Media</p>
         
         <!-- Información del Dashboard -->
         <div class="dashboard-info">
           <p class="info-text">
-            Utiliza el botón "Subir Contenido" en la barra superior para agregar nuevo contenido multimedia.
+            Utiliza el botón "Subir Contenido" en la barra superior para agregar nuevo contenido {{ gestorType === 'video' ? 'de video' : 'de audio' }}.
           </p>
         </div>
       </div>
@@ -64,36 +58,35 @@
       <div class="tips-content">
         <h2 class="tips-title">💡 Guía Rápida</h2>
         <div class="tips-grid">
-          <div class="tip-card">
+          <div class="tip-card" *ngIf="gestorType === 'audio'">
             <div class="tip-icon">🎵</div>
             <h4>Subida de Audio</h4>
             <ul>
               <li>Formato: Solo MP3</li>
               <li>Tamaño máximo: 2MB</li>
               <li>Duración: Hasta 10 minutos</li>
-              <li>Calidad recomendada: 128kbps</li>
             </ul>
           </div>
           
-          <div class="tip-card">
+          <div class="tip-card" *ngIf="gestorType === 'video'">
             <div class="tip-icon">🎬</div>
             <h4>Subida de Video</h4>
             <ul>
               <li>Formato: URLs válidas</li>
-              <li>Plataformas: YouTube, Vimeo</li>
+              <li>Plataformas como: YouTube</li>
               <li>Duración: Hasta 4 horas</li>
-              <li>Resoluciones soportadas</li>
+              <li>Resoluciones soportadas: 720p, 1080p, 4k</li>
             </ul>
           </div>
           
           <div class="tip-card">
-            <div class="tip-icon">�️</div>
-            <h4>Clasificación</h4>
+            <div class="tip-icon">👍</div>
+            <h4>Clasifica tu contenido</h4>
             <ul>
+              <li>Conviértete en experto en una especialización</li>
               <li>Selecciona tags apropiados</li>
-              <li>Define la edad mínima</li>
-              <li>Configura la visibilidad</li>
-              <li>Añade descripción detallada</li>
+              <li>Define la edad mínima para su reproducción</li>
+              <li>Añade descripciones detalladas</li>
             </ul>
           </div>
         </div>
