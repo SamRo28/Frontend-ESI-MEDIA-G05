@@ -66,7 +66,6 @@ export class ContentService {
       formData.append('descripcion', audioData.descripcion);
     }
     
-    // Los tags se envían como elementos separados del array
     audioData.tags.forEach((tag, index) => {
       formData.append(`tags[${index}]`, tag);
     });
@@ -97,18 +96,18 @@ export class ContentService {
   uploadVideo(videoData: VideoUploadData): Observable<UploadResponse> {
     const payload = {
       titulo: videoData.titulo,
-      descripcion: videoData.descripcion || null, // CAMBIO: null en lugar de undefined
+      descripcion: videoData.descripcion || null,
       tags: videoData.tags,
-      duracion: videoData.duracion, // Mantener como number, no string
+      duracion: videoData.duracion,
       vip: videoData.vip,
       edadVisualizacion: videoData.edadVisualizacion,
       fechaDisponibleHasta: videoData.fechaDisponibleHasta 
-        ? videoData.fechaDisponibleHasta.toISOString() // CAMBIO: Usar toISOString() como audio
+        ? videoData.fechaDisponibleHasta.toISOString()
         : null,
       visible: videoData.visible,
       url: videoData.url,
       resolucion: videoData.resolucion,
-      caratula: videoData.caratula || null // CAMBIO: null en lugar de undefined
+      caratula: videoData.caratula || null
     };
 
     // El interceptor authInterceptor se encarga automáticamente del header Authorization

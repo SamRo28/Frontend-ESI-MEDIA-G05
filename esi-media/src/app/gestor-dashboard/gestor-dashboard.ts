@@ -35,7 +35,7 @@ export class GestorDashboardComponent implements OnInit {
   };
   
   isLoading = true;
-  gestorType: 'audio' | 'video' | 'admin' = 'audio'; // Por defecto audio
+  gestorType: 'audio' | 'video' | 'admin' = 'audio'; // Por defecto audio, solo para pruebas
   userName = '';
 
   constructor(
@@ -57,15 +57,19 @@ export class GestorDashboardComponent implements OnInit {
       const email = sessionStorage.getItem('email');
       
       if (email) {
-        // Extraer el nombre del email (antes del @)
+        // TODO: Utilizar el alias en lugar del email
         this.userName = email.split('@')[0] || 'Gestor';
       } else {
         this.userName = 'Gestor';
       }
       
+
+      // TODO: analizar desde esta linea a la 95
+
+
       // Determinar el tipo de gestor basado en la información de sesión
       if (userType === 'gestor_de_contenido') {
-        this.gestorType = 'audio'; // Por defecto, pero se puede extender
+        this.gestorType = 'audio';
       } else if (userType === 'admin') {
         this.gestorType = 'admin';
       } else {
@@ -90,14 +94,13 @@ export class GestorDashboardComponent implements OnInit {
     this.isLoading = false;
   }
 
+
+
   // Navegación a páginas de subida
   navigateToUpload() {
-    // Por ahora, para el mockup, iremos por defecto a audio
-    // En el futuro esto se determinará por el tipo de gestor
     if (this.gestorType === 'video') {
       this.router.navigate(['/video/subir']);
     } else {
-      // Por defecto audio
       this.router.navigate(['/audio/subir']);
     }
   }
@@ -119,6 +122,9 @@ export class GestorDashboardComponent implements OnInit {
     sessionStorage.removeItem('currentUserClass');
     this.router.navigate(['/login']);
   }
+
+
+// TODO: Analizar si esto se puede eliminar ya sin problemas, porque este boton ya no existe en la interfaz
 
   // Ir al home
   goToHome() {
