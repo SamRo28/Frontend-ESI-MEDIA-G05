@@ -35,7 +35,7 @@ export class GestorDashboardComponent implements OnInit {
   };
   
   isLoading = true;
-  gestorType: 'audio' | 'video' | 'admin' = 'audio'; // Por defecto audio, solo para pruebas
+  gestorType: 'audio' | 'video' = 'audio'; // Por defecto audio, solo para pruebas
   userName = '';
 
   constructor(
@@ -52,39 +52,25 @@ export class GestorDashboardComponent implements OnInit {
   loadUserInfo() {
     // Solo acceder a sessionStorage en el navegador
     if (isPlatformBrowser(this.platformId)) {
-      // Obtener información del usuario del sessionStorage
+      // Obtenemos el tipo de usuario desde sessionStorage para validar que es gestor realmente
       const userType = sessionStorage.getItem('currentUserClass');
-      const email = sessionStorage.getItem('email');
-      
-      if (email) {
-        // TODO: Utilizar el alias en lugar del email
-        this.userName = email.split('@')[0] || 'Gestor';
-      } else {
-        this.userName = 'Gestor';
-      }
-      
-
-      // TODO: analizar desde esta linea a la 95
-
-
-      // Determinar el tipo de gestor basado en la información de sesión
-      if (userType === 'gestor_de_contenido') {
-        this.gestorType = 'audio';
-      } else if (userType === 'admin') {
-        this.gestorType = 'admin';
-      } else {
-        this.gestorType = 'audio';
-      }
-    } else {
-      // Valores por defecto para SSR
-      this.userName = 'Gestor';
-      this.gestorType = 'audio';
+      // Obtener el resto de información del usuario del sessionStorage
+      const userJson = sessionStorage.getItem('user');
+        let parsedUser: any = null;
+        if (userJson) {
+          try { parsedUser = JSON.parse(userJson); } catch (e) { parsedUser = null; }
+        }
+      this.userName = parsedUser?.alias || 'Gestor';
+      //Ahora obtenemos el tipo contenido video o audio
+      this.gestorType = parsedUser?.tipocontenidovideooaudio || 'audio';
     }
   }
 
   loadDashboardStats() {
-    // Para el Sprint #1, no necesitamos cargar estadísticas reales
+    // Para el Sprint #1, todavia no necesitamos cargar estadísticas reales
     // Solo inicializamos los valores por defecto
+
+    // TODO en sprint #2 implementar carga real de estadísticas
     this.stats = {
       totalContent: 0,
       audioCount: 0,
