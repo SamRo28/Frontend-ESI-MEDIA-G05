@@ -37,6 +37,8 @@ export class GestorDashboardComponent implements OnInit {
   isLoading = true;
   gestorType: 'audio' | 'video' = 'audio'; // Por defecto audio, solo para pruebas
   userName = '';
+  // Mensajes para mostrar retroalimentación en la UI (p.ej. 'Sesión cerrada')
+  successMessage = '';
 
   constructor(
     private readonly contentService: ContentService,
@@ -103,10 +105,25 @@ export class GestorDashboardComponent implements OnInit {
 
   // Cerrar sesión
   logout() {
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('email');
-    sessionStorage.removeItem('currentUserClass');
-    this.router.navigate(['/login']);
+    // borrar usuario completo, token y metadatos de sesión, limpiar estado y redirigir
+    if (isPlatformBrowser(this.platformId)) {
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('email');
+      sessionStorage.removeItem('currentUserClass');
+
+      // Limpiar estado local
+      this.userName = '';
+
+      // Mostrar mensaje breve (puede usarse en template si se quiere mostrar)
+      this.successMessage = 'Sesión cerrada';
+      // Renovamos isLoading/flags si es necesario
+
+      // Redirigir al home después de un pequeño retardo para permitir ver el mensaje
+      setTimeout(() => {
+        this.router.navigate(['/home']);
+      }, 1350);
+    }
   }
 
 
