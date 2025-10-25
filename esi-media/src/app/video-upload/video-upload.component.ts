@@ -1,8 +1,26 @@
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ContentService, VideoUploadData, UploadResponse } from '../services/content.service';
+
+// Validador para fechas que deben ser estrictamente posteriores a hoy
+function futureDateValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const value = control.value;
+    if (!value) return null; // Campo vacío permitido (es opcional)
+    
+    const selectedDate = new Date(value);
+    if (Number.isNaN(selectedDate.getTime())) return { invalidDate: true };
+    
+    // Comparar solo la parte de fecha (sin horas) para evitar problemas de zona horaria
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+    
+    return selectedDate > today ? null : { notInFuture: true };
+  };
+}
 
 @Component({
   selector: 'app-video-upload',
@@ -52,7 +70,7 @@ export class VideoUploadComponent {
       segundos: ['', [Validators.required, Validators.min(0), Validators.max(59)]],
       vip: [false, [Validators.required]],
       edadVisualizacion: ['', [Validators.required]],
-      fechaDisponibleHasta: [''],
+      fechaDisponibleHasta: ['', [futureDateValidator()]],
       visible: [true, [Validators.required]],
       url: ['', [Validators.required, Validators.pattern(/^https?:\/\/[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*(?:[/#?].*)?$/)]],
       resolucion: ['', [Validators.required]],
