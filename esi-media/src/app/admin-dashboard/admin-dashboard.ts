@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, ChangeDetectorRef, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ChangeDetectorRef, Inject, PLATFORM_ID, NgZone } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -11,7 +11,7 @@ import { AdminService, Usuario, PerfilDetalle, ContenidoResumen, ContenidoDetall
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule]
 })
-export class AdminDashboardComponent implements OnInit {
+export class AdminDashboardComponent implements OnInit, AfterViewInit {
   activeTab = 'inicio';
   showForm = false;
   usuarios: Usuario[] = [];
@@ -58,6 +58,10 @@ export class AdminDashboardComponent implements OnInit {
   errorBloqueo = '';
   // Doble confirmaciÃ³n de bloqueo/desbloqueo
   confirmBloqueoStep: 1 | 2 = 1;
+  
+  // Estados para mostrar/ocultar contraseñas
+  showPassword = false;
+  showRepeatPassword = false;
   
   // Filtros
   filtroRol = 'Todos'; // 'Todos', 'Administrador', 'Gestor', 'Visualizador'
@@ -107,10 +111,40 @@ export class AdminDashboardComponent implements OnInit {
       const userStr = localStorage.getItem('currentUser');
       if (userStr) {
         this.currentUser = JSON.parse(userStr);
-      }
+    // Asegurar que activeTab esté inicializado correctamente
+    if (!this.activeTab) {
+      this.activeTab = 'inicio';
     }
     
-    this.loadUsuarios();
+    // Solo cargar datos cuando estemos en el navegador
+    if (isPlatformBrowser(this.platformId)) {
+      // Cargar información del usuario actual desde sessionStorage
+      const userStr = sessionStorage.getItem('user');
+      if (userStr) {
+        try {
+          this.currentUser = JSON.parse(userStr);
+        } catch (e) {
+          console.error('❌ Error al parsear usuario desde sessionStorage:', e);
+        }
+      }
+      
+      // Cargar usuarios para mostrar estadísticas en la vista de inicio
+      this.loadUsuarios();
+    }
+    
+    // Forzar detección de cambios para asegurar que la vista se actualice
+    this.cdr.detectChanges();
+  }
+
+  ngAfterViewInit() {
+    // Segunda carga después de que la vista esté completamente inicializada
+    // Esto asegura que las estadísticas se muestren correctamente desde el inicio
+    if (isPlatformBrowser(this.platformId) && this.usuarios.length === 0) {
+      console.log('🔄 AfterViewInit - Recargando usuarios para estadísticas...');
+      setTimeout(() => {
+        this.loadUsuarios();
+      }, 100); // Pequeño delay para asegurar que la vista esté lista
+    }
   }
 
   loadUsuarios() {
@@ -119,6 +153,7 @@ export class AdminDashboardComponent implements OnInit {
     
     this.adminService.getUsuarios().subscribe({
       next: (usuarios) => {
+        console.log('✅ Usuarios cargados exitosamente:', usuarios.length);
         this.usuarios = usuarios;
         // Resolver y persistir Admin-ID si falta
         try {
@@ -144,15 +179,23 @@ export class AdminDashboardComponent implements OnInit {
         this.aplicarFiltros(); // Aplicar filtros despuÃ©s de cargar usuarios
       },
       error: (error: any) => {
-        console.error('Error al cargar usuarios:', error);
-        this.errorMessage = 'Error al cargar la lista de usuarios';
+        console.error('❌ Error al cargar usuarios:', error);
         
-        // Intentar recargar despuÃ©s de un tiempo si hay un error temporal
-        setTimeout(() => {
-          if (this.usuarios.length === 0) {
-            this.loadUsuarios();
-          }
-        }, 3000);
+        if (error.status === 401) {
+          this.errorMessage = '❌ No tienes autorización para ver la lista de usuarios. Token inválido o expirado.';
+        } else {
+          this.errorMessage = 'Error al cargar la lista de usuarios';
+          
+          // Intentar recargar después de un tiempo si hay un error temporal
+          setTimeout(() => {
+            if (this.usuarios.length === 0) {
+              this.loadUsuarios();
+            }
+          }, 3000);
+        }
+        
+        // También forzar detección de cambios en caso de error
+        this.cdr.detectChanges();
       }
     });
   }
@@ -273,6 +316,8 @@ export class AdminDashboardComponent implements OnInit {
     if (this.showForm) {
       // Limpiar mensajes cuando se abre el formulario
       this.resetMessages();
+      // Recargar la lista de usuarios cuando se cierre el formulario
+      this.loadUsuarios();
     } else {
       this.resetForm();
       this.resetMessages();
@@ -284,9 +329,6 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   createUser() {
-    console.log('ðŸŽ¯ COMPONENTE: *** createUser() EJECUTADO ***');
-    console.log('ðŸ“‹ COMPONENTE: Datos del formulario:', this.newUser);
-    console.log('ðŸ“‹ COMPONENTE: isCreating antes:', this.isCreating);
     
     this.resetMessages();
     
@@ -304,12 +346,7 @@ export class AdminDashboardComponent implements OnInit {
     
     const emptyFields = requiredFields.filter(field => !this.newUser[field as keyof typeof this.newUser]);
     
-    console.log('âœ… COMPONENTE: ValidaciÃ³n campos vacÃ­os - Tipo de usuario:', this.newUser.rol);
-    console.log('âœ… COMPONENTE: ValidaciÃ³n campos vacÃ­os - Campos requeridos:', requiredFields);
-    console.log('âœ… COMPONENTE: ValidaciÃ³n campos vacÃ­os - Campos vacÃ­os encontrados:', emptyFields);
-    
     if (emptyFields.length > 0) {
-      console.log('âŒ COMPONENTE: ValidaciÃ³n fallÃ³ - campos vacÃ­os:', emptyFields);
       this.fieldsWithError = [...emptyFields];
       this.errorMessage = `âŒ Complete todos los campos obligatorios: ${emptyFields.join(', ')}`;
       return;
@@ -319,28 +356,21 @@ export class AdminDashboardComponent implements OnInit {
     console.log('âœ… COMPONENTE: ValidaciÃ³n contraseÃ±as - contrasenia:', this.newUser.contrasenia);
     console.log('âœ… COMPONENTE: ValidaciÃ³n contraseÃ±as - repetirContrasenia:', this.newUser.repetirContrasenia);
     
-    if (this.newUser.contrasenia !== this.newUser.repetirContrasenia) {
-      console.log('âŒ COMPONENTE: ValidaciÃ³n fallÃ³ - contraseÃ±as no coinciden');
+    if (!this.isPasswordValid()) {
       this.fieldsWithError = ['contrasenia', 'repetirContrasenia'];
       this.errorMessage = 'âŒ Las contraseÃ±as no coinciden. Verifique que ambas contraseÃ±as sean idÃ©nticas.';
       return;
     }
 
     // Validar email
-    console.log('âœ… COMPONENTE: ValidaciÃ³n email:', this.newUser.email);
-    
     if (!this.isValidEmail(this.newUser.email)) {
-      console.log('âŒ COMPONENTE: ValidaciÃ³n fallÃ³ - email invÃ¡lido');
       this.fieldsWithError = ['email'];
       this.errorMessage = 'âŒ Por favor, ingrese un correo electrÃ³nico vÃ¡lido (ejemplo: usuario@dominio.com).';
       return;
     }
 
-    console.log('ðŸŽ‰ COMPONENTE: Todas las validaciones pasaron!');
-    
-    // Solo activar loading despuÃ©s de validar
+    // Solo activar loading después de validar
     this.isCreating = true;
-    console.log('ðŸ”„ COMPONENTE: isCreating = true');
     
     // Forzar detecciÃ³n de cambios despuÃ©s de actualizar isCreating
     this.cdr.detectChanges();
@@ -368,9 +398,7 @@ export class AdminDashboardComponent implements OnInit {
       userData.departamento = this.newUser.departamento;
     }
 
-    console.log('ðŸš€ COMPONENTE: Preparando datos para envÃ­o...');
-    console.log('ðŸ“¤ COMPONENTE: userData creado:', userData);
-    console.log('ðŸ“ž COMPONENTE: *** AHORA LLAMANDO A adminService.crearUsuario() ***');
+
 
     // Variable para el timeout de respaldo
     let backupTimeout: any = null;
@@ -378,7 +406,6 @@ export class AdminDashboardComponent implements OnInit {
     // Implementar timeout de respaldo mÃ¡s largo ahora que sabemos que el server responde
     backupTimeout = setTimeout(() => {
       if (this.isCreating) {
-        console.log('âš ï¸ TIMEOUT DE RESPALDO: El servidor tardÃ³ mÃ¡s de 8 segundos');
         this.isCreating = false;
         this.cdr.detectChanges(); // Forzar actualizaciÃ³n en timeout
         this.errorMessage = 'La operaciÃ³n tardÃ³ mÃ¡s tiempo del esperado, pero es posible que el administrador se haya creado.';
@@ -397,38 +424,30 @@ export class AdminDashboardComponent implements OnInit {
 
     this.adminService.crearUsuario(userData).subscribe({
       next: (response: any) => {
-        console.log('âœ… Ã‰XITO: Respuesta completa del servidor:', response);
         clearTimeout(backupTimeout); // Cancelar timeout de respaldo
         
         // Extraer el nombre de la respuesta del servidor o usar el del formulario
         const nombreCreado = response?.nombre || this.newUser.nombre;
         
-        // CAMBIOS CRÃTICOS DE ESTADO
-        console.log('ðŸ”„ CAMBIANDO ESTADOS:');
-        console.log('  isCreating:', this.isCreating, '-> false');
-        console.log('  isSuccess:', this.isSuccess, '-> true');
-        
-        this.isCreating = false;
-        this.isSuccess = true;
-        
-        // Mensaje de Ã©xito especÃ­fico por rol
-        const tipoUsuario = this.newUser.rol === 'Gestor' ? 'Gestor de Contenido' : 'Administrador';
-        this.successMessage = `Â¡${tipoUsuario} "${nombreCreado}" creado exitosamente!`;
-        
-        console.log('âœ… ESTADOS ACTUALIZADOS:');
-        console.log('  isCreating:', this.isCreating);
-        console.log('  isSuccess:', this.isSuccess);
-        console.log('  successMessage:', this.successMessage);
-        
-        // FORZAR DETECCIÃ“N DE CAMBIOS
-        this.cdr.detectChanges();
-        console.log('ðŸŽ‰ DetecciÃ³n de cambios ejecutada - deberÃ­a mostrar pantalla de Ã©xito');
+        // Ejecutar cambios de estado dentro de la zona de Angular
+        this.ngZone.run(() => {
+          this.isCreating = false;
+          this.isSuccess = true;
+          
+          // Mensaje de éxito específico por rol
+          const tipoUsuario = this.newUser.rol === 'Gestor' ? 'Gestor de Contenido' : 'Administrador';
+          this.successMessage = `¡${tipoUsuario} "${nombreCreado}" creado exitosamente!`;
+          
+          // **RECARGAR AUTOMÁTICAMENTE la lista de usuarios para que se vea el nuevo usuario**
+          console.log('🔄 Usuario creado exitosamente, recargando lista automáticamente...');
+          this.loadUsuarios();
+          
+          // FORZAR DETECCIÓN DE CAMBIOS
+          this.cdr.detectChanges();
+        });
       },
       error: (error: any) => {
-        console.error('âŒ Error completo al crear usuario:', error);
-        console.log('ðŸ“Š Status del error:', error.status);
-        console.log('ðŸ“ Mensaje del error:', error.error);
-        console.log('ðŸŒ URL completa:', error.url);
+        console.error('❌ Error completo al crear usuario:', error);
         
         clearTimeout(backupTimeout); // Cancelar timeout de respaldo
         this.isCreating = false;
@@ -536,17 +555,26 @@ export class AdminDashboardComponent implements OnInit {
 
   // MÃ©todo para salir del formulario despuÃ©s del Ã©xito
   exitForm() {
+    console.log('🚪 SALIENDO del formulario - recargando usuarios...');
+    
+    // Cerrar formulario y resetear
     this.showForm = false;
     this.resetForm();
-    this.loadUsuarios(); // Recargar la lista de usuarios
+    
+    // Recargar la lista de usuarios inmediatamente
+    this.loadUsuarios();
     
     // Mostrar mensaje de Ã©xito en la vista principal
     const nombreCreado = this.newUser.nombre || 'nuevo administrador';
     this.successMessage = `âœ… El administrador "${nombreCreado}" ha sido registrado correctamente en el sistema.`;
     
-    // Limpiar el mensaje despuÃ©s de 5 segundos
+    // Forzar detección de cambios después de cerrar el formulario
+    this.cdr.detectChanges();
+    
+    // Limpiar el mensaje después de 5 segundos
     setTimeout(() => {
       this.successMessage = '';
+      this.cdr.detectChanges(); // También forzar detección al limpiar mensaje
     }, 5000);
   }
 
@@ -556,7 +584,74 @@ export class AdminDashboardComponent implements OnInit {
     return this.usuarios.filter(u => u.bloqueado).length;
   }
 
-  // MÃ©todos de filtrado
+  // Formatear fecha para mostrar en el dashboard
+  formatDate(dateString: string): string {
+    if (!dateString) return 'No disponible';
+    
+    try {
+      const date = new Date(dateString);
+      const options: Intl.DateTimeFormatOptions = { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      };
+      return date.toLocaleDateString('es-ES', options);
+    } catch (error) {
+      return 'Fecha no válida';
+    }
+  }
+
+  // Validación de contraseña en tiempo real
+  validatePassword() {
+    const password = this.newUser.contrasenia;
+    const confirmPassword = this.newUser.repetirContrasenia;
+    const nombre = this.newUser.nombre.trim();
+    
+    // Validar longitud mínima (8 caracteres)
+    this.passwordValidation.minLength = password.length >= 8;
+    
+    // Validar que tenga al menos una mayúscula
+    this.passwordValidation.hasUpperCase = /[A-Z]/.test(password);
+    
+    // Validar que tenga al menos una minúscula
+    this.passwordValidation.hasLowerCase = /[a-z]/.test(password);
+    
+    // Validar que tenga al menos un número
+    this.passwordValidation.hasNumber = /[0-9]/.test(password);
+    
+    // Validar que tenga al menos un carácter especial
+    this.passwordValidation.hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+    
+    // Validar que NO empiece con mayúscula
+    this.passwordValidation.noStartsWithUpperCase = password.length > 0 && !/^[A-Z]/.test(password);
+    
+    // Validar que las contraseñas coincidan
+    this.passwordValidation.passwordsMatch = password.length > 0 && password === confirmPassword;
+    
+    // Validar que la contraseña NO contenga el nombre de usuario (insensible a mayúsculas)
+    if (nombre.length > 0 && password.length > 0) {
+      this.passwordValidation.notContainsUsername = !password.toLowerCase().includes(nombre.toLowerCase());
+    } else {
+      // Si no hay nombre o contraseña, consideramos válido este criterio
+      this.passwordValidation.notContainsUsername = true;
+    }
+  }
+
+  // Verificar si la contraseña es válida
+  isPasswordValid(): boolean {
+    return this.passwordValidation.minLength &&
+           this.passwordValidation.hasUpperCase &&
+           this.passwordValidation.hasLowerCase &&
+           this.passwordValidation.hasNumber &&
+           this.passwordValidation.hasSpecialChar &&
+           this.passwordValidation.noStartsWithUpperCase &&
+           this.passwordValidation.passwordsMatch &&
+           this.passwordValidation.notContainsUsername;
+  }
+
+  // Métodos de filtrado
   aplicarFiltros() {
     let usuariosFiltrados = [...this.usuarios];
 
@@ -697,10 +792,53 @@ export class AdminDashboardComponent implements OnInit {
 
   deleteUser() {
     if (!this.usuarioAEliminar || this.isDeleting) return;
-    
-    const userId = this.usuarioAEliminar.id; 
+
+    const userId = this.usuarioAEliminar.id || (this.usuarioAEliminar as any)._id;
     const nombreUsuario = this.usuarioAEliminar.nombre;
     const apellidosUsuario = this.usuarioAEliminar.apellidos;
+
+    // Normalizar identificadores y roles
+    const currentUserId = this.currentUser?.id || this.currentUser?._id || null;
+    const currentUserEmail = (this.currentUser?.email || '').toString();
+    const currentUserRole = (this.currentUser?.rol || this.currentUser?.role || '').toString().toLowerCase();
+
+    const targetId = userId || null;
+    const targetEmail = (this.usuarioAEliminar?.email || '').toString();
+    const targetRole = (this.usuarioAEliminar?.rol || '').toString().toLowerCase();
+
+    const isSameById = currentUserId && targetId && currentUserId === targetId;
+    const isSameByEmail = currentUserEmail && targetEmail && currentUserEmail === targetEmail;
+    const isSelf = !!(isSameById || isSameByEmail);
+
+    // Si el objetivo es Visualizador, SOLO él mismo puede eliminarse.
+    // Ni administradores, ni gestores, ni otros visualizadores pueden borrarlo.
+    if (targetRole === 'visualizador') {
+      if (!isSelf) {
+        this.errorMessage = 'Sólo un visualizador puede eliminar su propia cuenta.';
+        this.closeDeleteModal();
+        setTimeout(() => { this.errorMessage = ''; }, 5000);
+        return;
+      }
+
+      // Además, asegurarnos de que el usuario actual tenga rol Visualizador
+      if (currentUserRole !== 'visualizador') {
+        this.errorMessage = 'Sólo un visualizador puede eliminar su propia cuenta.';
+        this.closeDeleteModal();
+        setTimeout(() => { this.errorMessage = ''; }, 5000);
+        return;
+      }
+      // Si es self y rol también es visualizador, permitir continuar
+    }
+
+    // En el admin-dashboard (acceso solo para administradores) no se permite
+    // que el usuario actual se elimine a sí mismo. No hace falta comprobar explícitamente
+    // el rol porque este dashboard solo lo usan administradores.
+    if (isSelf) {
+      this.errorMessage = 'No puedes eliminar tu propia cuenta de administrador.';
+      this.closeDeleteModal();
+      setTimeout(() => { this.errorMessage = ''; }, 5000);
+      return;
+    }
     
     if (!userId) {
       this.errorMessage = 'Error: ID de usuario no disponible';
@@ -895,6 +1033,100 @@ export class AdminDashboardComponent implements OnInit {
       }
       // Si es solo el nombre de archivo, servir desde raÃ­z pÃºblica
       return `/${foto}`;
+    // NUEVO: Cargar detalles completos del usuario según su tipo
+  private loadUserDetails(userId: string, rol: string) {
+    
+    switch (rol) {
+      case 'Administrador':
+        this.adminService.getAdministradorById(userId).subscribe({
+          next: (response) => this.processUserDetails(response, 'Administrador'),
+          error: (error) => this.handleUserDetailsError(error, '/users', 'Administrador')
+        });
+        break;
+      case 'Gestor':
+        this.adminService.getGestorById(userId).subscribe({
+          next: (response) => this.processUserDetails(response, 'Gestor'),
+          error: (error) => this.handleUserDetailsError(error, '/users', 'Gestor')
+        });
+        break;
+      case 'Visualizador':
+      default:
+        this.adminService.getVisualizadorById(userId).subscribe({
+          next: (response) => this.processUserDetails(response, 'Visualizador'),
+          error: (error) => this.handleUserDetailsError(error, '/users', 'Visualizador')
+        });
+        break;
+    }
+  }
+
+  private processUserDetails(response: any, rol: string) {
+    let userDetails: any;
+    
+    // ESTRATEGIA SIMPLIFICADA: Asumir que la respuesta ES directamente los datos del usuario
+    if (response && typeof response === 'object') {
+      userDetails = response;
+    } else {
+      this.errorMessage = 'Error: no se pudieron cargar los datos del usuario';
+      return;
+    }
+    
+    // Actualizar el formulario con TODOS los datos disponibles
+    this.editUserForm = {
+      ...this.editUserForm,
+      ...userDetails
+    };
+    
+    // Mapeos específicos para campos que pueden tener nombres diferentes
+    if (userDetails.campoespecializacion) {
+      this.editUserForm.especialidad = userDetails.campoespecializacion;
+    }
+    
+    // 🔧 ARREGLO DE FECHAS: Convertir fechas al formato YYYY-MM-DD para inputs HTML
+    if (userDetails.fechaNac || userDetails.fechanac) {
+      const fechaNac = userDetails.fechaNac || userDetails.fechanac;
+      this.editUserForm.fechanac = this.formatDateForInput(fechaNac);
+    }
+    
+    if (userDetails.fechaRegistro || userDetails.fecharegistro) {
+      const fechaRegistro = userDetails.fechaRegistro || userDetails.fecharegistro;
+      this.editUserForm.fecharegistro = this.formatDateForInput(fechaRegistro);
+    }
+    
+    if (userDetails.alias) {
+      this.editUserForm.alias = userDetails.alias;
+    }
+    this.cdr.detectChanges(); // Forzar actualización de la vista
+  }
+
+  // 🔧 NUEVO: Método para formatear fechas para inputs HTML
+  private formatDateForInput(dateValue: any): string {
+    if (!dateValue) return '';
+    
+    try {
+      let date: Date;
+      
+      if (dateValue instanceof Date) {
+        date = dateValue;
+      } else if (typeof dateValue === 'string') {
+        date = new Date(dateValue);
+      } else if (typeof dateValue === 'number') {
+        date = new Date(dateValue);
+      } else {
+        return '';
+      }
+      
+      if (Number.isNaN(date.getTime())) {
+        return '';
+      }
+      
+      // Formatear como YYYY-MM-DD para input[type="date"]
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      return '';
     }
     // Si viene como objeto con campo url o path
     if (foto.url && typeof foto.url === 'string') return foto.url;
@@ -965,7 +1197,27 @@ export class AdminDashboardComponent implements OnInit {
           // Actualizar lista principal
           this.usuarios = this.usuarios.map(u => u.id === idObjetivo ? { ...u, bloqueado: nuevoEstado } : u);
 
-          // Reaplicar filtros para refrescar la tabla visible
+      // SIMPLIFICADO: Usar un solo método para todos los tipos de usuario
+      let updatedUser: any;
+      updatedUser = await firstValueFrom(this.adminService.updateUser(this.editUserForm.id, updateData, this.editUserForm.rol));
+      
+      console.log('✅ Respuesta de actualización:', updatedUser);
+      
+      // ESTRATEGIA SIMPLIFICADA: Asumir que la respuesta ES directamente los datos actualizados
+      let userData: any;
+      if (updatedUser && typeof updatedUser === 'object') {
+        userData = updatedUser;
+        console.log('📦 Usando datos directos de la respuesta:', userData);
+      } else {
+        console.warn('⚠️ Respuesta inesperada, usando datos enviados como fallback');
+        userData = updateData; // Usar los datos que enviamos como fallback
+      }
+      
+      if (userData) {
+        // Actualizar el usuario en la lista local
+        const index = this.usuarios.findIndex(u => u.id === this.editingUser?.id);
+        if (index !== -1) {
+          this.usuarios[index] = { ...this.usuarios[index], ...userData };
           this.aplicarFiltros();
         }
 
@@ -1012,6 +1264,124 @@ export class AdminDashboardComponent implements OnInit {
       const adminEnLista = this.usuarios.find(u => u.email === this.currentUser?.email);
       if (adminEnLista?.id) {
         return adminEnLista.id;
+  // ============================================
+  // MÉTODOS PARA MOSTRAR/OCULTAR CONTRASEÑAS
+  // ============================================
+  
+  togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
+  }
+  
+  toggleRepeatPasswordVisibility() {
+    this.showRepeatPassword = !this.showRepeatPassword;
+  }
+
+  // ============================================
+  // MÉTODO PARA MOSTRAR CONFIRMACIÓN DE CREACIÓN
+  // ============================================
+  
+  showCreationConfirmation() {
+    // Resetear mensajes
+    this.resetMessages();
+    
+    // Limpiar errores anteriores
+    this.fieldsWithError = [];
+    
+    // Validar campos obligatorios según el rol
+    let requiredFields: string[];
+    
+    if (this.newUser.rol === 'Gestor') {
+      requiredFields = ['nombre', 'apellidos', 'email', 'contrasenia', 'alias', 'especialidad', 'tipoContenido', 'foto'];
+    } else {
+      requiredFields = ['nombre', 'apellidos', 'email', 'contrasenia', 'departamento'];
+    }
+    
+    const emptyFields = requiredFields.filter(field => !this.newUser[field as keyof typeof this.newUser]);
+    
+    if (emptyFields.length > 0) {
+      this.fieldsWithError = [...emptyFields];
+      this.errorMessage = `❌ Complete todos los campos obligatorios: ${emptyFields.join(', ')}`;
+      return;
+    }
+
+    // Validar política de contraseñas
+    this.validatePassword();
+    
+    if (!this.isPasswordValid()) {
+      this.fieldsWithError = ['contrasenia', 'repetirContrasenia'];
+      
+      const errores = [];
+      if (!this.passwordValidation.minLength) errores.push('mínimo 8 caracteres');
+      if (!this.passwordValidation.noStartsWithUpperCase) errores.push('no debe comenzar con mayúscula');
+      if (!this.passwordValidation.hasUpperCase) errores.push('al menos una letra mayúscula');
+      if (!this.passwordValidation.hasLowerCase) errores.push('al menos una letra minúscula');
+      if (!this.passwordValidation.hasNumber) errores.push('al menos un número');
+      if (!this.passwordValidation.hasSpecialChar) errores.push('al menos un carácter especial (!@#$%^&*...)');
+      if (!this.passwordValidation.passwordsMatch) errores.push('las contraseñas deben coincidir');
+      if (!this.passwordValidation.notContainsUsername) errores.push('no debe contener el nombre de usuario');
+      
+      this.errorMessage = `❌ La contraseña no cumple con la política de seguridad: ${errores.join(', ')}`;
+      return;
+    }
+
+    // Validar email
+    if (!this.isValidEmail(this.newUser.email)) {
+      this.fieldsWithError = ['email'];
+      this.errorMessage = '❌ Por favor, ingrese un correo electrónico válido (ejemplo: usuario@dominio.com).';
+      return;
+    }
+
+    // Si todas las validaciones pasan, mostrar modal de confirmación
+    this.showCreateConfirmation = true;
+    
+    console.log('� Estado DESPUÉS - showCreateConfirmation:', this.showCreateConfirmation);
+    console.log('🔍 Estado DESPUÉS - showForm:', this.showForm);
+    
+    // Forzar múltiples detecciones de cambios
+    this.cdr.detectChanges();
+    
+    setTimeout(() => {
+      console.log('⏰ Verificación después de 100ms - showCreateConfirmation:', this.showCreateConfirmation);
+      this.cdr.detectChanges();
+    }, 100);
+  }
+
+  // ============================================
+  // MÉTODO PARA CONFIRMAR Y CREAR USUARIO
+  // ============================================
+  
+  confirmCreateUser() {
+    this.showCreateConfirmation = false;
+    this.createUser();
+  }
+
+  // ============================================
+  // MÉTODO PARA CANCELAR CREACIÓN
+  // ============================================
+  
+  cancelCreateUser() {
+    // Solo cerrar el modal de confirmación, el formulario se mantiene abierto
+    this.showCreateConfirmation = false;
+  }
+
+  // ============================================
+  // MÉTODO PARA VERIFICAR TOKEN DE AUTENTICACIÓN
+  // ============================================
+  
+  private checkAuthToken() {
+    if (isPlatformBrowser(this.platformId)) {
+      const token = sessionStorage.getItem('authToken') || 
+                    localStorage.getItem('authToken') || 
+                    sessionStorage.getItem('token');
+      
+      if (token) {
+        console.log('✅ Token de autorización encontrado:', token.substring(0, 20) + '...');
+      } else {
+        console.warn('⚠️ No se encontró token de autorización');
+        // Generar token de prueba temporal si es necesario
+        const testToken = 'test-token-' + Date.now();
+        sessionStorage.setItem('authToken', testToken);
+        console.log('🧪 Token de prueba generado:', testToken);
       }
     }
 

@@ -43,16 +43,43 @@ export class AdminService {
 
   constructor(private readonly http: HttpClient) {}
 
-  // ============== Usuarios (genéricos) ==============
+  // Obtener headers con token de autorización
+  private getAuthHeaders(): any {
+    let token = sessionStorage.getItem('authToken');
+    
+    if (!token) {
+      // Intentar obtener token de otras fuentes posibles
+      token = localStorage.getItem('authToken') || 
+              sessionStorage.getItem('token') || 
+              localStorage.getItem('token') ||
+              sessionStorage.getItem('userToken') ||
+              localStorage.getItem('userToken');
+      
+      if (!token) {
+        // Por ahora, continuar sin token para ver si algunos endpoints funcionan sin auth
+        return {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        };
+      }
+    }
+    
+    return {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    };
+  }
+
   getUsuarios(): Observable<Usuario[]> {
-    return this.http.get<Usuario[]>(`${this.apiUrl}/users/listar`);
+    return this.http.post<Usuario[]>(`${this.apiUrl}/users/listar`, {}).pipe(
+      catchError(this.handleError)
+    );
   }
 
   crearUsuario(userData: any): Observable<any> {
-    console.log('AdminService: Detectando tipo de usuario...');
-    console.log('Datos:', userData);
-    console.log('Rol detectado:', userData?.rol);
-
     // Decidir qué endpoint usar según el rol
     if (userData?.rol === 'Gestor') {
       return this.crearGestor(userData);
@@ -62,9 +89,8 @@ export class AdminService {
   }
 
   private crearAdministrador(userData: any): Observable<any> {
-    console.log('AdminService: Creando Administrador');
     const url = `${this.apiUrl}/administradores/crear-simple`;
-    console.log('URL Administrador:', url);
+    
     return this.http.post(url, userData).pipe(
       timeout(10000),
       catchError((error) => {
@@ -75,9 +101,8 @@ export class AdminService {
   }
 
   private crearGestor(userData: any): Observable<any> {
-    console.log('AdminService: Creando Gestor de Contenido');
     const url = `${this.apiUrl}/gestores/crear`;
-    console.log('URL Gestor:', url);
+    
     return this.http.post(url, userData).pipe(
       timeout(10000),
       catchError((error) => {
@@ -88,9 +113,7 @@ export class AdminService {
   }
 
   private handleError(error: any): Observable<never> {
-    console.error('Tipo de error:', error?.name);
-    console.error('Status:', error?.status);
-    if (error?.name === 'TimeoutError') {
+    if (error.name === 'TimeoutError') {
       return throwError(() => ({
         message: 'La conexión tardó demasiado tiempo. El usuario puede haberse creado exitosamente.',
         status: 'timeout'
@@ -101,8 +124,7 @@ export class AdminService {
 
   updateProfile(userId: string, updates: any): Observable<any> {
     const url = `${this.apiUrl}/users/${userId}/profile`;
-    console.log('AdminService: Actualizando perfil en:', url);
-    console.log('Datos:', updates);
+    
     return this.http.put(url, updates).pipe(
       timeout(10000),
       catchError((error) => {
@@ -157,6 +179,19 @@ export class AdminService {
         return this.handleError(error);
       })
     );
+  // ✅ MÉTODO CORREGIDO: Usar endpoints simples que funcionaban antes
+  updateUser(id: string, userData: any, tipo: string): Observable<any> {
+    console.log('🔗 Actualizando usuario:', id, userData);
+    console.log('🎯 VOLVIENDO a estrategia simple que funcionaba antes');
+    
+    // VOLVER A LA ESTRATEGIA ORIGINAL: usar /users/{id}/profile que funcionaba
+    const url = `${this.apiUrl}/users/${id}/profile`;
+    console.log('🌐 URL (endpoint simple SIN auth):', url);
+    console.log('📦 Datos enviados:', userData);
+    
+    // IMPORTANTE: NO usar headers de autorización para estos endpoints
+    return this.http.put<any>(url, {userData, tipo});
+      
   }
 
   /** Desbloquea un usuario */
@@ -193,6 +228,9 @@ export class AdminService {
       }),
       catchError((error) => this.handleError(error))
     );
+  updateVisualizador(id: string, visualizador: VisualizadorGestionDTO): Observable<any> {
+
+    return this.updateUser(id, visualizador, "Visualizador");
   }
 
   getContenidoDetalle(id: string, adminId: string): Observable<ContenidoDetalle> {
@@ -207,6 +245,9 @@ export class AdminService {
   // =================== Gestión de usuarios (compatibilidad con user-management) ===================
   getAllVisualizadores(page = 0, size = 10): Observable<Paginado<VisualizadorGestionDTO>> {
     return this.http.get<Paginado<VisualizadorGestionDTO>>(`${this.apiUrl}/visualizadores`, { params: { page, size } as any });
+  updateGestor(id: string, gestor: GestorGestionDTO): Observable<any> {
+    console.log('🔗 Actualizando gestor (usando endpoint genérico):', id, gestor);
+    return this.updateUser(id, gestor, "GestordeContenido");
   }
 
   getAllGestores(page = 0, size = 10): Observable<Paginado<GestorGestionDTO>> {
@@ -215,6 +256,9 @@ export class AdminService {
 
   getAllAdministradores(page = 0, size = 10): Observable<Paginado<AdministradorGestionDTO>> {
     return this.http.get<Paginado<AdministradorGestionDTO>>(`${this.apiUrl}/administradores`, { params: { page, size } as any });
+  updateAdministrador(id: string, administrador: AdministradorGestionDTO): Observable<any> {
+    console.log('🔗 Actualizando administrador (usando endpoint genérico):', id, administrador);
+    return this.updateUser(id, administrador, "Administrador");
   }
 
   updateVisualizador(id: string, payload: any): Observable<any> {
