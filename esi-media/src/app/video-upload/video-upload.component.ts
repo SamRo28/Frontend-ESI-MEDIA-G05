@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -60,7 +60,8 @@ export class VideoUploadComponent {
   constructor(
     private fb: FormBuilder,
     private contentService: ContentService,
-    private router: Router
+    private router: Router,
+  private cdr: ChangeDetectorRef
   ) {
     this.videoForm = this.fb.group({
       titulo: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
@@ -177,6 +178,12 @@ export class VideoUploadComponent {
           if (response.success) {
             this.uploadSuccess = true;
             this.uploadMessage = '¡Video subido exitosamente! 🎉';
+            // Forzar detección de cambios para que la UI muestre el estado de éxito inmediatamente
+            this.cdr.detectChanges();
+            // Redirigir al dashboard de gestores tras mostrar feedback 2 segundos
+            setTimeout(() => {
+              this.router.navigate(['/gestor-dashboard']);
+            }, 3000);
           } else {
             this.uploadSuccess = false;
             this.uploadMessage = `❌ Error: ${response.message}`;

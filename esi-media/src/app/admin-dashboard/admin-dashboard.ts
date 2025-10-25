@@ -1046,50 +1046,52 @@ export class AdminDashboardComponent implements OnInit {
       console.log('🎯 Rol:', this.editUserForm.rol);
       console.log('📊 Cantidad de campos:', Object.keys(updateData).length);
 
-      // SIMPLIFICADO: Usar un solo método para todos los tipos de usuario
-      let updatedUser: any;
-      updatedUser = await firstValueFrom(this.adminService.updateUser(this.editUserForm.id, updateData, this.editUserForm.rol));
-      
-      console.log('✅ Respuesta de actualización:', updatedUser);
-      
-      // ESTRATEGIA SIMPLIFICADA: Asumir que la respuesta ES directamente los datos actualizados
-      let userData: any;
-      if (updatedUser && typeof updatedUser === 'object') {
-        userData = updatedUser;
-        console.log('📦 Usando datos directos de la respuesta:', userData);
-      } else {
-        console.warn('⚠️ Respuesta inesperada, usando datos enviados como fallback');
-        userData = updateData; // Usar los datos que enviamos como fallback
-      }
-      
-      if (userData) {
-        // Actualizar el usuario en la lista local
-        const index = this.usuarios.findIndex(u => u.id === this.editingUser?.id);
-        if (index !== -1) {
-          this.usuarios[index] = { ...this.usuarios[index], ...userData };
-          this.aplicarFiltros();
-        }
+      // SIMPLIFICADO: Usar subscribe para replicar comportamiento consistente con deleteUser()
+      const tempId = this.editUserForm.id;
+      const tempNombre = this.editUserForm.nombre;
+      const tempApellidos = this.editUserForm.apellidos;
 
-        this.successMessage = `Usuario ${this.editUserForm.nombre} ${this.editUserForm.apellidos} actualizado correctamente`;
-        
-        // Mantener el modal abierto pero mostrar los datos actualizados
-        this.editUserForm = {
-          ...this.editUserForm,
-          ...userData
-        };
-        
-        // Mapear campos específicos si es necesario
-        if (this.editUserForm.rol === 'Gestor' && userData.campoespecializacion) {
-          this.editUserForm.especialidad = userData.campoespecializacion;
-        }
-        
-        this.showEditConfirmation = false;
+      // Cerrar modal ANTES de la llamada para dar feedback inmediato (igual que deleteUser)
+      this.showEditUserModal = false;
+      this.showEditConfirmation = false;
 
-        // Limpiar mensaje después de 3 segundos
-        setTimeout(() => {
-          this.successMessage = '';
-        }, 3000);
-      }
+      this.adminService.updateUser(tempId, updateData, this.editUserForm.rol).subscribe({
+        next: (updatedUser: any) => {
+          console.log('Usuario actualizado correctamente:', updatedUser);
+
+          const userData = (updatedUser && typeof updatedUser === 'object') ? updatedUser : updateData;
+
+          // Actualizar la lista después de la actualización exitosa
+          const index = this.usuarios.findIndex(u => u.id === tempId);
+          if (index !== -1) {
+            this.usuarios[index] = { ...this.usuarios[index], ...userData };
+            this.aplicarFiltros();
+          }
+
+          // Mostrar mensaje global de éxito (visible en la vista principal)
+          this.successMessage = `Usuario ${tempNombre} ${tempApellidos} actualizado correctamente`;
+
+          // Limpiar mensaje después de unos segundos
+          setTimeout(() => {
+            this.successMessage = '';
+          }, 3000);
+        },
+        error: (error: any) => {
+          console.error('Error al actualizar usuario:', error);
+          this.errorMessage = error?.error?.message || 'Error al actualizar el usuario';
+          // Recargar lista para asegurar estado consistente
+          this.loadUsuarios();
+
+          setTimeout(() => {
+            this.errorMessage = '';
+          }, 5000);
+        },
+        complete: () => {
+          // Restablecer flag de actualización
+          this.isUpdating = false;
+          this.cdr.detectChanges();
+        }
+      });
 
     } catch (error: any) {
       console.error('❌ Error actualizando usuario:', error);

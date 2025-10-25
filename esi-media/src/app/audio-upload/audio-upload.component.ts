@@ -271,6 +271,11 @@ export class AudioUploadComponent {
           if (response.success) {
             this.uploadSuccess = true;
             this.uploadMessage = '¡Audio subido exitosamente! 🎉';
+            // Forzar detección y redirigir al dashboard de gestores después de 2s
+            this.cdr.detectChanges();
+            setTimeout(() => {
+              this.router.navigate(['/gestor-dashboard']);
+            }, 3000);
           } else {
             this.uploadSuccess = false;
             this.uploadMessage = `❌ Error: ${response.message}`;

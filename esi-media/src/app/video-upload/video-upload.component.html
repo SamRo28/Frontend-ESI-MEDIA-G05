@@ -303,8 +303,8 @@
           </div>
 
           <!-- Mensaje de resultado -->
-          <div *ngIf="uploadMessage" 
-               [class]="uploadSuccess ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'"
+          <div *ngIf="uploadMessage"
+               [ngClass]="uploadSuccess ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'"
                class="p-6 border-2 rounded-lg text-center font-semibold">
             {{ uploadMessage }}
           </div>
