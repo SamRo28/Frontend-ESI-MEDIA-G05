@@ -56,6 +56,25 @@ export interface AdministradorGestionDTO {
   fecharegistro?: Date;
 }
 
+export interface ContenidoDetalle extends ContenidoResumen {
+  url?: string;
+  descripcion?: string;
+  duracion?: number;
+  resolucion?: string; // solo Video
+  estado?: boolean;
+  fechaEstado?: Date;
+  fechaDisponibleHasta?: Date;
+  vip?: boolean;
+  edadMinima?: number;
+}
+
+export interface ContenidoResumen {
+  id: string;
+  titulo: string;
+  tipo: 'Audio' | 'Video';
+  gestorNombre?: string;
+}
+
 // Interfaces para respuestas paginadas
 export interface PaginatedResponse<T> {
   content: T[];
@@ -372,4 +391,67 @@ export class AdminService {
         catchError(this.handleError)
       );
   }
+
+// =================== CONTENIDOS (solo lectura por administradores) ===================
+  getContenidos(adminId: string): Observable<ContenidoResumen[]> {
+    const url = `${this.apiUrl}/contenidos/listar`;
+    const headers = { 'Admin-ID': adminId };
+    return this.http.get<ContenidoResumen[]>(url, { headers }).pipe(
+      timeout(5000),
+      map((arr: any) => {
+        if (!Array.isArray(arr)) return arr;
+        return arr.map((it: any) => {
+          const g = it?.gestor ?? {};
+          const nombreDerivado = it?.gestorNombre
+            ?? (g?.nombre || g?.apellidos ? `${g?.nombre ?? ''} ${g?.apellidos ?? ''}`.trim() : undefined)
+            ?? g?.alias
+            ?? it?.alias
+            ?? it?.gestorNombreCompleto;
+          return { ...it, gestorNombre: nombreDerivado ?? it?.gestorNombre ?? '-' } as ContenidoResumen;
+        });
+      }),
+      catchError((error) => this.handleError(error))
+    );
+  }
+
+  getContenidoDetalle(id: string, adminId: string): Observable<ContenidoDetalle> {
+    const url = `${this.apiUrl}/contenidos/${id}`;
+    const headers = { 'Admin-ID': adminId };
+    return this.http.get<ContenidoDetalle>(url, { headers }).pipe(
+      timeout(5000),
+      catchError((error) => this.handleError(error))
+    );
+  }
+
+  /** Bloquea un usuario */
+  bloquearUsuario(usuarioId: string, adminId: string): Observable<any> {
+    const url = `${this.apiUrl}/usuarios/${usuarioId}/bloquear`;
+    console.log('AdminService: Bloqueando usuario:', usuarioId);
+    const headers = { 'Admin-ID': adminId };
+    return this.http.put(url, {}, { headers }).pipe(
+      timeout(5000),
+      catchError((error) => {
+        console.error('Error bloqueando usuario:', error);
+        return this.handleError(error);
+      })
+    );
+  }
+
+  /** Desbloquea un usuario */
+  desbloquearUsuario(usuarioId: string, adminId: string): Observable<any> {
+    const url = `${this.apiUrl}/usuarios/${usuarioId}/desbloquear`;
+    console.log('AdminService: Desbloqueando usuario:', usuarioId);
+    const headers = { 'Admin-ID': adminId };
+    return this.http.put(url, {}, { headers }).pipe(
+      timeout(5000),
+      catchError((error) => {
+        console.error('Error desbloqueando usuario:', error);
+        return this.handleError(error);
+      })
+    );
+  }
+
+
+
+
 }

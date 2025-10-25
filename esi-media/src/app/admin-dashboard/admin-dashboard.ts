@@ -4,13 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AdminService, Usuario } from '../services/admin.service';
 import { firstValueFrom } from 'rxjs';
+import { ContentList } from '../content-list/content-list';
 
 @Component({
   selector: 'app-admin-dashboard',
   templateUrl: './admin-dashboard.html',
   styleUrls: ['./admin-dashboard.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule, ContentList]
 })
 export class AdminDashboardComponent implements OnInit {
   activeTab = 'inicio';
@@ -29,6 +30,15 @@ export class AdminDashboardComponent implements OnInit {
     email: '',
     foto: ''
   };
+
+  // Modal de confirmaciÃ³n para bloquear/desbloquear usuario
+  showBloqueoModal = false;
+  usuarioABloquear: Usuario | null = null;
+  accionBloqueo: 'bloquear' | 'desbloquear' = 'bloquear';
+  loadingBloqueo = false;
+  errorBloqueo = '';
+  // Doble confirmaciÃ³n de bloqueo/desbloqueo
+  confirmBloqueoStep: 1 | 2 = 1;
   
   // Modal de confirmación para eliminar usuario
   showDeleteModal = false;
@@ -142,10 +152,19 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   setActiveTab(tab: string) {
+    console.log('🔄 [AdminDashboard] setActiveTab llamado con tab:', tab);
+    console.log('🔄 [AdminDashboard] activeTab antes:', this.activeTab);
     this.activeTab = tab;
+    console.log('🔄 [AdminDashboard] activeTab después:', this.activeTab);
+    
     if (tab === 'usuarios') {
       this.loadUsuarios();
     }
+    
+    if (tab === 'contenidos') {
+      this.activeTab = 'contenidos';
+    }
+    
     this.resetMessages();
   }
 
@@ -1138,5 +1157,108 @@ export class AdminDashboardComponent implements OnInit {
         console.log('🧪 Token de prueba generado:', testToken);
       }
     }
+  }
+
+
+
+  /**
+   * Confirma y ejecuta la acciÃ³n de bloquear/desbloquear
+   */
+  confirmarBloqueo() {
+    if (!this.usuarioABloquear) return;
+
+    // Primera pulsaciÃ³n: mostrar aviso y pedir confirmaciÃ³n con un segundo clic
+    if (this.confirmBloqueoStep === 1) {
+      this.confirmBloqueoStep = 2;
+      return;
+    }
+
+    const adminId = this.obtenerAdminId();
+    if (!adminId) {
+      this.errorBloqueo = 'No se pudo identificar al administrador';
+      return;
+    }
+
+    this.loadingBloqueo = true;
+    this.errorBloqueo = '';
+
+    const accion$ = this.accionBloqueo === 'bloquear'
+      ? this.adminService.bloquearUsuario(this.usuarioABloquear.id!, adminId)
+      : this.adminService.desbloquearUsuario(this.usuarioABloquear.id!, adminId);
+
+    // Fallback por si algo deja el loading en true mÃ¡s de 7s
+    const backup = setTimeout(() => {
+      if (this.loadingBloqueo) {
+        this.loadingBloqueo = false;
+        this.errorBloqueo = 'La operaciÃ³n tardÃ³ mÃ¡s de lo esperado. Refresca la lista para ver el estado.';
+        this.cdr.detectChanges();
+      }
+    }, 7000);
+
+    accion$.subscribe({
+      next: (response) => {
+        console.log('âœ… Usuario', this.accionBloqueo === 'bloquear' ? 'bloqueado' : 'desbloqueado');
+        
+        // Actualizar el estado local INMEDIATAMENTE (usuarios y filtrados)
+        const nuevoEstado = this.accionBloqueo === 'bloquear';
+        const idObjetivo = this.usuarioABloquear?.id;
+        if (idObjetivo) {
+          // Actualizar referencia directa (objeto seleccionado)
+          this.usuarioABloquear!.bloqueado = nuevoEstado;
+
+          // Actualizar lista principal
+          this.usuarios = this.usuarios.map(u => u.id === idObjetivo ? { ...u, bloqueado: nuevoEstado } : u);
+
+          // Reaplicar filtros para refrescar la tabla visible
+          this.aplicarFiltros();
+        }
+
+        // Sincronizar con servidor tras un pequeÃ±o delay para evitar sobrescribir con datos obsoletos
+        setTimeout(() => this.loadUsuarios(), 600);
+        
+        // Cerrar modal
+        this.cerrarModalBloqueo();
+        this.loadingBloqueo = false;
+        clearTimeout(backup);
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('âŒ Error:', error);
+        this.errorBloqueo = error.message || `Error al ${this.accionBloqueo} usuario`;
+        this.loadingBloqueo = false;
+        clearTimeout(backup);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  /**
+   * Cierra el modal de bloqueo
+   */
+  cerrarModalBloqueo() {
+    this.showBloqueoModal = false;
+    this.usuarioABloquear = null;
+    this.loadingBloqueo = false;
+    this.errorBloqueo = '';
+  }
+
+
+  private obtenerAdminId(): string | null {
+    // Primero intenta desde currentUser (acepta id o _id)
+    if (this.currentUser?._id || this.currentUser?.id) {
+      return (this.currentUser as any)._id || this.currentUser.id;
+    }
+
+    // Buscar en la lista de usuarios por email
+    if (this.currentUser?.email) {
+      const adminEnLista = this.usuarios.find(u => u.email === this.currentUser?.email);
+      if (adminEnLista?.id) {
+        return adminEnLista.id;
+      }
+    }
+
+    // Ãšltimo recurso: primer administrador de la lista
+    const primerAdmin = this.usuarios.find(u => u.rol === 'Administrador');
+    return primerAdmin?.id || null;
   }
 }
