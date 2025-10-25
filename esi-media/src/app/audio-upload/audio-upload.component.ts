@@ -130,6 +130,15 @@ export class AudioUploadComponent {
   }
 
   onSubmit() {
+    const minutos = Number(this.audioForm.value.minutos) || 0;
+    const segundos = Number(this.audioForm.value.segundos) || 0;
+    if ((minutos * 60 + segundos) <= 0) {
+      this.uploadMessage = 'La duración debe ser al menos 1 segundo.';
+      this.audioForm.get('minutos')?.markAsTouched();
+      this.audioForm.get('segundos')?.markAsTouched();
+      return;
+    }
+
     if (this.audioForm.valid && this.selectedFile) {
       // Mostrar modal de confirmación antes de subir
       this.showUploadConfirmation = true;

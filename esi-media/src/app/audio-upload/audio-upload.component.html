@@ -165,6 +165,10 @@
             <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('minutos') || getFieldError('segundos')">
               {{ getFieldError('minutos') || getFieldError('segundos') }}
             </div>
+            <!-- Error cuando la duración total es 0 segundos -->
+            <div class="text-red-400 text-sm mt-1" *ngIf="(((audioForm.value.minutos || 0) * 60 + (audioForm.value.segundos || 0)) <= 0) && (audioForm.get('minutos')?.touched || audioForm.get('segundos')?.touched)">
+              La duración debe ser al menos 1 segundo.
+            </div>
           </div>
 
           <!-- Edad mínima -->
@@ -321,16 +325,16 @@
           <button 
             *ngIf="!uploadSuccess"
             type="submit" 
-            [disabled]="!audioForm.valid || !selectedFile || isUploading"
-            [class]="(audioForm.valid && selectedFile && !isUploading) 
+              [disabled]="!audioForm.valid || !selectedFile || isUploading || (((audioForm.value.minutos || 0) * 60 + (audioForm.value.segundos || 0)) <= 0)"
+            [class]="(audioForm.valid && selectedFile && !isUploading && (((audioForm.value.minutos || 0) * 60 + (audioForm.value.segundos || 0)) > 0)) 
               ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transform hover:scale-105' 
               : 'bg-gray-600 cursor-not-allowed'"
             class="w-full py-4 text-white font-bold rounded-lg disabled:opacity-50 transition-all duration-300"
           >
-            <span *ngIf="!isUploading && (audioForm.valid && selectedFile)" class="flex items-center justify-center">
+            <span *ngIf="!isUploading && (audioForm.valid && selectedFile && (((audioForm.value.minutos || 0) * 60 + (audioForm.value.segundos || 0)) > 0))" class="flex items-center justify-center">
               🎵 Subir Audio
             </span>
-            <span *ngIf="!isUploading && (!audioForm.valid || !selectedFile)" class="flex items-center justify-center">
+            <span *ngIf="!isUploading && (!(audioForm.valid && selectedFile && (((audioForm.value.minutos || 0) * 60 + (audioForm.value.segundos || 0)) > 0)))" class="flex items-center justify-center">
               ⚠️ Completa todos los campos
             </span>
             <span *ngIf="isUploading" class="flex items-center justify-center">
@@ -346,7 +350,7 @@
             <ul class="text-yellow-200 text-sm space-y-1">
               <li *ngIf="!isFieldComplete('titulo')">• Título requerido</li>
               <li *ngIf="!isFieldComplete('tags')">• Tags requeridos</li>
-              <li *ngIf="!isFieldComplete('duracion')">• Duración requerida</li>
+              <li *ngIf="!isFieldComplete('minutos') || !isFieldComplete('segundos') || (((audioForm.value.minutos || 0) * 60 + (audioForm.value.segundos || 0)) <= 0)">• Duración requerida</li>
               <li *ngIf="!isFieldComplete('edadVisualizacion')">• Edad mínima requerida</li>
               <li *ngIf="!selectedFile">• Archivo de audio requerido</li>
             </ul>
