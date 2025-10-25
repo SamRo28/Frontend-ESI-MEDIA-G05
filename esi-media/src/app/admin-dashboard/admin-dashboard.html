@@ -959,7 +959,6 @@
                     Crear Gestor
                   </button>
                 </div>
-                </div>
               </form>
             </div>
           </div>
@@ -1654,59 +1653,6 @@
 
 
 
-          <!-- Botones de acción (primera confirmación) -->
-          <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
-            <button 
-              type="button"
-              (click)="closeEditUserModal()"
-              class="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
-              Cancelar
-            </button>
-            <button 
-              type="button"
-              (click)="confirmUserChanges()"
-              class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              Confirmar Cambios
-            </button>
-          </div>
-        </form>
-
-        <!-- Confirmación de cambios (doble validación) -->
-        <div *ngIf="showEditConfirmation" class="space-y-6">
-          <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <div class="flex items-start gap-3">
-              <svg class="w-6 h-6 text-amber-600 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-              </svg>
-              <div>
-                <h4 class="text-lg font-semibold text-amber-800 mb-2">¿Confirmar cambios en el usuario?</h4>
-                <p class="text-amber-700 text-sm mb-4">
-                  Estás a punto de actualizar los datos de <strong>{{ editUserForm.nombre }} {{ editUserForm.apellidos }}</strong>. 
-                  Esta acción modificará la información del usuario en el sistema.
-                </p>
-                
-                <!-- Resumen de cambios -->
-                <div class="bg-white rounded-lg p-3 border border-amber-200">
-                  <h5 class="font-medium text-amber-800 mb-2">Resumen de cambios:</h5>
-                  <div class="space-y-1 text-sm">
-                    <div><span class="text-gray-600">Nombre:</span> <span class="font-medium">{{ editUserForm.nombre }}</span></div>
-                    <div><span class="text-gray-600">Apellidos:</span> <span class="font-medium">{{ editUserForm.apellidos }}</span></div>
-                    <div *ngIf="editUserForm.departamento"><span class="text-gray-600">Departamento:</span> <span class="font-medium">{{ editUserForm.departamento }}</span></div>
-                    <div *ngIf="editUserForm.apodo"><span class="text-gray-600">Apodo:</span> <span class="font-medium">{{ editUserForm.apodo }}</span></div>
-                    <div>
-                      <span class="text-gray-600">Estado:</span> 
-                      <span [class]="editUserForm.bloqueado ? 'font-medium text-red-600' : 'font-medium text-green-600'">
-                        {{ editUserForm.bloqueado ? 'Bloqueado' : 'Activo' }}
-                      </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- ============================================ -->
   <!-- MODAL DE CONFIRMACIÓN PARA EDITAR USUARIO -->
   <div *ngIf="showEditConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1772,8 +1718,4 @@
 
 
 
-</div>
-        </div>
-      </div>
-    </div>
-  </div>
+

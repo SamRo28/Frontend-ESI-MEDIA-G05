@@ -179,6 +179,7 @@ export class AdminService {
         return this.handleError(error);
       })
     );
+  }
   // ✅ MÉTODO CORREGIDO: Usar endpoints simples que funcionaban antes
   updateUser(id: string, userData: any, tipo: string): Observable<any> {
     console.log('🔗 Actualizando usuario:', id, userData);
@@ -228,6 +229,7 @@ export class AdminService {
       }),
       catchError((error) => this.handleError(error))
     );
+  }
   updateVisualizador(id: string, visualizador: VisualizadorGestionDTO): Observable<any> {
 
     return this.updateUser(id, visualizador, "Visualizador");
@@ -245,10 +247,18 @@ export class AdminService {
   // =================== Gestión de usuarios (compatibilidad con user-management) ===================
   getAllVisualizadores(page = 0, size = 10): Observable<Paginado<VisualizadorGestionDTO>> {
     return this.http.get<Paginado<VisualizadorGestionDTO>>(`${this.apiUrl}/visualizadores`, { params: { page, size } as any });
+  }
   updateGestor(id: string, gestor: GestorGestionDTO): Observable<any> {
     console.log('🔗 Actualizando gestor (usando endpoint genérico):', id, gestor);
     return this.updateUser(id, gestor, "GestordeContenido");
   }
+
+  // Actualizar administrador (compatibilidad con user-management)
+  updateAdministrador(id: string, admin: AdministradorGestionDTO): Observable<any> {
+    console.log('🔗 Actualizando administrador (usando endpoint genérico):', id, admin);
+    return this.updateUser(id, admin, "Administrador");
+  }
+
 
   getAllGestores(page = 0, size = 10): Observable<Paginado<GestorGestionDTO>> {
     return this.http.get<Paginado<GestorGestionDTO>>(`${this.apiUrl}/gestores`, { params: { page, size } as any });
@@ -256,22 +266,8 @@ export class AdminService {
 
   getAllAdministradores(page = 0, size = 10): Observable<Paginado<AdministradorGestionDTO>> {
     return this.http.get<Paginado<AdministradorGestionDTO>>(`${this.apiUrl}/administradores`, { params: { page, size } as any });
-  updateAdministrador(id: string, administrador: AdministradorGestionDTO): Observable<any> {
-    console.log('🔗 Actualizando administrador (usando endpoint genérico):', id, administrador);
-    return this.updateUser(id, administrador, "Administrador");
   }
 
-  updateVisualizador(id: string, payload: any): Observable<any> {
-    return this.http.put(`${this.apiUrl}/visualizadores/${id}`, payload);
-  }
-
-  updateGestor(id: string, payload: any): Observable<any> {
-    return this.http.put(`${this.apiUrl}/gestores/${id}`, payload);
-  }
-
-  updateAdministrador(id: string, payload: any): Observable<any> {
-    return this.http.put(`${this.apiUrl}/administradores/${id}`, payload);
-  }
 
   deleteVisualizador(id: string): Observable<any> {
     return this.http.delete(`${this.apiUrl}/visualizadores/${id}`);

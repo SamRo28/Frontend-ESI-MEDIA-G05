@@ -3,6 +3,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AdminService, Usuario, PerfilDetalle, ContenidoResumen, ContenidoDetalle } from '../services/admin.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -11,7 +12,7 @@ import { AdminService, Usuario, PerfilDetalle, ContenidoResumen, ContenidoDetall
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule]
 })
-export class AdminDashboardComponent implements OnInit, AfterViewInit {
+export class AdminDashboardComponent implements OnInit {
   activeTab = 'inicio';
   showForm = false;
   usuarios: Usuario[] = [];
@@ -31,6 +32,14 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
   // InformaciÃ³n del usuario actual
   currentUser: any = null;
   
+  // Estados para doble confirmación
+  showEditConfirmation = false;
+  showUploadConfirmation = false;
+  showCreateConfirmation = false;
+  // Estado de actualización en confirmación de edición
+  isUpdating = false;
+
+
   // Modal de perfil
   showProfileModal = false;
   editingProfile = {
@@ -39,8 +48,25 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     email: '',
     foto: ''
   };
-  
-  // Modal de confirmaciÃ³n para eliminar usuario
+
+  // Validación de contraseña en tiempo real
+  passwordValidation = {
+    minLength: false,
+    hasUpperCase: false,
+    hasLowerCase: false,
+    hasNumber: false,
+    hasSpecialChar: false,
+    noStartsWithUpperCase: false,
+    passwordsMatch: false,
+    notContainsUsername: true // Por defecto true hasta que se ingrese un nombre
+  };
+
+    // Modal de edición de usuario
+  showEditUserModal = false;
+  editingUser: Usuario | null = null;
+  editUserForm: any = {};
+
+  // Modal de confirmación para eliminar usuario
   showDeleteModal = false;
   usuarioAEliminar: Usuario | null = null;
   
@@ -102,6 +128,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     private readonly adminService: AdminService,
     private readonly cdr: ChangeDetectorRef,
     private readonly router: Router,
+    private ngZone: NgZone,
     @Inject(PLATFORM_ID) private readonly platformId: Object
   ) {}
 
@@ -111,6 +138,8 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
       const userStr = localStorage.getItem('currentUser');
       if (userStr) {
         this.currentUser = JSON.parse(userStr);
+      }
+    }
     // Asegurar que activeTab esté inicializado correctamente
     if (!this.activeTab) {
       this.activeTab = 'inicio';
@@ -1014,6 +1043,40 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     this.cdr.detectChanges();
   }
 
+  // ============================================
+  // Confirmación de edición de usuario (modal)
+  // ============================================
+  cancelUserChanges() {
+    // Cierra el modal de confirmación sin aplicar cambios
+    this.showEditConfirmation = false;
+  }
+
+  async saveUserChanges() {
+    // Si no hay datos cargados para editar, simplemente cierra
+    if (!this.editUserForm || !this.editUserForm.id) {
+      this.showEditConfirmation = false;
+      return;
+    }
+
+    this.isUpdating = true;
+    try {
+      // Usa el endpoint genérico de actualización por rol para minimizar riesgos
+      const rol = this.editUserForm.rol || 'Visualizador';
+      await firstValueFrom(this.adminService.updateUser(this.editUserForm.id, this.editUserForm, rol));
+
+      // Refresca la lista local
+      await new Promise(res => setTimeout(res, 200));
+      this.loadUsuarios();
+      this.showEditConfirmation = false;
+    } catch (e) {
+      console.error('Error al guardar cambios del usuario:', e);
+      this.errorMessage = 'No se pudieron guardar los cambios. Inténtalo de nuevo.';
+    } finally {
+      this.isUpdating = false;
+      this.cdr.detectChanges();
+    }
+  }
+
   closePerfilModal() {
     this.showPerfilModal = false;
     this.usuarioADetalle = null;
@@ -1031,9 +1094,12 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
       if (foto.startsWith('http://') || foto.startsWith('https://') || foto.startsWith('/')) {
         return foto;
       }
-      // Si es solo el nombre de archivo, servir desde raÃ­z pÃºblica
+    }
+      // Si es solo el nombre de archivo, servir desde raíz pública
       return `/${foto}`;
-    // NUEVO: Cargar detalles completos del usuario según su tipo
+  }
+
+/*  // NUEVO: Cargar detalles completos del usuario según su tipo
   private loadUserDetails(userId: string, rol: string) {
     
     switch (rol) {
@@ -1057,8 +1123,8 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
         });
         break;
     }
-  }
-
+  }*/
+/*
   private processUserDetails(response: any, rol: string) {
     let userDetails: any;
     
@@ -1097,6 +1163,9 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     }
     this.cdr.detectChanges(); // Forzar actualización de la vista
   }
+    */
+
+  /*
 
   // 🔧 NUEVO: Método para formatear fechas para inputs HTML
   private formatDateForInput(dateValue: any): string {
@@ -1133,7 +1202,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     if (foto.path && typeof foto.path === 'string') return foto.path.startsWith('/') ? foto.path : `/${foto.path}`;
     return '';
   }
-
+*/
   // ==================================================
   // Bloquear/Desbloquear Usuario
   // ==================================================
@@ -1149,13 +1218,41 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     this.confirmBloqueoStep = 1;
   }
 
+   openEditUserModal(usuario: Usuario) {
+    this.editingUser = usuario;
+    
+    // Mostrar modal inmediatamente con datos básicos
+    this.showEditUserModal = true;
+    this.showEditConfirmation = false;
+    this.resetMessages();
+    
+    // Preparar formulario con datos básicos primero
+    this.editUserForm = {
+      id: usuario.id,
+      nombre: usuario.nombre,
+      apellidos: usuario.apellidos,
+      email: usuario.email,
+      foto: usuario.foto,
+      departamento: usuario.departamento || '',
+      rol: usuario.rol || 'Visualizador',
+      bloqueado: usuario.bloqueado,
+      alias: '',
+      especialidad: '',
+      descripcion: '',
+      tipocontenidovideooaudio: '',
+      fecharegistro: null,
+      fechanac: '',
+      vip: false
+    };
+  }
+
   /**
-   * Confirma y ejecuta la acciÃ³n de bloquear/desbloquear
+   * Confirma y ejecuta la acción de bloquear/desbloquear
    */
   confirmarBloqueo() {
     if (!this.usuarioABloquear) return;
 
-    // Primera pulsaciÃ³n: mostrar aviso y pedir confirmaciÃ³n con un segundo clic
+    // Primera pulsación: mostrar aviso y pedir confirmación con un segundo clic
     if (this.confirmBloqueoStep === 1) {
       this.confirmBloqueoStep = 2;
       return;
@@ -1184,7 +1281,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     }, 7000);
 
     accion$.subscribe({
-      next: (response) => {
+      next: async (response) => {
         console.log('âœ… Usuario', this.accionBloqueo === 'bloquear' ? 'bloqueado' : 'desbloqueado');
         
         // Actualizar el estado local INMEDIATAMENTE (usuarios y filtrados)
@@ -1199,7 +1296,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
 
       // SIMPLIFICADO: Usar un solo método para todos los tipos de usuario
       let updatedUser: any;
-      updatedUser = await firstValueFrom(this.adminService.updateUser(this.editUserForm.id, updateData, this.editUserForm.rol));
+      updatedUser = await firstValueFrom(this.adminService.updateUser(this.editUserForm.id, this.usuarios, this.editUserForm.rol));
       
       console.log('✅ Respuesta de actualización:', updatedUser);
       
@@ -1210,7 +1307,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
         console.log('📦 Usando datos directos de la respuesta:', userData);
       } else {
         console.warn('⚠️ Respuesta inesperada, usando datos enviados como fallback');
-        userData = updateData; // Usar los datos que enviamos como fallback
+        userData = this.usuarios; // Usar los datos que enviamos como fallback
       }
       
       if (userData) {
@@ -1229,9 +1326,9 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
         this.loadingBloqueo = false;
         clearTimeout(backup);
         this.cdr.detectChanges();
-      },
+      }}},
       error: (error) => {
-        console.error('âŒ Error:', error);
+        console.error('🛑 Error:', error);
         this.errorBloqueo = error.message || `Error al ${this.accionBloqueo} usuario`;
         this.loadingBloqueo = false;
         clearTimeout(backup);
@@ -1253,7 +1350,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
   /**
    * Obtiene el ID del administrador actual
    */
-  private obtenerAdminId(): string | null {
+  private obtenerAdminId(): string | undefined {
     // Primero intenta desde currentUser (acepta id o _id)
     if (this.currentUser?._id || this.currentUser?.id) {
       return (this.currentUser as any)._id || this.currentUser.id;
@@ -1264,6 +1361,14 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
       const adminEnLista = this.usuarios.find(u => u.email === this.currentUser?.email);
       if (adminEnLista?.id) {
         return adminEnLista.id;
+      }
+    }
+
+    // Último recurso: devolver el primer administrador disponible
+    const primerAdmin = this.usuarios.find(u => u.rol === 'Administrador');
+    return primerAdmin?.id || undefined;
+  }
+    // Ãšltimo recurso: primer administrador de la lista
   // ============================================
   // MÉTODOS PARA MOSTRAR/OCULTAR CONTRASEÑAS
   // ============================================
