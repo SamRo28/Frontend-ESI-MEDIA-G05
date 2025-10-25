@@ -392,4 +392,22 @@ export class VideoUploadComponent {
       event.preventDefault();
     }
   }
+
+  // Obtener texto descriptivo para edad de visualización
+  getEdadVisualizacionText(edad: string): string {
+    switch(edad) {
+      case 'TP':
+        return 'Todo Público';
+      case '18':
+        return '+18 (Adultos)';
+      default:
+        return edad || 'No especificado';
+    }
+  }
+
+  // Obtener el label de un tag por su valor
+  getTagLabel(tagValue: string): string {
+    const tagObj = this.availableVideoTags.find(t => t.value === tagValue);
+    return tagObj ? tagObj.label : tagValue;
+  }
 }
