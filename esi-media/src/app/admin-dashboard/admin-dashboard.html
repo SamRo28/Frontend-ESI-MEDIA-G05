@@ -221,6 +221,7 @@
                       </div>
                     </div>
                   </div>
+                      <!-- MODAL DE EDICIÓN DE USUARIO (moved to global modals area) -->
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4 content-detail-grid">
                     <div>
                       <div class="text-xs text-gray-500">URL</div>
@@ -438,7 +439,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                           </svg>
                         </button>
-                        <button type="button" class="p-1 hover:bg-gray-100 rounded" title="Editar">
+                        <button type="button" (click)="openEditUserModal(usuario)" class="p-1 hover:bg-gray-100 rounded" title="Editar">
                           <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                           </svg>
@@ -1218,6 +1219,71 @@
         </div>
 
     
+
+  <!-- MODAL DE EDICIÓN DE USUARIO (global) -->
+  <div id="edit-user-overlay" [style.display]="showEditUserModal ? 'flex' : 'none'" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" (click)="($event.target === $event.currentTarget) && closeEditUserModal()" style="z-index:99999;">
+    <div id="edit-user-modal" class="bg-white rounded-xl shadow-2xl w-full max-w-2xl" (click)="$event.stopPropagation()" style="z-index:100000; position:relative; display:block;">
+      <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <h3 class="text-xl font-bold text-gray-900">Editar Usuario</h3>
+        <p class="text-sm text-gray-600">Modifica los datos y pulsa "Siguiente" para confirmar los cambios</p>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Nombre</label>
+            <input type="text" [(ngModel)]="editUserForm.nombre" class="w-full px-3 py-2 border rounded" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Apellidos</label>
+            <input type="text" [(ngModel)]="editUserForm.apellidos" class="w-full px-3 py-2 border rounded" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Email</label>
+            <input type="email" [value]="editUserForm.email" disabled class="w-full px-3 py-2 border rounded bg-gray-100" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Rol</label>
+            <select [(ngModel)]="editUserForm.rol" class="w-full px-3 py-2 border rounded">
+              <option value="Administrador">Administrador</option>
+              <option value="Gestor">Gestor</option>
+              <option value="Visualizador">Visualizador</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div *ngIf="editUserForm.rol === 'Administrador'">
+            <label class="block text-sm font-medium text-gray-700">Departamento</label>
+            <input type="text" [(ngModel)]="editUserForm.departamento" class="w-full px-3 py-2 border rounded" />
+          </div>
+          <div *ngIf="editUserForm.rol === 'Gestor'">
+            <label class="block text-sm font-medium text-gray-700">Alias</label>
+            <input type="text" [(ngModel)]="editUserForm.alias" class="w-full px-3 py-2 border rounded" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="inline-flex items-center">
+              <input type="checkbox" [(ngModel)]="editUserForm.bloqueado" class="mr-2" />
+              <span class="text-sm">Bloqueado</span>
+            </label>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Foto</label>
+            <input type="text" [(ngModel)]="editUserForm.foto" class="w-full px-3 py-2 border rounded" />
+          </div>
+        </div>
+      </div>
+      <div class="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end gap-3">
+        <button (click)="closeEditUserModal()" class="px-4 py-2 border rounded text-gray-700">Cancelar</button>
+        <button (click)="closeEditUserModal(); showEditConfirmation = true" class="px-4 py-2 bg-blue-600 text-white rounded">Siguiente: Confirmar</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Modal de Edición de Perfil -->
   <div *ngIf="showProfileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" (click)="closeProfileModal()">

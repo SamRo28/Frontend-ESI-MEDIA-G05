@@ -1037,11 +1037,10 @@ export class AdminDashboardComponent implements OnInit {
 
   usuarioADetalle: Usuario | null = null;
 
-  openPerfilModal(usuario: Usuario) {
-    this.usuarioADetalle = usuario;
-    this.showPerfilModal = true;
-    this.cdr.detectChanges();
-  }
+  // Habilita el modal fallback usado solo para diagnóstico.
+  // Cambia a `true` temporalmente si necesitas reactivar el fallback en desarrollo.
+  private enableFallbackEditModal = false;
+
 
   // ============================================
   // Confirmación de edición de usuario (modal)
@@ -1219,8 +1218,9 @@ export class AdminDashboardComponent implements OnInit {
   }
 
    openEditUserModal(usuario: Usuario) {
+    console.log('🔧 openEditUserModal called for usuario:', usuario?.id || usuario?.email || usuario);
     this.editingUser = usuario;
-    
+
     // Mostrar modal inmediatamente con datos básicos
     this.showEditUserModal = true;
     this.showEditConfirmation = false;
@@ -1244,6 +1244,114 @@ export class AdminDashboardComponent implements OnInit {
       fechanac: '',
       vip: false
     };
+    // Forzar detección para asegurar que el modal se muestre inmediatamente
+    try { this.cdr.detectChanges(); } catch {}
+    // Debug helpers: exponer el formulario y comprobar el estado del modal tras un breve delay
+    try {
+      // @ts-ignore permitir acceso desde consola
+      (window as any).__lastEditUserForm = this.editUserForm;
+    } catch {}
+    setTimeout(() => {
+      console.log('🔍 Estado comprobado tras 500ms - showEditUserModal =', this.showEditUserModal);
+    }, 500);
+    // Crear un modal fallback en el body en caso de que el modal del template no sea visible
+    // Esto está condicionado por `enableFallbackEditModal` para que no aparezca en uso normal.
+    try {
+      if (this.enableFallbackEditModal) {
+        this.createFallbackEditModal();
+      }
+    } catch (e) { console.warn('No se pudo crear fallback modal:', e); }
+  }
+
+  // Cierra el modal de edición y limpia cualquier fallback creado
+  closeEditUserModal() {
+    this.showEditUserModal = false;
+    try { this.removeFallbackEditModal(); } catch {}
+    try { this.cdr.detectChanges(); } catch {}
+  }
+
+  // --- Modal fallback (DOM directo) para diagnosticar / reemplazar visualmente ---
+  private createFallbackEditModal() {
+    try {
+      // si ya existe, actualizar contenido
+      const existing = document.getElementById('fallback-edit-modal');
+      if (existing) {
+        existing.style.display = 'flex';
+        this.updateFallbackEditModalContent(existing);
+        return;
+      }
+
+      const overlay = document.createElement('div');
+      overlay.id = 'fallback-edit-modal';
+      Object.assign(overlay.style, {
+        position: 'fixed', left: '0', top: '0', right: '0', bottom: '0',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(0,0,0,0.6)', zIndex: '200000'
+      });
+
+      const modal = document.createElement('div');
+      modal.id = 'fallback-edit-modal-inner';
+      Object.assign(modal.style, {
+        width: '720px', maxWidth: '95%', background: 'white', padding: '18px', borderRadius: '12px', boxShadow: '0 8px 30px rgba(0,0,0,0.3)'
+      });
+
+      const title = document.createElement('h3');
+      title.textContent = 'Editar Usuario (Fallback)';
+      title.style.margin = '0 0 8px 0';
+      title.style.fontSize = '18px';
+      title.style.fontWeight = '600';
+
+      modal.appendChild(title);
+
+      const pre = document.createElement('pre');
+      pre.style.maxHeight = '300px';
+      pre.style.overflow = 'auto';
+      pre.style.background = '#f7f7f7';
+      pre.style.padding = '8px';
+      pre.style.borderRadius = '6px';
+      pre.textContent = JSON.stringify(this.editUserForm, null, 2);
+      modal.appendChild(pre);
+
+      const controls = document.createElement('div');
+      Object.assign(controls.style, { display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' });
+
+      const btnClose = document.createElement('button');
+      btnClose.textContent = 'Cancelar';
+      Object.assign(btnClose.style, { padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db', background: '#fff' });
+      btnClose.onclick = () => this.closeEditUserModal();
+
+      const btnNext = document.createElement('button');
+      btnNext.textContent = 'Siguiente: Confirmar';
+      Object.assign(btnNext.style, { padding: '8px 12px', borderRadius: '6px', border: 'none', background: '#2563eb', color: 'white' });
+      // exponer funcion global que activará la confirmación en Angular
+      const self = this;
+      (window as any).__openFallbackConfirm = () => {
+        try { self.showEditConfirmation = true; self.removeFallbackEditModal(); self.cdr.detectChanges(); } catch (e) { console.warn(e); }
+      };
+      btnNext.onclick = () => { (window as any).__openFallbackConfirm(); };
+
+      controls.appendChild(btnClose);
+      controls.appendChild(btnNext);
+      modal.appendChild(controls);
+
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+    } catch (e) {
+      console.warn('Error creando fallback modal:', e);
+    }
+  }
+
+  private updateFallbackEditModalContent(el: HTMLElement) {
+    const pre = el.querySelector('pre');
+    if (pre) pre.textContent = JSON.stringify(this.editUserForm, null, 2);
+  }
+
+  private removeFallbackEditModal() {
+    try {
+      const existing = document.getElementById('fallback-edit-modal');
+      if (existing && existing.parentElement) existing.parentElement.removeChild(existing);
+      try { delete (window as any).__openFallbackConfirm; } catch {}
+    } catch (e) { console.warn('Error removing fallback modal', e); }
   }
 
   /**

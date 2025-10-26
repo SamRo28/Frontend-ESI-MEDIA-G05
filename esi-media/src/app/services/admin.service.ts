@@ -115,7 +115,8 @@ export class AdminService {
   private handleError(error: any): Observable<never> {
     if (error.name === 'TimeoutError') {
       return throwError(() => ({
-        message: 'La conexión tardó demasiado tiempo. El usuario puede haberse creado exitosamente.',
+        // Mensaje genérico para timeouts en cualquier endpoint
+        message: 'La conexión tardó demasiado tiempo. Verifica que el backend esté ejecutándose y vuelve a intentarlo.',
         status: 'timeout'
       }));
     }
@@ -159,7 +160,8 @@ export class AdminService {
     }
     const options = adminId ? { headers: { 'Admin-ID': adminId } } : {};
     return this.http.get<PerfilDetalle>(url, options).pipe(
-      timeout(5000),
+      // Aumentamos timeout para evitar errores por lentitud del backend en entornos locales
+      timeout(15000),
       catchError((error) => {
         console.error('Error obteniendo perfil:', error);
         return this.handleError(error);
@@ -214,7 +216,8 @@ export class AdminService {
     const url = `${this.apiUrl}/contenidos/listar`;
     const headers = { 'Admin-ID': adminId };
     return this.http.get<ContenidoResumen[]>(url, { headers }).pipe(
-      timeout(5000),
+      // Aumentamos el timeout para evitar timeouts rápidos en entornos lentos
+      timeout(15000),
       map((arr: any) => {
         if (!Array.isArray(arr)) return arr;
         return arr.map((it: any) => {

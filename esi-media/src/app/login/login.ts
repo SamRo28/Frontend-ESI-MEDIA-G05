@@ -50,28 +50,48 @@ export class Login {
           }
         } catch {}
 
-        sessionStorage.setItem('email', response.email);
-        sessionStorage.setItem('currentUserClass', response.tipo);
-        
-        if(response.usuario.twoFactorAutenticationEnabled){
-           this.router.navigate(['/2verification'], { state: { allowFa2Code: true } });
+        // Guardar email y tipo con comprobaciones
+        const emailToStore = response?.email ?? usuario?.email ?? '';
+        const tipoToStore = response?.tipo ?? usuario?.tipo ?? usuario?.rol ?? '';
+        if (emailToStore) sessionStorage.setItem('email', emailToStore);
+        if (tipoToStore) sessionStorage.setItem('currentUserClass', tipoToStore);
+
+        // Extraer token de forma defensiva (varios backends usan diferentes nombres)
+        const token = response?.sesionstoken?.token
+          ?? response?.sessionToken
+          ?? response?.token
+          ?? response?.tokenSesion
+          ?? response?.sesionstoken
+          ?? null;
+
+        if (!token) {
+          console.warn('Login: token no encontrado en la respuesta', response);
+        } else {
+          try { sessionStorage.setItem('token', token); } catch {}
+        }
+
+        const twoFaEnabled = usuario?.twoFactorAutenticationEnabled ?? response?.twoFactorAutenticationEnabled ?? false;
+        if (twoFaEnabled) {
+          this.router.navigate(['/2verification'], { state: { allowFa2Code: true } });
         }
         /*else if (!response.twoFactorAutenticationEnabled && response.tipo !== 'visualizador'){
           this.router.navigate(['/2fa'], { state: { allowFa2: true } });
         }*/
-        else{
-          if(response.tipo === 'visualizador'){
+        else {
+          // Navegación por tipo - usar la variable guardada (tipoToStore)
+          if (tipoToStore === 'visualizador') {
             this.router.navigate(['/visualizador']);
-          }
-          else if(response.tipo === 'admin'){
+          } else if (tipoToStore === 'admin' || tipoToStore === 'Administrador' || tipoToStore === 'administrador') {
             this.router.navigate(['/admin-dashboard']);
-          }
-          else if(response.tipo === 'creador'){
+          } else if (tipoToStore === 'creador') {
             this.router.navigate(['/creador-dashboard']);
           }
-          sessionStorage.setItem('token', response.sesionstoken.token);
-          this.router.navigate(['/dashboard']);
-
+          // Si no se navegó ya a un dashboard específico, ir al dashboard genérico
+          setTimeout(() => {
+            if (!this.router.url.includes('/admin-dashboard') && !this.router.url.includes('/visualizador') && !this.router.url.includes('/creador-dashboard')) {
+              this.router.navigate(['/dashboard']);
+            }
+          }, 10);
         }
 
         
