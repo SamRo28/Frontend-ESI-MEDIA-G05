@@ -247,6 +247,32 @@ export class AdminService {
     );
   }
 
+  getAdministradorById(id: string): Observable<any> {
+    console.log('🔗 Obteniendo administrador (usando endpoint genérico):', id);
+    return this.getUserById(id);
+  }
+  getUserById(id: string): Observable<any> {
+    console.log('🔗 Obteniendo usuario por ID:', id);
+    const url = `${this.apiUrl}/users/${id}`;
+    console.log('🌐 URL:', url);
+    return this.http.get<any>(url)
+      .pipe(
+        timeout(10000),
+        catchError(this.handleError)
+      );
+  }
+
+  getGestorById(id: string): Observable<any> {
+    console.log('🔗 Obteniendo gestor (usando endpoint genérico):', id);
+    return this.getUserById(id);
+  }
+
+   getVisualizadorById(id: string): Observable<any> {
+    console.log('🔗 Obteniendo visualizador (usando endpoint genérico):', id);
+    return this.getUserById(id);
+  }
+
+
   // =================== Gestión de usuarios (compatibilidad con user-management) ===================
   getAllVisualizadores(page = 0, size = 10): Observable<Paginado<VisualizadorGestionDTO>> {
     return this.http.get<Paginado<VisualizadorGestionDTO>>(`${this.apiUrl}/visualizadores`, { params: { page, size } as any });

@@ -34,69 +34,21 @@ export class Login {
     
     this.userService.login(this.email, this.password).subscribe({
       next: (response) => {
-        // Bloqueo: si el backend devuelve el usuario bloqueado, mostrar error y no continuar
-        const usuario = response?.usuario ?? response;
-        const bloqueado = usuario?.bloqueado === true || usuario?.isBloqueado === true;
-        if (bloqueado) {
-          this.errorMsg = 'No puede iniciar sesión. Usuario bloqueado';
-          this.cdr.detectChanges();
-          return;
+        sessionStorage.setItem('email', response.usuario.email);
+        sessionStorage.setItem('currentUserClass', response.tipo);
+        sessionStorage.setItem('user', JSON.stringify(response.usuario));
+
+        if(response.usuario.twoFactorAutenticationEnabled){
+           this.router.navigate(['/2verification'], { state: { allowFa2Code: true } });
         }
-
-        // Persist current user for admin flows (Admin-ID header usage)
-        try {
-          if (isPlatformBrowser(this.platformId) && usuario) {
-            localStorage.setItem('currentUser', JSON.stringify(usuario));
-          }
-        } catch {}
-
-        // Guardar email y tipo con comprobaciones
-        const emailToStore = response?.email ?? usuario?.email ?? '';
-        const tipoToStore = response?.tipo ?? usuario?.tipo ?? usuario?.rol ?? '';
-        if (emailToStore) sessionStorage.setItem('email', emailToStore);
-        if (tipoToStore) sessionStorage.setItem('currentUserClass', tipoToStore);
-
-        // Extraer token de forma defensiva (varios backends usan diferentes nombres)
-        const token = response?.sesionstoken?.token
-          ?? response?.sessionToken
-          ?? response?.token
-          ?? response?.tokenSesion
-          ?? response?.sesionstoken
-          ?? null;
-
-        if (!token) {
-          console.warn('Login: token no encontrado en la respuesta', response);
-        } else {
-          try { sessionStorage.setItem('token', token); } catch {}
-        }
-
-        const twoFaEnabled = usuario?.twoFactorAutenticationEnabled ?? response?.twoFactorAutenticationEnabled ?? false;
-        if (twoFaEnabled) {
-          this.router.navigate(['/2verification'], { state: { allowFa2Code: true } });
-        }
-        /*else if (!response.twoFactorAutenticationEnabled && response.tipo !== 'visualizador'){
+        else if (!response.twoFactorAutenticationEnabled && response.tipo !== 'visualizador'){
           this.router.navigate(['/2fa'], { state: { allowFa2: true } });
-        }*/
-        else {
-          // Navegación por tipo - usar la variable guardada (tipoToStore)
-          if (tipoToStore === 'visualizador') {
-            this.router.navigate(['/visualizador']);
-          } else if (tipoToStore === 'admin' || tipoToStore === 'Administrador' || tipoToStore === 'administrador') {
-            this.router.navigate(['/admin-dashboard']);
-          } else if (tipoToStore === 'creador') {
-            this.router.navigate(['/creador-dashboard']);
-          }
-          // Si no se navegó ya a un dashboard específico, ir al dashboard genérico
-          setTimeout(() => {
-            if (!this.router.url.includes('/admin-dashboard') && !this.router.url.includes('/visualizador') && !this.router.url.includes('/creador-dashboard')) {
-              this.router.navigate(['/dashboard']);
-            }
-          }, 10);
         }
-
-        
-        
-
+        else{
+          this.router.navigate(['/dashboard']);
+          sessionStorage.setItem('token', response.sesionstoken.token);
+          this.router.navigate(['/dashboard']);
+        }
       },
       error: (error) => {
         console.error('Login failed:', error);

@@ -1218,9 +1218,8 @@ export class AdminDashboardComponent implements OnInit {
   }
 
    openEditUserModal(usuario: Usuario) {
-    console.log('🔧 openEditUserModal called for usuario:', usuario?.id || usuario?.email || usuario);
     this.editingUser = usuario;
-
+    
     // Mostrar modal inmediatamente con datos básicos
     this.showEditUserModal = true;
     this.showEditConfirmation = false;
@@ -1244,101 +1243,9 @@ export class AdminDashboardComponent implements OnInit {
       fechanac: '',
       vip: false
     };
-    // Forzar detección para asegurar que el modal se muestre inmediatamente
-    try { this.cdr.detectChanges(); } catch {}
-    // Debug helpers: exponer el formulario y comprobar el estado del modal tras un breve delay
-    try {
-      // @ts-ignore permitir acceso desde consola
-      (window as any).__lastEditUserForm = this.editUserForm;
-    } catch {}
-    setTimeout(() => {
-      console.log('🔍 Estado comprobado tras 500ms - showEditUserModal =', this.showEditUserModal);
-    }, 500);
-    // Crear un modal fallback en el body en caso de que el modal del template no sea visible
-    // Esto está condicionado por `enableFallbackEditModal` para que no aparezca en uso normal.
-    try {
-      if (this.enableFallbackEditModal) {
-        this.createFallbackEditModal();
-      }
-    } catch (e) { console.warn('No se pudo crear fallback modal:', e); }
-  }
-
-  // Cierra el modal de edición y limpia cualquier fallback creado
-  closeEditUserModal() {
-    this.showEditUserModal = false;
-    try { this.removeFallbackEditModal(); } catch {}
-    try { this.cdr.detectChanges(); } catch {}
-  }
-
-  // --- Modal fallback (DOM directo) para diagnosticar / reemplazar visualmente ---
-  private createFallbackEditModal() {
-    try {
-      // si ya existe, actualizar contenido
-      const existing = document.getElementById('fallback-edit-modal');
-      if (existing) {
-        existing.style.display = 'flex';
-        this.updateFallbackEditModalContent(existing);
-        return;
-      }
-
-      const overlay = document.createElement('div');
-      overlay.id = 'fallback-edit-modal';
-      Object.assign(overlay.style, {
-        position: 'fixed', left: '0', top: '0', right: '0', bottom: '0',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'rgba(0,0,0,0.6)', zIndex: '200000'
-      });
-
-      const modal = document.createElement('div');
-      modal.id = 'fallback-edit-modal-inner';
-      Object.assign(modal.style, {
-        width: '720px', maxWidth: '95%', background: 'white', padding: '18px', borderRadius: '12px', boxShadow: '0 8px 30px rgba(0,0,0,0.3)'
-      });
-
-      const title = document.createElement('h3');
-      title.textContent = 'Editar Usuario (Fallback)';
-      title.style.margin = '0 0 8px 0';
-      title.style.fontSize = '18px';
-      title.style.fontWeight = '600';
-
-      modal.appendChild(title);
-
-      const pre = document.createElement('pre');
-      pre.style.maxHeight = '300px';
-      pre.style.overflow = 'auto';
-      pre.style.background = '#f7f7f7';
-      pre.style.padding = '8px';
-      pre.style.borderRadius = '6px';
-      pre.textContent = JSON.stringify(this.editUserForm, null, 2);
-      modal.appendChild(pre);
-
-      const controls = document.createElement('div');
-      Object.assign(controls.style, { display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' });
-
-      const btnClose = document.createElement('button');
-      btnClose.textContent = 'Cancelar';
-      Object.assign(btnClose.style, { padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db', background: '#fff' });
-      btnClose.onclick = () => this.closeEditUserModal();
-
-      const btnNext = document.createElement('button');
-      btnNext.textContent = 'Siguiente: Confirmar';
-      Object.assign(btnNext.style, { padding: '8px 12px', borderRadius: '6px', border: 'none', background: '#2563eb', color: 'white' });
-      // exponer funcion global que activará la confirmación en Angular
-      const self = this;
-      (window as any).__openFallbackConfirm = () => {
-        try { self.showEditConfirmation = true; self.removeFallbackEditModal(); self.cdr.detectChanges(); } catch (e) { console.warn(e); }
-      };
-      btnNext.onclick = () => { (window as any).__openFallbackConfirm(); };
-
-      controls.appendChild(btnClose);
-      controls.appendChild(btnNext);
-      modal.appendChild(controls);
-
-      overlay.appendChild(modal);
-      document.body.appendChild(overlay);
-    } catch (e) {
-      console.warn('Error creando fallback modal:', e);
-    }
+    
+    // Cargar datos específicos según el tipo de usuario
+    this.loadUserDetails(usuario.id!, usuario.rol || 'Visualizador');
   }
 
   private updateFallbackEditModalContent(el: HTMLElement) {
@@ -1602,6 +1509,163 @@ export class AdminDashboardComponent implements OnInit {
     const primerAdmin = this.usuarios.find(u => u.rol === 'Administrador');
     return primerAdmin?.id || null;
   }
+
+  confirmUserChanges() {
+    // Verificar si tenemos token de autorización
+    this.checkAuthToken();
+    
+    // Validar campos obligatorios según el tipo de usuario
+    let requiredFields: string[] = ['nombre', 'apellidos', 'email'];
+    
+    // Agregar campos específicos según el rol
+    if (this.editUserForm.rol === 'Administrador') {
+      requiredFields.push('departamento');
+    } else if (this.editUserForm.rol === 'Gestor') {
+      requiredFields.push('alias');
+    }
+    // Para Visualizadores, solo nombre, apellidos y email son obligatorios
+
+    const emptyFields = requiredFields.filter(field => !this.editUserForm[field]?.trim());
+    
+    if (emptyFields.length > 0) {
+      this.errorMessage = `Complete los siguientes campos obligatorios: ${emptyFields.join(', ')}`;
+      return;
+    }
+
+    // Mostrar confirmación
+    this.showEditConfirmation = true;
+    this.resetMessages();
+  }
+
+  closeEditUserModal() {
+    this.showEditUserModal = false;
+    this.showEditConfirmation = false;
+    this.editingUser = null;
+    this.editUserForm = {};
+    this.resetMessages();
+  }
+
+  getUserTypeDisplayName(rol: string): string {
+    switch (rol) {
+      case 'Administrador':
+        return 'Administrador';
+      case 'Gestor':
+        return 'Gestor de Contenido';
+      case 'Visualizador':
+      default:
+        return 'Visualizador';
+    }
+  }
+
+  private loadUserDetails(userId: string, rol: string) {
+    
+    switch (rol) {
+      case 'Administrador':
+        this.adminService.getAdministradorById(userId).subscribe({
+          next: (response) => this.processUserDetails(response, 'Administrador'),
+          error: (error) => this.handleUserDetailsError(error, '/users', 'Administrador')
+        });
+        break;
+      case 'Gestor':
+        this.adminService.getGestorById(userId).subscribe({
+          next: (response) => this.processUserDetails(response, 'Gestor'),
+          error: (error) => this.handleUserDetailsError(error, '/users', 'Gestor')
+        });
+        break;
+      case 'Visualizador':
+      default:
+        this.adminService.getVisualizadorById(userId).subscribe({
+          next: (response) => this.processUserDetails(response, 'Visualizador'),
+          error: (error) => this.handleUserDetailsError(error, '/users', 'Visualizador')
+        });
+        break;
+    }
+  }
+
+  private handleUserDetailsError(error: any, endpointUrl: string, rol: string) {
+    console.error(`❌ Error cargando detalles del ${rol}:`, error);
+    console.error('🔍 URL que falló:', endpointUrl);
+    console.error('🔍 Status del error:', error.status);
+    console.error('🔍 Mensaje del error:', error.message);
+    
+    // Si falla, mantenemos los datos básicos que ya tenemos
+    this.errorMessage = `No se pudieron cargar todos los detalles del usuario. Endpoint: ${endpointUrl}`;
+    
+    // Limpiar el mensaje después de unos segundos
+    setTimeout(() => {
+      this.errorMessage = '';
+    }, 8000);
+  }
+
+  private processUserDetails(response: any, rol: string) {
+    let userDetails: any;
+    
+    // ESTRATEGIA SIMPLIFICADA: Asumir que la respuesta ES directamente los datos del usuario
+    if (response && typeof response === 'object') {
+      userDetails = response;
+    } else {
+      this.errorMessage = 'Error: no se pudieron cargar los datos del usuario';
+      return;
+    }
+    
+    // Actualizar el formulario con TODOS los datos disponibles
+    this.editUserForm = {
+      ...this.editUserForm,
+      ...userDetails
+    };
+    
+    // Mapeos específicos para campos que pueden tener nombres diferentes
+    if (userDetails.campoespecializacion) {
+      this.editUserForm.especialidad = userDetails.campoespecializacion;
+    }
+    
+    // 🔧 ARREGLO DE FECHAS: Convertir fechas al formato YYYY-MM-DD para inputs HTML
+    if (userDetails.fechaNac || userDetails.fechanac) {
+      const fechaNac = userDetails.fechaNac || userDetails.fechanac;
+      this.editUserForm.fechanac = this.formatDateForInput(fechaNac);
+    }
+    
+    if (userDetails.fechaRegistro || userDetails.fecharegistro) {
+      const fechaRegistro = userDetails.fechaRegistro || userDetails.fecharegistro;
+      this.editUserForm.fecharegistro = this.formatDateForInput(fechaRegistro);
+    }
+    
+    if (userDetails.alias) {
+      this.editUserForm.alias = userDetails.alias;
+    }
+    this.cdr.detectChanges(); // Forzar actualización de la vista
+  }
+   private formatDateForInput(dateValue: any): string {
+    if (!dateValue) return '';
+    
+    try {
+      let date: Date;
+      
+      if (dateValue instanceof Date) {
+        date = dateValue;
+      } else if (typeof dateValue === 'string') {
+        date = new Date(dateValue);
+      } else if (typeof dateValue === 'number') {
+        date = new Date(dateValue);
+      } else {
+        return '';
+      }
+      
+      if (Number.isNaN(date.getTime())) {
+        return '';
+      }
+      
+      // Formatear como YYYY-MM-DD para input[type="date"]
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      return '';
+    }
+  }
+
 }
 
 
