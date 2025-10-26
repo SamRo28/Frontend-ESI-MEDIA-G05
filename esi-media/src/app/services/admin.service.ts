@@ -85,15 +85,7 @@ export class AdminService {
               sessionStorage.getItem('userToken') ||
               localStorage.getItem('userToken');
       
-      console.warn('⚠️ No se encontró token en sessionStorage.authToken');
-      console.log('🔍 Tokens alternativos encontrados:', {
-        'localStorage.authToken': localStorage.getItem('authToken'),
-        'sessionStorage.token': sessionStorage.getItem('token'),
-        'localStorage.token': localStorage.getItem('token')
-      });
-      
       if (!token) {
-        console.error('❌ No hay token de autorización disponible');
         // Por ahora, continuar sin token para ver si algunos endpoints funcionan sin auth
         return {
           headers: {
@@ -102,8 +94,6 @@ export class AdminService {
         };
       }
     }
-    
-    console.log('✅ Token de autorización encontrado:', token ? token.substring(0, 20) + '...' : 'null');
     
     return {
       headers: {
@@ -114,14 +104,12 @@ export class AdminService {
   }
 
   getUsuarios(): Observable<Usuario[]> {
-    return this.http.get<Usuario[]>(`${this.apiUrl}/users/listar`);
+    return this.http.post<Usuario[]>(`${this.apiUrl}/users/listar`, {}).pipe(
+      catchError(this.handleError)
+    );
   }
 
   crearUsuario(userData: any): Observable<any> {
-    console.log('🔗 AdminService: Detectando tipo de usuario...');
-    console.log('📦 Datos:', userData);
-    console.log('👤 Rol detectado:', userData.rol);
-
     // Decidir qué endpoint usar según el rol
     if (userData.rol === 'Gestor') {
       return this.crearGestor(userData);
@@ -131,9 +119,7 @@ export class AdminService {
   }
 
   private crearAdministrador(userData: any): Observable<any> {
-    console.log('🔗 AdminService: Creando Administrador');
     const url = `${this.apiUrl}/administradores/crear-simple`;
-    console.log('🌐 URL Administrador:', url);
     
     return this.http.post(url, userData).pipe(
       timeout(10000),
@@ -145,9 +131,7 @@ export class AdminService {
   }
 
   private crearGestor(userData: any): Observable<any> {
-    console.log('🔗 AdminService: Creando Gestor de Contenido');
     const url = `${this.apiUrl}/gestores/crear`;
-    console.log('🌐 URL Gestor:', url);
     
     return this.http.post(url, userData).pipe(
       timeout(10000),
@@ -159,9 +143,6 @@ export class AdminService {
   }
 
   private handleError(error: any): Observable<never> {
-    console.error('❌ Tipo de error:', error.name);
-    console.error('❌ Status:', error.status);
-    
     if (error.name === 'TimeoutError') {
       return throwError(() => ({
         message: 'La conexión tardó demasiado tiempo. El usuario puede haberse creado exitosamente.',
@@ -173,8 +154,6 @@ export class AdminService {
 
   updateProfile(userId: string, updates: any): Observable<any> {
     const url = `${this.apiUrl}/users/${userId}/profile`;
-    console.log('🔄 AdminService: Actualizando perfil en:', url);
-    console.log('📦 Datos:', updates);
     
     return this.http.put(url, updates).pipe(
       timeout(10000),

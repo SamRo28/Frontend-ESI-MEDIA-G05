@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, Inject, PLATFORM_ID, NgZone } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ChangeDetectorRef, Inject, PLATFORM_ID, NgZone } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -12,7 +12,7 @@ import { firstValueFrom } from 'rxjs';
   standalone: true,
   imports: [CommonModule, FormsModule]
 })
-export class AdminDashboardComponent implements OnInit {
+export class AdminDashboardComponent implements OnInit, AfterViewInit {
   activeTab = 'inicio';
   showForm = false;
   usuarios: Usuario[] = [];
@@ -43,6 +43,10 @@ export class AdminDashboardComponent implements OnInit {
   showEditConfirmation = false;
   showUploadConfirmation = false;
   showCreateConfirmation = false;
+  
+  // Estados para mostrar/ocultar contraseñas
+  showPassword = false;
+  showRepeatPassword = false;
   
   // Filtros
   filtroRol = 'Todos'; // 'Todos', 'Administrador', 'Gestor', 'Visualizador'
@@ -105,19 +109,25 @@ export class AdminDashboardComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    // Cargar información del usuario actual desde sessionStorage (solo en el navegador)
+    // Asegurar que activeTab esté inicializado correctamente
+    if (!this.activeTab) {
+      this.activeTab = 'inicio';
+    }
+    
+    // Solo cargar datos cuando estemos en el navegador
     if (isPlatformBrowser(this.platformId)) {
+      // Cargar información del usuario actual desde sessionStorage
       const userStr = sessionStorage.getItem('user');
       if (userStr) {
         try {
           this.currentUser = JSON.parse(userStr);
-          console.log('✅ Usuario cargado desde sessionStorage:', this.currentUser);
         } catch (e) {
           console.error('❌ Error al parsear usuario desde sessionStorage:', e);
         }
-      } else {
-        console.warn('⚠️ No se encontró usuario en sessionStorage');
       }
+      
+      // Cargar usuarios para mostrar estadísticas en la vista de inicio
+      this.loadUsuarios();
     }
     
     this.loadUsuarios();
@@ -140,6 +150,19 @@ export class AdminDashboardComponent implements OnInit {
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
+    // Forzar detección de cambios para asegurar que la vista se actualice
+    this.cdr.detectChanges();
+  }
+
+  ngAfterViewInit() {
+    // Segunda carga después de que la vista esté completamente inicializada
+    // Esto asegura que las estadísticas se muestren correctamente desde el inicio
+    if (isPlatformBrowser(this.platformId) && this.usuarios.length === 0) {
+      console.log('🔄 AfterViewInit - Recargando usuarios para estadísticas...');
+      setTimeout(() => {
+        this.loadUsuarios();
+      }, 100); // Pequeño delay para asegurar que la vista esté lista
+    }
   }
 
   loadUsuarios() {
@@ -148,19 +171,32 @@ export class AdminDashboardComponent implements OnInit {
     
     this.adminService.getUsuarios().subscribe({
       next: (usuarios) => {
+        console.log('✅ Usuarios cargados exitosamente:', usuarios.length);
         this.usuarios = usuarios;
         this.aplicarFiltros(); // Aplicar filtros después de cargar usuarios
+        
+        // Forzar actualización de la vista para que las estadísticas se muestren inmediatamente
+        this.cdr.detectChanges();
+        console.log('🔄 Vista actualizada con', usuarios.length, 'usuarios');
       },
       error: (error: any) => {
-        console.error('Error al cargar usuarios:', error);
-        this.errorMessage = 'Error al cargar la lista de usuarios';
+        console.error('❌ Error al cargar usuarios:', error);
         
-        // Intentar recargar después de un tiempo si hay un error temporal
-        setTimeout(() => {
-          if (this.usuarios.length === 0) {
-            this.loadUsuarios();
-          }
-        }, 3000);
+        if (error.status === 401) {
+          this.errorMessage = '❌ No tienes autorización para ver la lista de usuarios. Token inválido o expirado.';
+        } else {
+          this.errorMessage = 'Error al cargar la lista de usuarios';
+          
+          // Intentar recargar después de un tiempo si hay un error temporal
+          setTimeout(() => {
+            if (this.usuarios.length === 0) {
+              this.loadUsuarios();
+            }
+          }, 3000);
+        }
+        
+        // También forzar detección de cambios en caso de error
+        this.cdr.detectChanges();
       }
     });
   }
@@ -186,6 +222,8 @@ export class AdminDashboardComponent implements OnInit {
     if (!this.showForm) {
       this.resetForm();
       this.resetMessages();
+      // Recargar la lista de usuarios cuando se cierre el formulario
+      this.loadUsuarios();
     } else {
       // Limpiar mensajes cuando se abre el formulario
       this.resetMessages();
@@ -197,9 +235,6 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   createUser() {
-    console.log('🎯 COMPONENTE: *** createUser() EJECUTADO ***');
-    console.log('📋 COMPONENTE: Datos del formulario:', this.newUser);
-    console.log('📋 COMPONENTE: isCreating antes:', this.isCreating);
     
     this.resetMessages();
     
@@ -217,12 +252,7 @@ export class AdminDashboardComponent implements OnInit {
     
     const emptyFields = requiredFields.filter(field => !this.newUser[field as keyof typeof this.newUser]);
     
-    console.log('✅ COMPONENTE: Validación campos vacíos - Tipo de usuario:', this.newUser.rol);
-    console.log('✅ COMPONENTE: Validación campos vacíos - Campos requeridos:', requiredFields);
-    console.log('✅ COMPONENTE: Validación campos vacíos - Campos vacíos encontrados:', emptyFields);
-    
     if (emptyFields.length > 0) {
-      console.log('❌ COMPONENTE: Validación falló - campos vacíos:', emptyFields);
       this.fieldsWithError = [...emptyFields];
       this.errorMessage = `❌ Complete todos los campos obligatorios: ${emptyFields.join(', ')}`;
       return;
@@ -232,7 +262,6 @@ export class AdminDashboardComponent implements OnInit {
     this.validatePassword();
     
     if (!this.isPasswordValid()) {
-      console.log('❌ COMPONENTE: Validación falló - política de contraseñas no cumplida');
       this.fieldsWithError = ['contrasenia', 'repetirContrasenia'];
       
       const errores = [];
@@ -250,20 +279,14 @@ export class AdminDashboardComponent implements OnInit {
     }
 
     // Validar email
-    console.log('✅ COMPONENTE: Validación email:', this.newUser.email);
-    
     if (!this.isValidEmail(this.newUser.email)) {
-      console.log('❌ COMPONENTE: Validación falló - email inválido');
       this.fieldsWithError = ['email'];
       this.errorMessage = '❌ Por favor, ingrese un correo electrónico válido (ejemplo: usuario@dominio.com).';
       return;
     }
 
-    console.log('🎉 COMPONENTE: Todas las validaciones pasaron!');
-    
     // Solo activar loading después de validar
     this.isCreating = true;
-    console.log('🔄 COMPONENTE: isCreating = true');
     
     // Forzar detección de cambios después de actualizar isCreating
     this.cdr.detectChanges();
@@ -291,9 +314,7 @@ export class AdminDashboardComponent implements OnInit {
       userData.departamento = this.newUser.departamento;
     }
 
-    console.log('🚀 COMPONENTE: Preparando datos para envío...');
-    console.log('📤 COMPONENTE: userData creado:', userData);
-    console.log('📞 COMPONENTE: *** AHORA LLAMANDO A adminService.crearUsuario() ***');
+
 
     // Variable para el timeout de respaldo
     let backupTimeout: any = null;
@@ -301,7 +322,6 @@ export class AdminDashboardComponent implements OnInit {
     // Implementar timeout de respaldo más largo ahora que sabemos que el server responde
     backupTimeout = setTimeout(() => {
       if (this.isCreating) {
-        console.log('⚠️ TIMEOUT DE RESPALDO: El servidor tardó más de 8 segundos');
         this.isCreating = false;
         this.cdr.detectChanges(); // Forzar actualización en timeout
         this.errorMessage = 'La operación tardó más tiempo del esperado, pero es posible que el administrador se haya creado.';
@@ -320,7 +340,6 @@ export class AdminDashboardComponent implements OnInit {
 
     this.adminService.crearUsuario(userData).subscribe({
       next: (response: any) => {
-        console.log('✅ ÉXITO: Respuesta completa del servidor:', response);
         clearTimeout(backupTimeout); // Cancelar timeout de respaldo
         
         // Extraer el nombre de la respuesta del servidor o usar el del formulario
@@ -328,11 +347,6 @@ export class AdminDashboardComponent implements OnInit {
         
         // Ejecutar cambios de estado dentro de la zona de Angular
         this.ngZone.run(() => {
-          // CAMBIOS CRÍTICOS DE ESTADO
-          console.log('🔄 CAMBIANDO ESTADOS dentro de NgZone:');
-          console.log('  isCreating:', this.isCreating, '-> false');
-          console.log('  isSuccess:', this.isSuccess, '-> true');
-          
           this.isCreating = false;
           this.isSuccess = true;
           
@@ -340,21 +354,16 @@ export class AdminDashboardComponent implements OnInit {
           const tipoUsuario = this.newUser.rol === 'Gestor' ? 'Gestor de Contenido' : 'Administrador';
           this.successMessage = `¡${tipoUsuario} "${nombreCreado}" creado exitosamente!`;
           
-          console.log('✅ ESTADOS ACTUALIZADOS:');
-          console.log('  isCreating:', this.isCreating);
-          console.log('  isSuccess:', this.isSuccess);
-          console.log('  successMessage:', this.successMessage);
+          // **RECARGAR AUTOMÁTICAMENTE la lista de usuarios para que se vea el nuevo usuario**
+          console.log('🔄 Usuario creado exitosamente, recargando lista automáticamente...');
+          this.loadUsuarios();
           
           // FORZAR DETECCIÓN DE CAMBIOS
           this.cdr.detectChanges();
-          console.log('🎉 Detección de cambios ejecutada - debería mostrar pantalla de éxito');
         });
       },
       error: (error: any) => {
         console.error('❌ Error completo al crear usuario:', error);
-        console.log('📊 Status del error:', error.status);
-        console.log('📝 Mensaje del error:', error.error);
-        console.log('🌐 URL completa:', error.url);
         
         clearTimeout(backupTimeout); // Cancelar timeout de respaldo
         
@@ -466,17 +475,26 @@ export class AdminDashboardComponent implements OnInit {
 
   // Método para salir del formulario después del éxito
   exitForm() {
+    console.log('🚪 SALIENDO del formulario - recargando usuarios...');
+    
+    // Cerrar formulario y resetear
     this.showForm = false;
     this.resetForm();
-    this.loadUsuarios(); // Recargar la lista de usuarios
+    
+    // Recargar la lista de usuarios inmediatamente
+    this.loadUsuarios();
     
     // Mostrar mensaje de éxito en la vista principal
     const nombreCreado = this.newUser.nombre || 'nuevo administrador';
     this.successMessage = `✅ El administrador "${nombreCreado}" ha sido registrado correctamente en el sistema.`;
     
+    // Forzar detección de cambios después de cerrar el formulario
+    this.cdr.detectChanges();
+    
     // Limpiar el mensaje después de 5 segundos
     setTimeout(() => {
       this.successMessage = '';
+      this.cdr.detectChanges(); // También forzar detección al limpiar mensaje
     }, 5000);
   }
 
@@ -484,6 +502,25 @@ export class AdminDashboardComponent implements OnInit {
 
   getUsuariosBloqueados(): number {
     return this.usuarios.filter(u => u.bloqueado).length;
+  }
+
+  // Formatear fecha para mostrar en el dashboard
+  formatDate(dateString: string): string {
+    if (!dateString) return 'No disponible';
+    
+    try {
+      const date = new Date(dateString);
+      const options: Intl.DateTimeFormatOptions = { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      };
+      return date.toLocaleDateString('es-ES', options);
+    } catch (error) {
+      return 'Fecha no válida';
+    }
   }
 
   // Validación de contraseña en tiempo real
@@ -872,6 +909,7 @@ export class AdminDashboardComponent implements OnInit {
       userDetails = response;
     } else {
       console.warn('⚠️ Respuesta inesperada:', response);
+      this.errorMessage = 'Error: no se pudieron cargar los datos del usuario';
       return;
     }
     
@@ -918,12 +956,10 @@ export class AdminDashboardComponent implements OnInit {
       } else if (typeof dateValue === 'number') {
         date = new Date(dateValue);
       } else {
-        console.warn('⚠️ Formato de fecha no reconocido:', dateValue);
         return '';
       }
       
       if (Number.isNaN(date.getTime())) {
-        console.warn('⚠️ Fecha inválida:', dateValue);
         return '';
       }
       
@@ -934,7 +970,6 @@ export class AdminDashboardComponent implements OnInit {
       
       return `${year}-${month}-${day}`;
     } catch (error) {
-      console.error('❌ Error formateando fecha:', dateValue, error);
       return '';
     }
   }
@@ -1118,6 +1153,106 @@ export class AdminDashboardComponent implements OnInit {
       default:
         return 'Visualizador';
     }
+  }
+
+  // ============================================
+  // MÉTODOS PARA MOSTRAR/OCULTAR CONTRASEÑAS
+  // ============================================
+  
+  togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
+  }
+  
+  toggleRepeatPasswordVisibility() {
+    this.showRepeatPassword = !this.showRepeatPassword;
+  }
+
+  // ============================================
+  // MÉTODO PARA MOSTRAR CONFIRMACIÓN DE CREACIÓN
+  // ============================================
+  
+  showCreationConfirmation() {
+    // Resetear mensajes
+    this.resetMessages();
+    
+    // Limpiar errores anteriores
+    this.fieldsWithError = [];
+    
+    // Validar campos obligatorios según el rol
+    let requiredFields: string[];
+    
+    if (this.newUser.rol === 'Gestor') {
+      requiredFields = ['nombre', 'apellidos', 'email', 'contrasenia', 'alias', 'especialidad', 'tipoContenido', 'foto'];
+    } else {
+      requiredFields = ['nombre', 'apellidos', 'email', 'contrasenia', 'departamento'];
+    }
+    
+    const emptyFields = requiredFields.filter(field => !this.newUser[field as keyof typeof this.newUser]);
+    
+    if (emptyFields.length > 0) {
+      this.fieldsWithError = [...emptyFields];
+      this.errorMessage = `❌ Complete todos los campos obligatorios: ${emptyFields.join(', ')}`;
+      return;
+    }
+
+    // Validar política de contraseñas
+    this.validatePassword();
+    
+    if (!this.isPasswordValid()) {
+      this.fieldsWithError = ['contrasenia', 'repetirContrasenia'];
+      
+      const errores = [];
+      if (!this.passwordValidation.minLength) errores.push('mínimo 8 caracteres');
+      if (!this.passwordValidation.noStartsWithUpperCase) errores.push('no debe comenzar con mayúscula');
+      if (!this.passwordValidation.hasUpperCase) errores.push('al menos una letra mayúscula');
+      if (!this.passwordValidation.hasLowerCase) errores.push('al menos una letra minúscula');
+      if (!this.passwordValidation.hasNumber) errores.push('al menos un número');
+      if (!this.passwordValidation.hasSpecialChar) errores.push('al menos un carácter especial (!@#$%^&*...)');
+      if (!this.passwordValidation.passwordsMatch) errores.push('las contraseñas deben coincidir');
+      if (!this.passwordValidation.notContainsUsername) errores.push('no debe contener el nombre de usuario');
+      
+      this.errorMessage = `❌ La contraseña no cumple con la política de seguridad: ${errores.join(', ')}`;
+      return;
+    }
+
+    // Validar email
+    if (!this.isValidEmail(this.newUser.email)) {
+      this.fieldsWithError = ['email'];
+      this.errorMessage = '❌ Por favor, ingrese un correo electrónico válido (ejemplo: usuario@dominio.com).';
+      return;
+    }
+
+    // Si todas las validaciones pasan, mostrar modal de confirmación
+    this.showCreateConfirmation = true;
+    
+    console.log('� Estado DESPUÉS - showCreateConfirmation:', this.showCreateConfirmation);
+    console.log('🔍 Estado DESPUÉS - showForm:', this.showForm);
+    
+    // Forzar múltiples detecciones de cambios
+    this.cdr.detectChanges();
+    
+    setTimeout(() => {
+      console.log('⏰ Verificación después de 100ms - showCreateConfirmation:', this.showCreateConfirmation);
+      this.cdr.detectChanges();
+    }, 100);
+  }
+
+  // ============================================
+  // MÉTODO PARA CONFIRMAR Y CREAR USUARIO
+  // ============================================
+  
+  confirmCreateUser() {
+    this.showCreateConfirmation = false;
+    this.createUser();
+  }
+
+  // ============================================
+  // MÉTODO PARA CANCELAR CREACIÓN
+  // ============================================
+  
+  cancelCreateUser() {
+    // Solo cerrar el modal de confirmación, el formulario se mantiene abierto
+    this.showCreateConfirmation = false;
   }
 
   // ============================================
