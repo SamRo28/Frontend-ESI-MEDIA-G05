@@ -83,7 +83,6 @@ export class GestorDashboardComponent implements OnInit {
   }
 
 
-
   // Navegación a páginas de subida
   navigateToUpload() {
     if (this.gestorType === 'video') {
@@ -92,15 +91,6 @@ export class GestorDashboardComponent implements OnInit {
       this.router.navigate(['/audio/subir']);
     }
   }
-
-  navigateToAudioUpload() {
-    this.router.navigate(['/audio/subir']);
-  }
-
-  navigateToVideoUpload() {
-    this.router.navigate(['/video/subir']);
-  }
-
 
 
   // Cerrar sesión
@@ -124,13 +114,5 @@ export class GestorDashboardComponent implements OnInit {
         this.router.navigate(['/home']);
       }, 1350);
     }
-  }
-
-
-// TODO: Analizar si esto se puede eliminar ya sin problemas, porque este boton ya no existe en la interfaz
-
-  // Ir al home
-  goToHome() {
-    this.router.navigate(['/home']);
   }
 }

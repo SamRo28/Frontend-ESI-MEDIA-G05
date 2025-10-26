@@ -56,16 +56,6 @@ describe('GestorDashboardComponent', () => {
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/video/subir']);
   });
 
-  it('should navigate to audio upload directly', () => {
-    component.navigateToAudioUpload();
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/audio/subir']);
-  });
-
-  it('should navigate to video upload directly', () => {
-    component.navigateToVideoUpload();
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/video/subir']);
-  });
-
   it('should logout and navigate to login', () => {
     spyOn(sessionStorage, 'removeItem');
     
@@ -75,11 +65,6 @@ describe('GestorDashboardComponent', () => {
     expect(sessionStorage.removeItem).toHaveBeenCalledWith('email');
     expect(sessionStorage.removeItem).toHaveBeenCalledWith('currentUserClass');
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
-  });
-
-  it('should navigate to home', () => {
-    component.goToHome();
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/home']);
   });
 
   it('should load user info from sessionStorage', () => {

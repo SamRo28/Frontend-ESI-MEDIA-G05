@@ -153,7 +153,7 @@ export class AudioUploadComponent {
     }
   }
 
-  // Detecta formato de audio por magic-bytes y devuelve 'mp3'|'wav'|'ogg'|'flac'|'m4a' o null si no se reconoce
+  // Detecta formato de audio por magic-bytes y devuelve 'mp3'|'wav'|'ogg'|'m4a' o null si no se reconoce
   private async detectAudioFormatByMagicBytes(file: File): Promise<string | null> {
     // Debemos leer primeros 12 bytes para tener suficiente información de los magic-bytes
     const slice = file.slice(0, 12);
@@ -174,9 +174,6 @@ export class AudioUploadComponent {
 
     // OGG: 'OggS'
     if (bytes[0] === 0x4F && bytes[1] === 0x67 && bytes[2] === 0x67 && bytes[3] === 0x53) return 'ogg';
-
-    // FLAC: 'fLaC'
-    if (bytes[0] === 0x66 && bytes[1] === 0x4C && bytes[2] === 0x61 && bytes[3] === 0x43) return 'flac';
 
     // M4A: 'ftyp' en bytes 4-7
     if (bytes.length >= 8 && bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) return 'm4a';
@@ -464,13 +461,6 @@ export class AudioUploadComponent {
     }
     
     return `✓ Duración: ${totalMinutos}m ${totalSegundos}s`;
-  }
-
-  // Formatear duración en minutos y segundos
-  formatDuration(seconds: number): string {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.round(seconds % 60);
-    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
   }
 
   // Solo permitiremos números en los campos de duración

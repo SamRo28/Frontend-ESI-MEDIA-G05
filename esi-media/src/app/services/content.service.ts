@@ -131,34 +131,4 @@ export class ContentService {
   checkVideoStatus(): Observable<any> {
     return this.http.get(`${this.baseUrl}/video/estado`);
   }
-
-  /**
-   * Prueba la conectividad con el backend
-   */
-  testConnection(): Observable<{ audio: any, video: any }> {
-    const audioStatus$ = this.checkAudioStatus();
-    const videoStatus$ = this.checkVideoStatus();
-    
-    // Usar forkJoin para hacer ambas peticiones en paralelo
-    return new Observable(observer => {
-      const audioPromise = new Promise(resolve => {
-        audioStatus$.subscribe({
-          next: result => resolve(result),
-          error: err => resolve({ error: err })
-        });
-      });
-      
-      const videoPromise = new Promise(resolve => {
-        videoStatus$.subscribe({
-          next: result => resolve(result),
-          error: err => resolve({ error: err })
-        });
-      });
-      
-      Promise.all([audioPromise, videoPromise]).then(([audio, video]) => {
-        observer.next({ audio, video });
-        observer.complete();
-      });
-    });
-  }
 }
