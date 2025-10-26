@@ -838,21 +838,17 @@ export class AdminDashboardComponent implements OnInit {
     this.resetMessages();
   }
 
-  // NUEVO: Cargar detalles completos del usuario según su tipo
+  // Cargar detalles completos del usuario según su tipo
   private loadUserDetails(userId: string, rol: string) {
-    console.log(`🔍 Cargando detalles completos para usuario ${userId} con rol ${rol}`);
-    console.log('🎯 NUEVA ESTRATEGIA: Usando endpoints genéricos /users/${id}');
     
     switch (rol) {
       case 'Administrador':
-        console.log('🌐 Conectando con endpoint: /users/' + userId);
         this.adminService.getAdministradorById(userId).subscribe({
           next: (response) => this.processUserDetails(response, 'Administrador'),
           error: (error) => this.handleUserDetailsError(error, '/users', 'Administrador')
         });
         break;
       case 'Gestor':
-        console.log('🌐 Conectando con endpoint: /users/' + userId);
         this.adminService.getGestorById(userId).subscribe({
           next: (response) => this.processUserDetails(response, 'Gestor'),
           error: (error) => this.handleUserDetailsError(error, '/users', 'Gestor')
@@ -860,7 +856,6 @@ export class AdminDashboardComponent implements OnInit {
         break;
       case 'Visualizador':
       default:
-        console.log('🌐 Conectando con endpoint: /users/' + userId);
         this.adminService.getVisualizadorById(userId).subscribe({
           next: (response) => this.processUserDetails(response, 'Visualizador'),
           error: (error) => this.handleUserDetailsError(error, '/users', 'Visualizador')
@@ -870,21 +865,15 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   private processUserDetails(response: any, rol: string) {
-    console.log(`✅ Respuesta del backend para ${rol}:`, response);
-    
+
     let userDetails: any;
-    
-    // ESTRATEGIA SIMPLIFICADA: Asumir que la respuesta ES directamente los datos del usuario
+
     if (response && typeof response === 'object') {
       userDetails = response;
-      console.log('📦 Usando datos directos del usuario:', userDetails);
     } else {
       console.warn('⚠️ Respuesta inesperada:', response);
-      this.errorMessage = 'Error: no se pudieron cargar los datos del usuario';
       return;
     }
-    
-    console.log('📋 Campos disponibles en la respuesta:', Object.keys(userDetails));
     
     // Actualizar el formulario con TODOS los datos disponibles
     this.editUserForm = {
@@ -897,28 +886,25 @@ export class AdminDashboardComponent implements OnInit {
       this.editUserForm.especialidad = userDetails.campoespecializacion;
     }
     
-    // 🔧 ARREGLO DE FECHAS: Convertir fechas al formato YYYY-MM-DD para inputs HTML
+    // ARREGLO DE FECHAS: Convertir fechas al formato YYYY-MM-DD para inputs HTML
     if (userDetails.fechaNac || userDetails.fechanac) {
       const fechaNac = userDetails.fechaNac || userDetails.fechanac;
       this.editUserForm.fechanac = this.formatDateForInput(fechaNac);
-      console.log('📅 Fecha nacimiento procesada:', fechaNac, '→', this.editUserForm.fechanac);
     }
     
     if (userDetails.fechaRegistro || userDetails.fecharegistro) {
       const fechaRegistro = userDetails.fechaRegistro || userDetails.fecharegistro;
       this.editUserForm.fecharegistro = this.formatDateForInput(fechaRegistro);
-      console.log('📅 Fecha registro procesada:', fechaRegistro, '→', this.editUserForm.fecharegistro);
     }
     
     if (userDetails.alias) {
       this.editUserForm.alias = userDetails.alias;
     }
     
-    console.log('📝 Formulario final actualizado:', this.editUserForm);
     this.cdr.detectChanges(); // Forzar actualización de la vista
   }
 
-  // 🔧 NUEVO: Método para formatear fechas para inputs HTML
+  // Método para formatear fechas para inputs HTML utilizando YYYY-MM-DD
   private formatDateForInput(dateValue: any): string {
     if (!dateValue) return '';
     
@@ -1006,7 +992,7 @@ export class AdminDashboardComponent implements OnInit {
     this.resetMessages();
   }
 
-  // Validador reutilizable para la fecha de nacimiento en el admin (mismo criterio que registro)
+  // Validador para la fecha de nacimiento en el admin-dashboard
   validateBirthDateForAdmin(dateStr: string, minYears: number): string | null {
     if (!dateStr) return null;
     const d = new Date(dateStr);
@@ -1026,73 +1012,10 @@ export class AdminDashboardComponent implements OnInit {
     this.resetMessages();
 
     try {
-      // 🔧 ESTRATEGIA SIMPLIFICADA: Enviar solo campos esenciales y validados
-      console.log('📋 Formulario completo antes de enviar:', this.editUserForm);
-      
-      // Preparar datos base (campos que sabemos que existen en todos los DTOs)
-      let updateData: any = {
-        nombre: this.editUserForm.nombre,
-        apellidos: this.editUserForm.apellidos,
-        email: this.editUserForm.email,
-        foto: this.editUserForm.foto || 'perfil1.png' // Valor por defecto
-      };
-      
-      // Agregar SOLO los campos específicos que están en los DTOs del backend
-      if (this.editUserForm.rol === 'Administrador') {
-        if (this.editUserForm.departamento) {
-          updateData.departamento = this.editUserForm.departamento;
-        }
-        // ✅ Agregar campo bloqueado para Administradores
-        updateData.bloqueado = this.editUserForm.bloqueado || false;
-        console.log('👤 Datos de Administrador completos:', updateData);
-        
-      } else if (this.editUserForm.rol === 'Gestor') {
-        if (this.editUserForm.alias) {
-          updateData.alias = this.editUserForm.alias;
-        }
-        if (this.editUserForm.especialidad) {
-          // El DTO del backend usa "campoespecializacion"
-          updateData.campoespecializacion = this.editUserForm.especialidad;
-        }
-        if (this.editUserForm.descripcion) {
-          updateData.descripcion = this.editUserForm.descripcion;
-        }
-        if (this.editUserForm.tipocontenidovideooaudio) {
-          updateData.tipocontenidovideooaudio = this.editUserForm.tipocontenidovideooaudio;
-        }
-        // ✅ Agregar campo bloqueado para Gestores
-        updateData.bloqueado = this.editUserForm.bloqueado || false;
-        console.log('👤 Datos de Gestor completos:', updateData);
-        
-      } else if (this.editUserForm.rol === 'Visualizador') {
-        if (this.editUserForm.alias) {
-          updateData.alias = this.editUserForm.alias;
-        }
-        if (this.editUserForm.fechanac) {
-          // Convertir a Date object
-          updateData.fechanac = new Date(this.editUserForm.fechanac);
-        }
-        // ✅ AGREGAR VIP para Visualizadores (campo importante que faltaba)
-        if (this.editUserForm.vip !== undefined) {
-          updateData.vip = this.editUserForm.vip;
-        }
-        // ✅ Agregar campo bloqueado para Visualizadores
-        updateData.bloqueado = this.editUserForm.bloqueado || false;
-        console.log('👤 Datos de Visualizador completos:', updateData);
-      }
+      // Preparar y limpiar los datos a enviar
+      const updateData = this.prepareUpdateData();
 
-      // Remover campos undefined/null para evitar errores en el backend
-      Object.keys(updateData).forEach(key => {
-        if (updateData[key] === undefined || updateData[key] === null || updateData[key] === '') {
-          delete updateData[key];
-        }
-      });
-
-      console.log('🚀 Datos FINALES (limpiados) a enviar:', updateData);
-      console.log('🎯 Rol:', this.editUserForm.rol);
-      console.log('📊 Cantidad de campos:', Object.keys(updateData).length);
-
-      // SIMPLIFICADO: Usar subscribe para replicar comportamiento consistente con deleteUser()
+      // Datos temporales para mensajes y actualizaciones de UI
       const tempId = this.editUserForm.id;
       const tempNombre = this.editUserForm.nombre;
       const tempApellidos = this.editUserForm.apellidos;
@@ -1103,8 +1026,6 @@ export class AdminDashboardComponent implements OnInit {
 
       this.adminService.updateUser(tempId, updateData, this.editUserForm.rol).subscribe({
         next: (updatedUser: any) => {
-          console.log('Usuario actualizado correctamente:', updatedUser);
-
           const userData = (updatedUser && typeof updatedUser === 'object') ? updatedUser : updateData;
 
           // Actualizar la lista después de la actualización exitosa
@@ -1118,19 +1039,14 @@ export class AdminDashboardComponent implements OnInit {
           this.successMessage = `Usuario ${tempNombre} ${tempApellidos} actualizado correctamente`;
 
           // Limpiar mensaje después de unos segundos
-          setTimeout(() => {
-            this.successMessage = '';
-          }, 3000);
+          setTimeout(() => { this.successMessage = ''; }, 3000);
         },
         error: (error: any) => {
           console.error('Error al actualizar usuario:', error);
           this.errorMessage = error?.error?.message || 'Error al actualizar el usuario';
           // Recargar lista para asegurar estado consistente
           this.loadUsuarios();
-
-          setTimeout(() => {
-            this.errorMessage = '';
-          }, 5000);
+          setTimeout(() => { this.errorMessage = ''; }, 5000);
         },
         complete: () => {
           // Restablecer flag de actualización
@@ -1148,6 +1064,44 @@ export class AdminDashboardComponent implements OnInit {
     } finally {
       this.isUpdating = false;
     }
+  }
+
+  // Extrae y construye el objeto que se enviará al backend según el rol
+  private prepareUpdateData(): any {
+    const base: any = {
+      nombre: this.editUserForm.nombre,
+      apellidos: this.editUserForm.apellidos,
+      email: this.editUserForm.email,
+      foto: this.editUserForm.foto || 'perfil1.png'
+    };
+
+    switch (this.editUserForm.rol) {
+      case 'Administrador':
+        if (this.editUserForm.departamento) base.departamento = this.editUserForm.departamento;
+        base.bloqueado = this.editUserForm.bloqueado || false;
+        break;
+      case 'Gestor':
+        if (this.editUserForm.alias) base.alias = this.editUserForm.alias;
+        if (this.editUserForm.especialidad) base.campoespecializacion = this.editUserForm.especialidad;
+        if (this.editUserForm.descripcion) base.descripcion = this.editUserForm.descripcion;
+        if (this.editUserForm.tipocontenidovideooaudio) base.tipocontenidovideooaudio = this.editUserForm.tipocontenidovideooaudio;
+        base.bloqueado = this.editUserForm.bloqueado || false;
+        break;
+      case 'Visualizador':
+      default:
+        if (this.editUserForm.alias) base.alias = this.editUserForm.alias;
+        if (this.editUserForm.fechanac) base.fechanac = new Date(this.editUserForm.fechanac);
+        if (this.editUserForm.vip !== undefined) base.vip = this.editUserForm.vip;
+        base.bloqueado = this.editUserForm.bloqueado || false;
+        break;
+    }
+
+    // Eliminar campos undefined/null/'' para evitar errores en el backend
+    Object.keys(base).forEach(key => {
+      if (base[key] === undefined || base[key] === null || base[key] === '') delete base[key];
+    });
+
+    return base;
   }
 
   cancelUserChanges() {

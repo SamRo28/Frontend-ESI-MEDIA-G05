@@ -58,10 +58,10 @@ export class VideoUploadComponent {
   selectedTags: string[] = [];
 
   constructor(
-    private fb: FormBuilder,
-    private contentService: ContentService,
-    private router: Router,
-  private cdr: ChangeDetectorRef
+    private readonly fb: FormBuilder,
+    private readonly contentService: ContentService,
+    private readonly router: Router,
+    private readonly cdr: ChangeDetectorRef
   ) {
     this.videoForm = this.fb.group({
       titulo: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
@@ -180,7 +180,7 @@ export class VideoUploadComponent {
             this.uploadMessage = '¡Video subido exitosamente! 🎉';
             // Forzar detección de cambios para que la UI muestre el estado de éxito inmediatamente
             this.cdr.detectChanges();
-            // Redirigir al dashboard de gestores tras mostrar feedback 2 segundos
+            // Redirigir al dashboard de gestores tras mostrar feedback 3 segundos
             setTimeout(() => {
               this.router.navigate(['/gestor-dashboard']);
             }, 3000);

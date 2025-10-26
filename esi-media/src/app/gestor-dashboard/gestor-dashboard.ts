@@ -37,13 +37,13 @@ export class GestorDashboardComponent implements OnInit {
   isLoading = true;
   gestorType: 'audio' | 'video' = 'audio'; // Por defecto audio, solo para pruebas
   userName = '';
-  // Mensajes para mostrar retroalimentación en la UI (p.ej. 'Sesión cerrada')
+  // Mensajes para mostrar retroalimentación en la UI (por ejemplo, 'Sesión cerrada')
   successMessage = '';
 
   constructor(
     private readonly contentService: ContentService,
     private readonly router: Router,
-    @Inject(PLATFORM_ID) private platformId: Object
+    @Inject(PLATFORM_ID) private readonly platformId: Object
   ) {}
 
   ngOnInit() {
@@ -54,8 +54,6 @@ export class GestorDashboardComponent implements OnInit {
   loadUserInfo() {
     // Solo acceder a sessionStorage en el navegador
     if (isPlatformBrowser(this.platformId)) {
-      // Obtenemos el tipo de usuario desde sessionStorage para validar que es gestor realmente
-      const userType = sessionStorage.getItem('currentUserClass');
       // Obtener el resto de información del usuario del sessionStorage
       const userJson = sessionStorage.getItem('user');
         let parsedUser: any = null;
@@ -107,7 +105,6 @@ export class GestorDashboardComponent implements OnInit {
 
       // Mostrar mensaje breve (puede usarse en template si se quiere mostrar)
       this.successMessage = 'Sesión cerrada';
-      // Renovamos isLoading/flags si es necesario
 
       // Redirigir al home después de un pequeño retardo para permitir ver el mensaje
       setTimeout(() => {

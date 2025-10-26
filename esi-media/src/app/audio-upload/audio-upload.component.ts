@@ -60,11 +60,10 @@ export class AudioUploadComponent {
   selectedTags: string[] = [];
   
   constructor(
-    private fb: FormBuilder,
-    private contentService: ContentService,
-    private router: Router
-    ,
-    private cdr: ChangeDetectorRef
+    private readonly fb: FormBuilder,
+    private readonly contentService: ContentService,
+    private readonly router: Router,
+    private readonly cdr: ChangeDetectorRef
   ) {
     this.audioForm = this.fb.group({
       titulo: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
@@ -268,7 +267,7 @@ export class AudioUploadComponent {
           if (response.success) {
             this.uploadSuccess = true;
             this.uploadMessage = '¡Audio subido exitosamente! 🎉';
-            // Forzar detección y redirigir al dashboard de gestores después de 2s
+            // Forzar detección y redirigir al dashboard de gestores después de 3 segundos
             this.cdr.detectChanges();
             setTimeout(() => {
               this.router.navigate(['/gestor-dashboard']);

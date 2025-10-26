@@ -50,9 +50,9 @@ export interface BackendError {
   providedIn: 'root'
 })
 export class ContentService {
-  private baseUrl = 'http://localhost:8080/gestor';
+  private readonly baseUrl = 'http://localhost:8080/gestor';
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   /**
    * Sube un archivo de audio usando el endpoint /gestor/audio/subir
@@ -86,7 +86,6 @@ export class ContentService {
 
     // El interceptor authInterceptor se encarga automáticamente del header Authorization
     const headers = new HttpHeaders();
-
     return this.http.post<UploadResponse>(`${this.baseUrl}/audio/subir`, formData, { headers });
   }
 
@@ -114,7 +113,6 @@ export class ContentService {
     const headers = new HttpHeaders({
       'Content-Type': 'application/json'
     });
-
     return this.http.post<UploadResponse>(`${this.baseUrl}/video/subir`, payload, { headers });
   }
 

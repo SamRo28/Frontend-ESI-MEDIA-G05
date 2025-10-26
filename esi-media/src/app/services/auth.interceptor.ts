@@ -7,18 +7,15 @@ import { Observable } from 'rxjs';
  * 
  */
 export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: HttpHandlerFn): Observable<HttpEvent<any>> => {
-  // Solo agregar el token a peticiones hacia nuestro backend
+  // Agregar el token a peticiones hacia nuestro backend
   if (req.url.includes('localhost:8080/gestor')) {
-    
     // Determinar qué token usar según el endpoint
-    let mockToken: string = sessionStorage.getItem('token') || '';
-    
-  
+    let token: string = sessionStorage.getItem('token') || '';
     
     // Agregar el header de autorización
     const authReq = req.clone({
       setHeaders: {
-        Authorization: `${mockToken}`
+        Authorization: `${token}`
       }
     });
     
