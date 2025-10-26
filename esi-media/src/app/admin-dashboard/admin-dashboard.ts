@@ -91,6 +91,11 @@ export class AdminDashboardComponent implements OnInit {
     { id: 'perfil4.png', nombre: 'Perfil 4' }
   ];
 
+  // Utilidades de fecha para inputs de tipo date
+  todayStr: string = '';
+  minAllowedBirthStr: string = '';
+  maxBirthForFourYearsStr: string = '';
+
   constructor(
     private adminService: AdminService,
     private cdr: ChangeDetectorRef,
@@ -116,6 +121,25 @@ export class AdminDashboardComponent implements OnInit {
     }
     
     this.loadUsuarios();
+
+    // Inicializar valores de fecha para inputs (usado en el modal de edición de visualizadores)
+    const today = new Date();
+    this.todayStr = AdminDashboardComponent.toDateInputValue(today);
+
+    // fecha máxima para que la persona tenga al menos 4 años => hoy - 4 años
+    const fourYearsAgo = new Date(today.getFullYear() - 4, today.getMonth(), today.getDate());
+    this.maxBirthForFourYearsStr = AdminDashboardComponent.toDateInputValue(fourYearsAgo);
+
+    // fecha mínima razonable (por ejemplo 100 años atrás)
+    const minBirth = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
+    this.minAllowedBirthStr = AdminDashboardComponent.toDateInputValue(minBirth);
+  }
+
+  static toDateInputValue(d: Date): string {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   }
 
   loadUsuarios() {
@@ -968,8 +992,30 @@ export class AdminDashboardComponent implements OnInit {
     }
 
     // Mostrar confirmación
+    // Si el usuario es Visualizador y se proporcionó una fecha de nacimiento, hay que validarla
+    if (this.editUserForm.rol === 'Visualizador' && this.editUserForm.fechanac) {
+      const err = this.validateBirthDateForAdmin(this.editUserForm.fechanac, 4);
+      if (err) {
+        this.errorMessage = err;
+        // Mantener el modal abierto para que el administrador corrija la fecha
+        return;
+      }
+    }
+
     this.showEditConfirmation = true;
     this.resetMessages();
+  }
+
+  // Validador reutilizable para la fecha de nacimiento en el admin (mismo criterio que registro)
+  validateBirthDateForAdmin(dateStr: string, minYears: number): string | null {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Fecha de nacimiento inválida';
+    const today = new Date();
+    if (d > today) return 'La fecha de nacimiento no puede ser futura';
+    const cutoff = new Date(today.getFullYear() - minYears, today.getMonth(), today.getDate());
+    if (d > cutoff) return `El usuario debe tener al menos ${minYears} años`;
+    return null;
   }
 
   // Segundo paso: confirmar cambios

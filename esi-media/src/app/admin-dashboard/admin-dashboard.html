@@ -1495,7 +1495,9 @@
                   type="date" 
                   [(ngModel)]="editUserForm.fechanac" 
                   name="fechanac"
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  [attr.max]="todayStr" [attr.min]="minAllowedBirthStr">
+                <small class="hint text-xs text-red-600 mt-1" *ngIf="editUserForm.fechanac && errorMessage">{{ errorMessage }}</small>
               </div>
             </div>
 
