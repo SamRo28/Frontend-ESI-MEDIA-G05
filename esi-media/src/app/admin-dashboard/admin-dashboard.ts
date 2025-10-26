@@ -95,6 +95,11 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     { id: 'perfil4.png', nombre: 'Perfil 4' }
   ];
 
+  // Utilidades de fecha para inputs de tipo date
+  todayStr: string = '';
+  minAllowedBirthStr: string = '';
+  maxBirthForFourYearsStr: string = '';
+
   constructor(
     private adminService: AdminService,
     private cdr: ChangeDetectorRef,
@@ -125,6 +130,26 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
       this.loadUsuarios();
     }
     
+    this.loadUsuarios();
+
+    // Inicializar valores de fecha para inputs (usado en el modal de edición de visualizadores)
+    const today = new Date();
+    this.todayStr = AdminDashboardComponent.toDateInputValue(today);
+
+    // fecha máxima para que la persona tenga al menos 4 años => hoy - 4 años
+    const fourYearsAgo = new Date(today.getFullYear() - 4, today.getMonth(), today.getDate());
+    this.maxBirthForFourYearsStr = AdminDashboardComponent.toDateInputValue(fourYearsAgo);
+
+    // fecha mínima razonable (por ejemplo 100 años atrás)
+    const minBirth = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
+    this.minAllowedBirthStr = AdminDashboardComponent.toDateInputValue(minBirth);
+  }
+
+  static toDateInputValue(d: Date): string {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
     // Forzar detección de cambios para asegurar que la vista se actualice
     this.cdr.detectChanges();
   }
@@ -850,7 +875,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     this.resetMessages();
   }
 
-    // NUEVO: Cargar detalles completos del usuario según su tipo
+  // Cargar detalles completos del usuario según su tipo
   private loadUserDetails(userId: string, rol: string) {
     
     switch (rol) {
@@ -877,12 +902,13 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
   }
 
   private processUserDetails(response: any, rol: string) {
+
     let userDetails: any;
-    
-    // ESTRATEGIA SIMPLIFICADA: Asumir que la respuesta ES directamente los datos del usuario
+
     if (response && typeof response === 'object') {
       userDetails = response;
     } else {
+      console.warn('⚠️ Respuesta inesperada:', response);
       this.errorMessage = 'Error: no se pudieron cargar los datos del usuario';
       return;
     }
@@ -898,7 +924,7 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
       this.editUserForm.especialidad = userDetails.campoespecializacion;
     }
     
-    // 🔧 ARREGLO DE FECHAS: Convertir fechas al formato YYYY-MM-DD para inputs HTML
+    // ARREGLO DE FECHAS: Convertir fechas al formato YYYY-MM-DD para inputs HTML
     if (userDetails.fechaNac || userDetails.fechanac) {
       const fechaNac = userDetails.fechaNac || userDetails.fechanac;
       this.editUserForm.fechanac = this.formatDateForInput(fechaNac);
@@ -912,10 +938,11 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     if (userDetails.alias) {
       this.editUserForm.alias = userDetails.alias;
     }
+    
     this.cdr.detectChanges(); // Forzar actualización de la vista
   }
 
-  // 🔧 NUEVO: Método para formatear fechas para inputs HTML
+  // Método para formatear fechas para inputs HTML utilizando YYYY-MM-DD
   private formatDateForInput(dateValue: any): string {
     if (!dateValue) return '';
     
@@ -986,8 +1013,30 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     }
 
     // Mostrar confirmación
+    // Si el usuario es Visualizador y se proporcionó una fecha de nacimiento, hay que validarla
+    if (this.editUserForm.rol === 'Visualizador' && this.editUserForm.fechanac) {
+      const err = this.validateBirthDateForAdmin(this.editUserForm.fechanac, 4);
+      if (err) {
+        this.errorMessage = err;
+        // Mantener el modal abierto para que el administrador corrija la fecha
+        return;
+      }
+    }
+
     this.showEditConfirmation = true;
     this.resetMessages();
+  }
+
+  // Validador para la fecha de nacimiento en el admin-dashboard
+  validateBirthDateForAdmin(dateStr: string, minYears: number): string | null {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Fecha de nacimiento inválida';
+    const today = new Date();
+    if (d > today) return 'La fecha de nacimiento no puede ser futura';
+    const cutoff = new Date(today.getFullYear() - minYears, today.getMonth(), today.getDate());
+    if (d > cutoff) return `El usuario debe tener al menos ${minYears} años`;
+    return null;
   }
 
   // Segundo paso: confirmar cambios
@@ -998,116 +1047,48 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     this.resetMessages();
 
     try {
-      // 🔧 ESTRATEGIA SIMPLIFICADA: Enviar solo campos esenciales y validados
-      console.log('📋 Formulario completo antes de enviar:', this.editUserForm);
-      
-      // Preparar datos base (campos que sabemos que existen en todos los DTOs)
-      let updateData: any = {
-        nombre: this.editUserForm.nombre,
-        apellidos: this.editUserForm.apellidos,
-        email: this.editUserForm.email,
-        foto: this.editUserForm.foto || 'perfil1.png' // Valor por defecto
-      };
-      
-      // Agregar SOLO los campos específicos que están en los DTOs del backend
-      if (this.editUserForm.rol === 'Administrador') {
-        if (this.editUserForm.departamento) {
-          updateData.departamento = this.editUserForm.departamento;
-        }
-        // ✅ Agregar campo bloqueado para Administradores
-        updateData.bloqueado = this.editUserForm.bloqueado || false;
-        console.log('👤 Datos de Administrador completos:', updateData);
-        
-      } else if (this.editUserForm.rol === 'Gestor') {
-        if (this.editUserForm.alias) {
-          updateData.alias = this.editUserForm.alias;
-        }
-        if (this.editUserForm.especialidad) {
-          // El DTO del backend usa "campoespecializacion"
-          updateData.campoespecializacion = this.editUserForm.especialidad;
-        }
-        if (this.editUserForm.descripcion) {
-          updateData.descripcion = this.editUserForm.descripcion;
-        }
-        if (this.editUserForm.tipocontenidovideooaudio) {
-          updateData.tipocontenidovideooaudio = this.editUserForm.tipocontenidovideooaudio;
-        }
-        // ✅ Agregar campo bloqueado para Gestores
-        updateData.bloqueado = this.editUserForm.bloqueado || false;
-        console.log('👤 Datos de Gestor completos:', updateData);
-        
-      } else if (this.editUserForm.rol === 'Visualizador') {
-        if (this.editUserForm.alias) {
-          updateData.alias = this.editUserForm.alias;
-        }
-        if (this.editUserForm.fechanac) {
-          // Convertir a Date object
-          updateData.fechanac = new Date(this.editUserForm.fechanac);
-        }
-        // ✅ AGREGAR VIP para Visualizadores (campo importante que faltaba)
-        if (this.editUserForm.vip !== undefined) {
-          updateData.vip = this.editUserForm.vip;
-        }
-        // ✅ Agregar campo bloqueado para Visualizadores
-        updateData.bloqueado = this.editUserForm.bloqueado || false;
-        console.log('👤 Datos de Visualizador completos:', updateData);
-      }
+      // Preparar y limpiar los datos a enviar
+      const updateData = this.prepareUpdateData();
 
-      // Remover campos undefined/null para evitar errores en el backend
-      Object.keys(updateData).forEach(key => {
-        if (updateData[key] === undefined || updateData[key] === null || updateData[key] === '') {
-          delete updateData[key];
+      // Datos temporales para mensajes y actualizaciones de UI
+      const tempId = this.editUserForm.id;
+      const tempNombre = this.editUserForm.nombre;
+      const tempApellidos = this.editUserForm.apellidos;
+
+      // Cerrar modal ANTES de la llamada para dar feedback inmediato (igual que deleteUser)
+      this.showEditUserModal = false;
+      this.showEditConfirmation = false;
+
+      this.adminService.updateUser(tempId, updateData, this.editUserForm.rol).subscribe({
+        next: (updatedUser: any) => {
+          const userData = (updatedUser && typeof updatedUser === 'object') ? updatedUser : updateData;
+
+          // Actualizar la lista después de la actualización exitosa
+          const index = this.usuarios.findIndex(u => u.id === tempId);
+          if (index !== -1) {
+            this.usuarios[index] = { ...this.usuarios[index], ...userData };
+            this.aplicarFiltros();
+          }
+
+          // Mostrar mensaje global de éxito (visible en la vista principal)
+          this.successMessage = `Usuario ${tempNombre} ${tempApellidos} actualizado correctamente`;
+
+          // Limpiar mensaje después de unos segundos
+          setTimeout(() => { this.successMessage = ''; }, 3000);
+        },
+        error: (error: any) => {
+          console.error('Error al actualizar usuario:', error);
+          this.errorMessage = error?.error?.message || 'Error al actualizar el usuario';
+          // Recargar lista para asegurar estado consistente
+          this.loadUsuarios();
+          setTimeout(() => { this.errorMessage = ''; }, 5000);
+        },
+        complete: () => {
+          // Restablecer flag de actualización
+          this.isUpdating = false;
+          this.cdr.detectChanges();
         }
       });
-
-      console.log('🚀 Datos FINALES (limpiados) a enviar:', updateData);
-      console.log('🎯 Rol:', this.editUserForm.rol);
-      console.log('📊 Cantidad de campos:', Object.keys(updateData).length);
-
-      // SIMPLIFICADO: Usar un solo método para todos los tipos de usuario
-      let updatedUser: any;
-      updatedUser = await firstValueFrom(this.adminService.updateUser(this.editUserForm.id, updateData, this.editUserForm.rol));
-      
-      console.log('✅ Respuesta de actualización:', updatedUser);
-      
-      // ESTRATEGIA SIMPLIFICADA: Asumir que la respuesta ES directamente los datos actualizados
-      let userData: any;
-      if (updatedUser && typeof updatedUser === 'object') {
-        userData = updatedUser;
-        console.log('📦 Usando datos directos de la respuesta:', userData);
-      } else {
-        console.warn('⚠️ Respuesta inesperada, usando datos enviados como fallback');
-        userData = updateData; // Usar los datos que enviamos como fallback
-      }
-      
-      if (userData) {
-        // Actualizar el usuario en la lista local
-        const index = this.usuarios.findIndex(u => u.id === this.editingUser?.id);
-        if (index !== -1) {
-          this.usuarios[index] = { ...this.usuarios[index], ...userData };
-          this.aplicarFiltros();
-        }
-
-        this.successMessage = `Usuario ${this.editUserForm.nombre} ${this.editUserForm.apellidos} actualizado correctamente`;
-        
-        // Mantener el modal abierto pero mostrar los datos actualizados
-        this.editUserForm = {
-          ...this.editUserForm,
-          ...userData
-        };
-        
-        // Mapear campos específicos si es necesario
-        if (this.editUserForm.rol === 'Gestor' && userData.campoespecializacion) {
-          this.editUserForm.especialidad = userData.campoespecializacion;
-        }
-        
-        this.showEditConfirmation = false;
-
-        // Limpiar mensaje después de 3 segundos
-        setTimeout(() => {
-          this.successMessage = '';
-        }, 3000);
-      }
 
     } catch (error: any) {
       console.error('❌ Error actualizando usuario:', error);
@@ -1118,6 +1099,44 @@ export class AdminDashboardComponent implements OnInit, AfterViewInit {
     } finally {
       this.isUpdating = false;
     }
+  }
+
+  // Extrae y construye el objeto que se enviará al backend según el rol
+  private prepareUpdateData(): any {
+    const base: any = {
+      nombre: this.editUserForm.nombre,
+      apellidos: this.editUserForm.apellidos,
+      email: this.editUserForm.email,
+      foto: this.editUserForm.foto || 'perfil1.png'
+    };
+
+    switch (this.editUserForm.rol) {
+      case 'Administrador':
+        if (this.editUserForm.departamento) base.departamento = this.editUserForm.departamento;
+        base.bloqueado = this.editUserForm.bloqueado || false;
+        break;
+      case 'Gestor':
+        if (this.editUserForm.alias) base.alias = this.editUserForm.alias;
+        if (this.editUserForm.especialidad) base.campoespecializacion = this.editUserForm.especialidad;
+        if (this.editUserForm.descripcion) base.descripcion = this.editUserForm.descripcion;
+        if (this.editUserForm.tipocontenidovideooaudio) base.tipocontenidovideooaudio = this.editUserForm.tipocontenidovideooaudio;
+        base.bloqueado = this.editUserForm.bloqueado || false;
+        break;
+      case 'Visualizador':
+      default:
+        if (this.editUserForm.alias) base.alias = this.editUserForm.alias;
+        if (this.editUserForm.fechanac) base.fechanac = new Date(this.editUserForm.fechanac);
+        if (this.editUserForm.vip !== undefined) base.vip = this.editUserForm.vip;
+        base.bloqueado = this.editUserForm.bloqueado || false;
+        break;
+    }
+
+    // Eliminar campos undefined/null/'' para evitar errores en el backend
+    Object.keys(base).forEach(key => {
+      if (base[key] === undefined || base[key] === null || base[key] === '') delete base[key];
+    });
+
+    return base;
   }
 
   cancelUserChanges() {

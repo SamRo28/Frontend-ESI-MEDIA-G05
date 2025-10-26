@@ -9,6 +9,17 @@ import { isPlatformBrowser } from '@angular/common';
  * 
  */
 export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: HttpHandlerFn): Observable<HttpEvent<any>> => {
+  // Agregar el token a peticiones hacia nuestro backend
+  if (req.url.includes('localhost:8080/gestor')) {
+    // Determinar qué token usar según el endpoint
+    let token: string = sessionStorage.getItem('token') || '';
+    
+    // Agregar el header de autorización
+    const authReq = req.clone({
+      setHeaders: {
+        Authorization: `${token}`
+      }
+    });
   const platformId = inject(PLATFORM_ID);
   
   // Si no estamos en el navegador (SSR), NO INTERCEPTAR - deja que la petición continúe sin token

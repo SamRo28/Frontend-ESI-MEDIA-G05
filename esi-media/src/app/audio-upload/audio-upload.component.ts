@@ -1,8 +1,26 @@
-import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Component, ChangeDetectorRef } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ContentService, AudioUploadData, UploadResponse } from '../services/content.service';
+
+// Validador para fechas que deben ser estrictamente posteriores a hoy
+function futureDateValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const value = control.value;
+    if (!value) return null; // Campo vacío permitido (es opcional)
+    
+    const selectedDate = new Date(value);
+    if (Number.isNaN(selectedDate.getTime())) return { invalidDate: true };
+    
+    // Comparar solo la parte de fecha (sin horas) para evitar problemas de zona horaria
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+    
+    return selectedDate > today ? null : { notInFuture: true };
+  };
+}
 
 @Component({
   selector: 'app-audio-upload',
@@ -16,11 +34,11 @@ export class AudioUploadComponent {
   selectedFile: File | null = null;
   isUploading = false;
   uploadMessage = '';
-  fileError = ''; // Error específico del archivo
-  uploadSuccess = false; // Nueva propiedad para controlar el éxito
+  fileError = '';
+  uploadSuccess = false;
   showUploadConfirmation = false;
   
-  // Tags predefinidos para audio
+  // Tags predefinidos para audios
   availableAudioTags = [
     { value: 'pop', label: 'Pop' },
     { value: 'rock', label: 'Rock' },
@@ -42,9 +60,10 @@ export class AudioUploadComponent {
   selectedTags: string[] = [];
   
   constructor(
-    private fb: FormBuilder,
-    private contentService: ContentService,
-    private router: Router
+    private readonly fb: FormBuilder,
+    private readonly contentService: ContentService,
+    private readonly router: Router,
+    private readonly cdr: ChangeDetectorRef
   ) {
     this.audioForm = this.fb.group({
       titulo: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
@@ -54,7 +73,7 @@ export class AudioUploadComponent {
       segundos: ['', [Validators.required, Validators.min(0), Validators.max(59)]],
       vip: [false, [Validators.required]],
       edadVisualizacion: ['', [Validators.required]],
-      fechaDisponibleHasta: [''],
+      fechaDisponibleHasta: ['', [futureDateValidator()]],
       visible: [true, [Validators.required]],
       archivo: [null, [Validators.required]],
       caratula: ['']
@@ -72,28 +91,53 @@ export class AudioUploadComponent {
     });
   }
 
-  onFileSelected(event: any) {
-    const file = event.target.files[0];
-    this.fileError = ''; // Limpiar errores previos
-    
+  async onFileSelected(event: any) {
+  const inputEl = event.target as HTMLInputElement;
+  const file = inputEl.files ? inputEl.files[0] : null;
+  this.fileError = ''; // Limpiar errores previos
+
     if (file) {
-      // Validar tipo de archivo
+      // Validar tipo de archivo en función del MIME type
       if (!file.type.includes('audio/mpeg') && !file.type.includes('audio/mp3')) {
         this.fileError = 'Solo se permiten archivos MP3';
         this.selectedFile = null;
+        // limpiar input para permitir volver a seleccionar el mismo archivo si fuese necesario
+        inputEl.value = '';
+        this.cdr.detectChanges();
         return;
       }
-      
+
       // Validar tamaño (2MB máximo)
       if (file.size > 2 * 1024 * 1024) {
         this.fileError = 'El archivo excede el tamaño máximo de 2MB';
         this.selectedFile = null;
+        inputEl.value = '';
+        this.cdr.detectChanges();
         return;
       }
-      
-      // Validar extensión
+
+      // Debemos aceptar solo archivos que sean REALMENTE .mp3
+      // Por ello validamos tanto la extensión como los magic-bytes
       if (!file.name.toLowerCase().endsWith('.mp3')) {
-        this.fileError = 'El archivo debe tener extensión .mp3';
+        this.fileError = 'Se requiere archivo con extensión .mp3';
+        this.selectedFile = null;
+        inputEl.value = '';
+        this.cdr.detectChanges();
+        return;
+      }
+
+      try {
+        const detected = await this.detectAudioFormatByMagicBytes(file);
+        if (detected !== 'mp3') {
+          this.fileError = `Se requiere un archivo MP3 /// (Formato detectado: ${detected || 'desconocido'})`;
+          this.selectedFile = null;
+          inputEl.value = '';
+          this.cdr.detectChanges();
+          return;
+        }
+      } catch (err) {
+        console.error('Error comprobando magic bytes:', err);
+        this.fileError = 'No se pudo verificar el tipo del archivo';
         this.selectedFile = null;
         return;
       }
@@ -101,7 +145,39 @@ export class AudioUploadComponent {
       this.selectedFile = file;
       this.audioForm.patchValue({ archivo: file });
       this.uploadMessage = '';
+      // limpiar valor del input para permitir re-selección del mismo fichero si el usuario lo desea
+      inputEl.value = '';
+      // forzar detección de cambios en la UI inmediatamente
+      this.cdr.detectChanges();
     }
+  }
+
+  // Detecta formato de audio por magic-bytes y devuelve 'mp3'|'wav'|'ogg'|'m4a' o null si no se reconoce
+  private async detectAudioFormatByMagicBytes(file: File): Promise<string | null> {
+    // Debemos leer primeros 12 bytes para tener suficiente información de los magic-bytes
+    const slice = file.slice(0, 12);
+    const arrayBuffer = await slice.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+
+    if (bytes.length < 4) return null;
+
+    // MP3: Aparece ID3 al inicio
+    if (bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) return 'mp3';
+    // O puede empezar directamente con un frame de audio (0xFFEx)
+    if (bytes[0] === 0xFF && (bytes[1] & 0xE0) === 0xE0) return 'mp3';
+
+    // WAV: 'RIFF'....'WAVE'
+    if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46) {
+      if (bytes.length >= 12 && bytes[8] === 0x57 && bytes[9] === 0x41 && bytes[10] === 0x56 && bytes[11] === 0x45) return 'wav';
+    }
+
+    // OGG: 'OggS'
+    if (bytes[0] === 0x4F && bytes[1] === 0x67 && bytes[2] === 0x67 && bytes[3] === 0x53) return 'ogg';
+
+    // M4A: 'ftyp' en bytes 4-7
+    if (bytes.length >= 8 && bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) return 'm4a';
+
+    return null;
   }
 
   // Métodos para manejar selección múltiple de tags
@@ -130,6 +206,15 @@ export class AudioUploadComponent {
   }
 
   onSubmit() {
+    const minutos = Number(this.audioForm.value.minutos) || 0;
+    const segundos = Number(this.audioForm.value.segundos) || 0;
+    if ((minutos * 60 + segundos) <= 0) {
+      this.uploadMessage = 'La duración debe ser al menos 1 segundo.';
+      this.audioForm.get('minutos')?.markAsTouched();
+      this.audioForm.get('segundos')?.markAsTouched();
+      return;
+    }
+
     if (this.audioForm.valid && this.selectedFile) {
       // Mostrar modal de confirmación antes de subir
       this.showUploadConfirmation = true;
@@ -152,10 +237,10 @@ export class AudioUploadComponent {
     const segundos = Number(this.audioForm.value.segundos) || 0;
     const formValues = this.audioForm.value; // Guardar todos los valores
       
-      // BLOQUEAR FORMULARIO COMPLETO
+      // Bloquear formulario completo una vez se decide subir el audio
       this.audioForm.disable();
 
-      // Usar selectedTags directamente (ya están como array)
+      // Usar selectedTags directamente
       const tagsArray = this.selectedTags.length > 0 ? this.selectedTags : [];
 
       // Convertir minutos y segundos a total de segundos con validación
@@ -182,6 +267,11 @@ export class AudioUploadComponent {
           if (response.success) {
             this.uploadSuccess = true;
             this.uploadMessage = '¡Audio subido exitosamente! 🎉';
+            // Forzar detección y redirigir al dashboard de gestores después de 3 segundos
+            this.cdr.detectChanges();
+            setTimeout(() => {
+              this.router.navigate(['/gestor-dashboard']);
+            }, 3000);
           } else {
             this.uploadSuccess = false;
             this.uploadMessage = `❌ Error: ${response.message}`;
@@ -255,7 +345,7 @@ export class AudioUploadComponent {
     return !hasError && !!(field?.touched);
   }
 
-  // Calcular progreso del formulario para feedback visual
+  // Calcular barra de progreso del formulario para feedback visual
   getFormProgress(): number {
     const basicFields = ['titulo', 'edadVisualizacion'];
     const completedBasicFields = basicFields.filter(field => {
@@ -263,7 +353,7 @@ export class AudioUploadComponent {
       return control && control.valid && control.value !== '';
     });
     
-    // Contar duración como una sola unidad (minutos Y segundos completos)
+    // Contar duración como una sola unidad (minutos Y segundos deben estar completos)
     const durationComplete = this.isFieldComplete('minutos') && this.isFieldComplete('segundos');
     
     // Contar tags como requerido
@@ -372,17 +462,9 @@ export class AudioUploadComponent {
     return `✓ Duración: ${totalMinutos}m ${totalSegundos}s`;
   }
 
-  // Formatear duración en minutos y segundos
-  formatDuration(seconds: number): string {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.round(seconds % 60);
-    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-  }
-
-  // Solo permitir números en campos de duración
+  // Solo permitiremos números en los campos de duración
   onlyNumbers(event: KeyboardEvent): void {
     const key = event.key;
-    // Permitir: números 0-9, backspace, delete, tab, escape, enter, flechas
     const allowedKeys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
                          'Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 
                          'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
@@ -392,9 +474,8 @@ export class AudioUploadComponent {
     }
   }
 
-  // Prevenir entrada de teclado en campos de fecha (solo permitir selector)
+  // Solo permitiremos el uso del selector de fecha, no entrada manual
   preventKeyboardInput(event: KeyboardEvent): void {
-    // Permitir solo teclas de navegación y funcionales, no letras/números
     const allowedKeys = ['Tab', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Delete', 'Backspace'];
     if (!allowedKeys.includes(event.key)) {
       event.preventDefault();

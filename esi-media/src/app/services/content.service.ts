@@ -50,9 +50,9 @@ export interface BackendError {
   providedIn: 'root'
 })
 export class ContentService {
-  private baseUrl = 'http://localhost:8080/gestor';
+  private readonly baseUrl = 'http://localhost:8080/gestor';
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   /**
    * Sube un archivo de audio usando el endpoint /gestor/audio/subir
@@ -66,7 +66,6 @@ export class ContentService {
       formData.append('descripcion', audioData.descripcion);
     }
     
-    // Los tags se envían como elementos separados del array
     audioData.tags.forEach((tag, index) => {
       formData.append(`tags[${index}]`, tag);
     });
@@ -87,7 +86,6 @@ export class ContentService {
 
     // El interceptor authInterceptor se encarga automáticamente del header Authorization
     const headers = new HttpHeaders();
-
     return this.http.post<UploadResponse>(`${this.baseUrl}/audio/subir`, formData, { headers });
   }
 
@@ -97,25 +95,24 @@ export class ContentService {
   uploadVideo(videoData: VideoUploadData): Observable<UploadResponse> {
     const payload = {
       titulo: videoData.titulo,
-      descripcion: videoData.descripcion || null, // CAMBIO: null en lugar de undefined
+      descripcion: videoData.descripcion || null,
       tags: videoData.tags,
-      duracion: videoData.duracion, // Mantener como number, no string
+      duracion: videoData.duracion,
       vip: videoData.vip,
       edadVisualizacion: videoData.edadVisualizacion,
       fechaDisponibleHasta: videoData.fechaDisponibleHasta 
-        ? videoData.fechaDisponibleHasta.toISOString() // CAMBIO: Usar toISOString() como audio
+        ? videoData.fechaDisponibleHasta.toISOString()
         : null,
       visible: videoData.visible,
       url: videoData.url,
       resolucion: videoData.resolucion,
-      caratula: videoData.caratula || null // CAMBIO: null en lugar de undefined
+      caratula: videoData.caratula || null
     };
 
     // El interceptor authInterceptor se encarga automáticamente del header Authorization
     const headers = new HttpHeaders({
       'Content-Type': 'application/json'
     });
-
     return this.http.post<UploadResponse>(`${this.baseUrl}/video/subir`, payload, { headers });
   }
 
@@ -131,35 +128,5 @@ export class ContentService {
    */
   checkVideoStatus(): Observable<any> {
     return this.http.get(`${this.baseUrl}/video/estado`);
-  }
-
-  /**
-   * Prueba la conectividad con el backend
-   */
-  testConnection(): Observable<{ audio: any, video: any }> {
-    const audioStatus$ = this.checkAudioStatus();
-    const videoStatus$ = this.checkVideoStatus();
-    
-    // Usar forkJoin para hacer ambas peticiones en paralelo
-    return new Observable(observer => {
-      const audioPromise = new Promise(resolve => {
-        audioStatus$.subscribe({
-          next: result => resolve(result),
-          error: err => resolve({ error: err })
-        });
-      });
-      
-      const videoPromise = new Promise(resolve => {
-        videoStatus$.subscribe({
-          next: result => resolve(result),
-          error: err => resolve({ error: err })
-        });
-      });
-      
-      Promise.all([audioPromise, videoPromise]).then(([audio, video]) => {
-        observer.next({ audio, video });
-        observer.complete();
-      });
-    });
   }
 }

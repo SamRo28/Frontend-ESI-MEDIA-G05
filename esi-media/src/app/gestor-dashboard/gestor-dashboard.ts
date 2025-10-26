@@ -35,13 +35,15 @@ export class GestorDashboardComponent implements OnInit {
   };
   
   isLoading = true;
-  gestorType: 'audio' | 'video' | 'admin' = 'audio'; // Por defecto audio
+  gestorType: 'audio' | 'video' = 'audio'; // Por defecto audio, solo para pruebas
   userName = '';
+  // Mensajes para mostrar retroalimentación en la UI (por ejemplo, 'Sesión cerrada')
+  successMessage = '';
 
   constructor(
     private readonly contentService: ContentService,
     private readonly router: Router,
-    @Inject(PLATFORM_ID) private platformId: Object
+    @Inject(PLATFORM_ID) private readonly platformId: Object
   ) {}
 
   ngOnInit() {
@@ -52,35 +54,23 @@ export class GestorDashboardComponent implements OnInit {
   loadUserInfo() {
     // Solo acceder a sessionStorage en el navegador
     if (isPlatformBrowser(this.platformId)) {
-      // Obtener información del usuario del sessionStorage
-      const userType = sessionStorage.getItem('currentUserClass');
-      const email = sessionStorage.getItem('email');
-      
-      if (email) {
-        // Extraer el nombre del email (antes del @)
-        this.userName = email.split('@')[0] || 'Gestor';
-      } else {
-        this.userName = 'Gestor';
-      }
-      
-      // Determinar el tipo de gestor basado en la información de sesión
-      if (userType === 'gestor_de_contenido') {
-        this.gestorType = 'audio'; // Por defecto, pero se puede extender
-      } else if (userType === 'admin') {
-        this.gestorType = 'admin';
-      } else {
-        this.gestorType = 'audio';
-      }
-    } else {
-      // Valores por defecto para SSR
-      this.userName = 'Gestor';
-      this.gestorType = 'audio';
+      // Obtener el resto de información del usuario del sessionStorage
+      const userJson = sessionStorage.getItem('user');
+        let parsedUser: any = null;
+        if (userJson) {
+          try { parsedUser = JSON.parse(userJson); } catch (e) { parsedUser = null; }
+        }
+      this.userName = parsedUser?.alias || 'Gestor';
+      //Ahora obtenemos el tipo contenido video o audio
+      this.gestorType = parsedUser?.tipocontenidovideooaudio || 'audio';
     }
   }
 
   loadDashboardStats() {
-    // Para el Sprint #1, no necesitamos cargar estadísticas reales
+    // Para el Sprint #1, todavia no necesitamos cargar estadísticas reales
     // Solo inicializamos los valores por defecto
+
+    // TODO en sprint #2 implementar carga real de estadísticas
     this.stats = {
       totalContent: 0,
       audioCount: 0,
@@ -90,38 +80,36 @@ export class GestorDashboardComponent implements OnInit {
     this.isLoading = false;
   }
 
+
   // Navegación a páginas de subida
   navigateToUpload() {
-    // Por ahora, para el mockup, iremos por defecto a audio
-    // En el futuro esto se determinará por el tipo de gestor
     if (this.gestorType === 'video') {
       this.router.navigate(['/video/subir']);
     } else {
-      // Por defecto audio
       this.router.navigate(['/audio/subir']);
     }
   }
 
-  navigateToAudioUpload() {
-    this.router.navigate(['/audio/subir']);
-  }
-
-  navigateToVideoUpload() {
-    this.router.navigate(['/video/subir']);
-  }
-
-
 
   // Cerrar sesión
   logout() {
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('email');
-    sessionStorage.removeItem('currentUserClass');
-    this.router.navigate(['/login']);
-  }
+    // borrar usuario completo, token y metadatos de sesión, limpiar estado y redirigir
+    if (isPlatformBrowser(this.platformId)) {
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('email');
+      sessionStorage.removeItem('currentUserClass');
 
-  // Ir al home
-  goToHome() {
-    this.router.navigate(['/home']);
+      // Limpiar estado local
+      this.userName = '';
+
+      // Mostrar mensaje breve (puede usarse en template si se quiere mostrar)
+      this.successMessage = 'Sesión cerrada';
+
+      // Redirigir al home después de un pequeño retardo para permitir ver el mensaje
+      setTimeout(() => {
+        this.router.navigate(['/home']);
+      }, 1350);
+    }
   }
 }
