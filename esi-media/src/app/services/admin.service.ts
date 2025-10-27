@@ -258,7 +258,7 @@ export class AdminService {
     console.log('🔗 Obteniendo administrador (usando endpoint genérico):', id);
     return this.getUserById(id);
   }
-  getUserById(id: string): Observable<any> {
+  /*getUserById(id: string): Observable<any> {
     console.log('🔗 Obteniendo usuario por ID:', id);
     const url = `${this.apiUrl}/users/${id}`;
     console.log('🌐 URL:', url);
@@ -267,7 +267,7 @@ export class AdminService {
         timeout(10000),
         catchError(this.handleError)
       );
-  }
+  }*/
 
   getGestorById(id: string): Observable<any> {
     console.log('🔗 Obteniendo gestor (usando endpoint genérico):', id);

@@ -186,8 +186,6 @@ export class AdminDashboardComponent implements OnInit {
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
-    // Forzar detección de cambios para asegurar que la vista se actualice
-    this.cdr.detectChanges();
   }
 
   ngAfterViewInit() {
@@ -1074,7 +1072,7 @@ export class AdminDashboardComponent implements OnInit {
     // Cierra el modal de confirmación sin aplicar cambios
     this.showEditConfirmation = false;
   }
-
+/*
   async saveUserChanges() {
     // Si no hay datos cargados para editar, simplemente cierra
     if (!this.editUserForm || !this.editUserForm.id) {
@@ -1100,7 +1098,7 @@ export class AdminDashboardComponent implements OnInit {
       this.cdr.detectChanges();
     }
   }
-
+*/
   closePerfilModal() {
     this.showPerfilModal = false;
     this.usuarioADetalle = null;
@@ -1335,13 +1333,13 @@ export class AdminDashboardComponent implements OnInit {
     return null;
   }
 
-  // Segundo paso: confirmar cambios
+  /*// Segundo paso: confirmar cambios
   async saveUserChanges() {
     if (!this.editingUser || this.isUpdating) return;
 
     const accion$ = this.accionBloqueo === 'bloquear'
-      ? this.adminService.bloquearUsuario(this.usuarioABloquear.id!, adminId)
-      : this.adminService.desbloquearUsuario(this.usuarioABloquear.id!, adminId);
+      ? this.adminService.bloquearUsuario(this.usuarioABloquear!.id!, adminId)
+      : this.adminService.desbloquearUsuario(this.usuarioABloquear!.id!, adminId);
 
     // Fallback por si algo deja el loading en true mÃ¡s de 7s
     const backup = setTimeout(() => {
@@ -1407,7 +1405,7 @@ export class AdminDashboardComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
-  }
+  }*/
 
   /**
    * Cierra el modal de bloqueo
