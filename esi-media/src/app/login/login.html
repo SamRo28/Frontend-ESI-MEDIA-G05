@@ -22,6 +22,9 @@
         </div>
 
         <form class="login-form" (ngSubmit)="onSubmit()" #loginForm="ngForm">
+            <div *ngIf="errorMsg" class="form-error" role="alert" aria-live="assertive">
+                {{ errorMsg }}
+            </div>
             <div class="form-group">
                 <label class="form-label" for="email">Email</label>
                 <input 

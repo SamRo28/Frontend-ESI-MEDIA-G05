@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-gray-50">
+﻿﻿<div class="min-h-screen bg-gray-50">
   <!-- Header -->
   <header class="dashboard-header shadow-md">
     <div class="flex h-16 items-center justify-between px-6 max-w-7xl mx-auto">
@@ -8,7 +8,7 @@
           <span class="text-2xl font-bold text-white">ESIMedia</span>
         </div>
 
-        <nav class="flex gap-1">
+                <nav class="flex gap-1">
           <button (click)="setActiveTab('inicio')"
             [ngClass]="activeTab === 'inicio' ? 'bg-blue-700 text-white' : 'text-white hover:bg-blue-600'"
             class="nav-button px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 hover:opacity-100">
@@ -25,6 +25,17 @@
             </svg>
             Usuarios
           </button>
+          <button (click)="setActiveTab('contenidos')"
+            [ngClass]="activeTab === 'contenidos' ? 'bg-blue-700 text-white' : 'text-blue-100 hover:text-white hover:bg-blue-600'"
+            class="nav-button px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <rect x="2" y="2" width="20" height="20" rx="2" ry="2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></rect>
+              <line x1="7" y1="2" x2="7" y2="22" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></line>
+              <line x1="17" y1="2" x2="17" y2="22" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></line>
+              <line x1="2" y1="12" x2="22" y2="12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></line>
+            </svg>
+            Contenidos
+          </button>
           <button (click)="setActiveTab('configuracion')"
             [ngClass]="activeTab === 'configuracion' ? 'bg-blue-700 text-white' : 'text-white hover:bg-blue-600'"
             class="nav-button px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 hover:opacity-100">
@@ -39,7 +50,7 @@
 
       <div class="flex items-center gap-2">
         <button (click)="openProfileModal()" class="px-4 py-2 rounded-lg bg-blue-700 text-white hover:bg-blue-800 transition-all font-medium flex items-center gap-2">
-          <img *ngIf="currentUser?.foto" [src]="'/' + currentUser.foto" alt="Foto de perfil" class="w-8 h-8 rounded-full object-cover">
+          <img *ngIf="currentUser?.foto" [src]="getFotoUrl(currentUser.foto)" alt="Foto de perfil" class="w-8 h-8 rounded-full object-cover">
           <svg *ngIf="!currentUser?.foto" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
           </svg>
@@ -60,7 +71,212 @@
   <main class="p-6">
     <div class="mx-auto max-w-6xl">
       <div [ngSwitch]="activeTab">
-        <!-- Vista de Usuarios -->
+                <!-- Vista de Contenidos -->
+        <div *ngSwitchCase="'contenidos'" class="space-y-3">
+          <div class="flex justify-between items-center pb-2">
+            <div>
+              <h2 class="text-3xl font-bold text-gray-900">Contenidos</h2>
+              <p class="text-gray-600 mt-1">Listado de contenidos </p>
+            </div>
+          </div>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-2 mb-1">
+            <div class="flex flex-col md:flex-row gap-2 items-start md:items-center justify-between">
+              <!-- Buscador por TÍTULO/TIPO/GESTOR -->
+              <div class="flex-1 min-w-0">
+                <label for="busquedaContenido" class="block text-xs font-medium text-gray-700 mb-0.5">
+                  Buscar por título, tipo o gestor
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    id="busquedaContenido"
+                    [(ngModel)]="busquedaContenido"
+                    (input)="onBusquedaContenidoChange()"
+                    class="w-full pl-9 pr-4 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm"
+                    placeholder="Escribe para buscar contenidos..."
+                  />
+                </div>
+              </div>
+
+              <!-- Filtro por TIPO -->
+              <div class="min-w-0">
+                <label for="filtroTipoContenido" class="block text-xs font-medium text-gray-700 mb-0.5">
+                  Filtrar por tipo
+                </label>
+                <select
+                  id="filtroTipoContenido"
+                  [(ngModel)]="filtroTipoContenido"
+                  (change)="onFiltroTipoContenidoChange()"
+                  class="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-white text-sm">
+                  <option value="Todos">Todos los tipos</option>
+                  <option value="Audio">Audio</option>
+                  <option value="Video">Video</option>
+                </select>
+              </div>
+
+              <!-- Botón limpiar filtros -->
+              <div class="flex items-end">
+                <button
+                  (click)="limpiarFiltrosContenidos()"
+                  class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all flex items-center gap-1">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                  Limpiar
+                </button>
+              </div>
+            </div>
+
+            <!-- Contador de resultados -->
+            <div class="mt-0.5 text-xs text-gray-600 flex items-center gap-1">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4"></path>
+              </svg>
+              Mostrando {{ contenidosFiltrados.length || 0 }} de {{ contenidos.length || 0 }} contenidos
+              <span *ngIf="filtroTipoContenido !== 'Todos' || busquedaContenido" class="text-blue-600 font-medium text-xs">
+                (filtrado)
+              </span>
+            </div>
+          </div>
+          <div class="table-container">
+            <div class="overflow-x-auto">
+              <table class="min-w-full">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">TÍTULO</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">TIPO</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">GESTOR</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">ACCIONES</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100">
+                  <tr *ngFor="let c of contenidosFiltrados" class="hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                      <div class="text-sm font-medium text-gray-900">{{ c.titulo }}</div>
+                    </td>
+                    <td class="px-4 py-3">
+                      <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded"
+                        [ngClass]="c.tipo === 'Video' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700'">
+                        {{ c.tipo }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3">
+                      <div class="text-sm text-gray-700">{{ c.gestorNombre || '-' }}</div>
+                    </td>
+                    <td class="px-4 py-3">
+                      <div class="flex gap-1">
+                        <button type="button" (click)="verDetalleContenido(c)" class="p-1 hover:bg-gray-100 rounded" title="Ver detalles">
+                          <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div *ngIf="showContenidoModal" class="fixed inset-0 bg-black bg-opacity-50 content-modal-overlay flex items-center justify-center z-50 p-4 backdrop-blur-sm" (click)="cerrarContenidoModal()">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-xl max-h-[85vh] overflow-y-auto border border-gray-200" (click)="$event.stopPropagation()">
+              <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <div class="flex items-center gap-3">
+                  <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-.661a1 1 0 01.894 1.447L18 14l.894 3.214a1 1 0 01-1.447 1.118L14 17l-3.447 1.332A1 1 0 019.106 17.214L10 14l-2.447-3.214a1 1 0 01.894-1.447L13 10l1.447-3.214A1 1 0 0115 6z"/>
+                  </svg>
+                  <div>
+                    <h3 class="text-xl font-bold text-gray-900">Detalle de Contenido</h3>
+                    <p class="text-sm text-gray-600 mt-1">Consulta de información </p>
+                  </div>
+                </div>
+                <button (click)="cerrarContenidoModal()" class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg p-2 transition-colors" aria-label="Cerrar">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              </div>
+              <div class="p-6 space-y-2">
+                <div *ngIf="loadingContenido" class="text-gray-500">Cargando...</div>
+                <div *ngIf="errorContenido" class="text-red-600">{{ errorContenido }}</div>
+                <ng-container *ngIf="detalleContenido && !loadingContenido">
+                  <div class="flex items-start gap-4 p-6 bg-gray-50 rounded-lg">
+                    <div class="flex-1">
+                      <h4 class="text-2xl font-bold text-gray-900">{{ detalleContenido.titulo }}</h4>
+                      <div class="flex gap-2 mt-3">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                          [ngClass]="detalleContenido?.tipo === 'Video' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700'">
+                          {{ detalleContenido.tipo }}
+                        </span>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                          [ngClass]="detalleContenido?.estado ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                          <span class="w-2 h-2 rounded-full mr-1.5" [ngClass]="detalleContenido?.estado ? 'bg-green-500' : 'bg-red-500'"></span>
+                          {{ detalleContenido?.estado ? 'Visible' : 'Oculto' }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                      <!-- MODAL DE EDICIÓN DE USUARIO (moved to global modals area) -->
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 content-detail-grid">
+                    <div>
+                      <div class="text-xs text-gray-500">URL</div>
+                      <div class="font-medium break-all">
+                        <a *ngIf="detalleContenido.url" [href]="detalleContenido.url" target="_blank" rel="noopener" class="text-blue-600 hover:underline">{{ detalleContenido.url }}</a>
+                        <span *ngIf="!detalleContenido.url">-</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-gray-500">TÍTULO</div>
+                      <div class="font-medium">{{ detalleContenido.titulo }}</div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-gray-500">TIPO</div>
+                      <div class="font-medium">{{ detalleContenido.tipo }}</div>
+                    </div>
+                    <div class="md:col-span-2">
+                      <div class="text-xs text-gray-500">DESCRIPCIÓN</div>
+                      <div class="font-medium">{{ detalleContenido.descripcion || '�' }}</div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-gray-500">DURACIÓN(min)</div>
+                      <div class="font-medium">{{ detalleContenido.duracion }}</div>
+                    </div>
+                    <div *ngIf="detalleContenido.tipo === 'Video'">
+                      <div class="text-xs text-gray-500">RESOLUCIÓN</div>
+                      <div class="font-medium">{{ detalleContenido.resolucion || '�' }}</div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-gray-500">ESTADO</div>
+                      <div class="font-medium">{{ detalleContenido.estado ? 'Visible' : 'Oculto' }}</div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-gray-500">FECHA ESTADO</div>
+                      <div class="font-medium">{{ detalleContenido.fechaEstado | date: 'short' }}</div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-gray-500">DISPONIBLE HASTA</div>
+                      <div class="font-medium">{{ detalleContenido.fechaDisponibleHasta | date: 'short' }}</div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-gray-500">VIP</div>
+                      <div class="font-medium">{{ detalleContenido.vip ? 'Sí' : 'No' }}</div>
+                    </div>
+                    <div>
+                      <div class="text-xs text-gray-500">RESTRICCIÓN EDAD</div>
+                      <div class="font-medium">{{ detalleContenido.edadMinima }}</div>
+                    </div>
+                  </div>
+                </ng-container>
+              </div>
+              
+            </div>
+          </div>
+        </div><!-- Vista de Usuarios -->
         <div *ngSwitchCase="'usuarios'" class="space-y-3">
           <!-- Encabezado principal -->
           <div class="flex justify-between items-center pb-2">
@@ -132,7 +348,7 @@
                   class="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-white text-sm">
                   <option value="Todos">Todos los roles</option>
                   <option value="Administrador">Administradores</option>
-                  <option value="Gestor">Gestores</option>
+                  <option value="Gestor">GESTORes</option>
                   <option value="Visualizador">Visualizadores</option>
                 </select>
               </div>
@@ -173,14 +389,14 @@
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Email</th>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Rol</th>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Estado</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Acciones</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">ACCIONES</th>
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-100">
                   <tr *ngFor="let usuario of usuariosFiltrados" class="hover:bg-gray-50">
                     <td class="px-4 py-3">
                       <div class="w-8 h-8 rounded overflow-hidden">
-                        <img *ngIf="usuario.foto" [src]="'/' + usuario.foto" [alt]="usuario.nombre" 
+            <img *ngIf="usuario.foto" [src]="getFotoUrl(usuario.foto)" [alt]="usuario.nombre" 
                              class="w-full h-full object-cover">
                         <div *ngIf="!usuario.foto" 
                              class="w-full h-full rounded bg-blue-600 text-white flex items-center justify-center font-medium text-sm">
@@ -205,22 +421,25 @@
                       </span>
                     </td>
                     <td class="px-4 py-3">
-                      <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded"
-                        [ngClass]="usuario.bloqueado ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'">
+                      <button type="button" 
+                        (click)="abrirModalBloqueo(usuario)"
+                        class="inline-flex items-center px-2 py-1 text-xs font-medium rounded cursor-pointer transition-all hover:opacity-80 hover:shadow-sm"
+                        [ngClass]="usuario.bloqueado ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'"
+                        [title]="usuario.bloqueado ? 'Click para desbloquear' : 'Click para bloquear'">
                         <span class="w-1.5 h-1.5 rounded-full mr-1" 
                           [ngClass]="usuario.bloqueado ? 'bg-red-500' : 'bg-green-500'"></span>
                         {{ usuario.bloqueado ? 'Bloqueado' : 'Activo' }}
-                      </span>
+                      </button>
                     </td>
                     <td class="px-4 py-3">
                       <div class="flex gap-1">
-                        <button class="p-1 hover:bg-gray-100 rounded" title="Ver detalles">
+                        <button type="button" (click)="verPerfil(usuario)" class="p-1 hover:bg-gray-100 rounded" title="Ver detalles">
                           <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                           </svg>
                         </button>
-                        <button (click)="openEditUserModal(usuario)" class="p-1 hover:bg-gray-100 rounded" title="Editar">
+                        <button type="button" (click)="openEditUserModal(usuario)" class="p-1 hover:bg-gray-100 rounded" title="Editar">
                           <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                           </svg>
@@ -288,9 +507,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                     </svg>
                   </div>
-                  <h4 class="text-xl font-bold text-gray-900 mb-3">
-                    {{ newUser.rol === 'Gestor' ? '¡Gestor de Contenido Creado!' : '¡Administrador Creado!' }}
-                  </h4>
+                  <h4 class="text-xl font-bold text-gray-900 mb-3">¡Administrador Creado!</h4>
                   <p class="text-gray-600 mb-6">{{ successMessage }}</p>
                   <div class="flex gap-3 justify-center">
                     <button (click)="resetMessages()" 
@@ -310,7 +527,7 @@
                 <!-- Mensaje de error dentro del formulario -->
                 <div *ngIf="errorMessage && !isSuccess" class="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg flex items-start gap-3">
                   <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm8-8a8 8 0 11-16 0 8 8 0 0116 0zM10 8a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2a1 1 0 01-1-1V8z" clip-rule="evenodd"></path>
                   </svg>
                   <span class="text-sm">{{ errorMessage }}</span>
                 </div>
@@ -319,7 +536,7 @@
                 <div *ngIf="!isSuccess">
                   <!-- Selección de rol -->
                   <div class="mb-4">
-                  <p class="block text-sm font-medium text-gray-700 mb-2">Tipo de Usuario</p>
+                  <p class="block text-sm font-medium text-gray-700 mb-2">TIPO de Usuario</p>
                   <div class="grid grid-cols-2 gap-2">
                     <button type="button" 
                       (click)="onRoleChange('Administrador')"
@@ -331,7 +548,7 @@
                       (click)="onRoleChange('Gestor')"
                       [ngClass]="newUser.rol === 'Gestor' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'"
                       class="px-3 py-2 rounded text-sm font-medium">
-                      Gestor
+                      GESTOR
                     </button>
                   </div>
                 </div>
@@ -344,7 +561,6 @@
                         Nombre <span class="text-red-500">*</span>
                       </label>
                       <input type="text" id="nombre" [(ngModel)]="newUser.nombre" name="nombre"
-                        (ngModelChange)="validatePassword()"
                         [class]="'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('nombre') ? 'field-error' : 'border-gray-300 focus:ring-blue-500')"
                         placeholder="Juan" required />
                     </div>
@@ -366,7 +582,7 @@
                     <div class="relative">
                       <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h4a2 2 0 002-2z"></path>
                         </svg>
                       </div>
                       <input type="email" id="email" [(ngModel)]="newUser.email" name="email"
@@ -396,61 +612,6 @@
                         [class]="'cursor-pointer rounded-lg border-2 p-2 transition-all hover:shadow-md ' + (newUser.foto === foto.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300')">
                         <img [src]="'/' + foto.id" [alt]="foto.nombre" class="w-full h-16 object-cover rounded">
                         <p class="text-xs text-center mt-1 text-gray-600">{{ foto.nombre }}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Política de contraseñas -->
-                  <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                    <div class="flex items-start gap-2">
-                      <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                      </svg>
-                      <div>
-                        <h4 class="text-sm font-semibold text-blue-900 mb-2">Política de Contraseñas Seguras</h4>
-                        <p class="text-xs text-blue-800 mb-2">La contraseña debe cumplir con los siguientes requisitos:</p>
-                        <ul class="text-xs text-blue-700 space-y-1">
-                          <li [class.text-green-600]="passwordValidation.minLength" [class.font-semibold]="passwordValidation.minLength">
-                            <span [class.hidden]="!passwordValidation.minLength">✓</span>
-                            <span [class.hidden]="passwordValidation.minLength">•</span>
-                            Mínimo 8 caracteres
-                          </li>
-                          <li [class.text-green-600]="passwordValidation.noStartsWithUpperCase" [class.font-semibold]="passwordValidation.noStartsWithUpperCase">
-                            <span [class.hidden]="!passwordValidation.noStartsWithUpperCase">✓</span>
-                            <span [class.hidden]="passwordValidation.noStartsWithUpperCase">•</span>
-                            No debe comenzar con letra mayúscula
-                          </li>
-                          <li [class.text-green-600]="passwordValidation.hasUpperCase" [class.font-semibold]="passwordValidation.hasUpperCase">
-                            <span [class.hidden]="!passwordValidation.hasUpperCase">✓</span>
-                            <span [class.hidden]="passwordValidation.hasUpperCase">•</span>
-                            Al menos una letra mayúscula (A-Z)
-                          </li>
-                          <li [class.text-green-600]="passwordValidation.hasLowerCase" [class.font-semibold]="passwordValidation.hasLowerCase">
-                            <span [class.hidden]="!passwordValidation.hasLowerCase">✓</span>
-                            <span [class.hidden]="passwordValidation.hasLowerCase">•</span>
-                            Al menos una letra minúscula (a-z)
-                          </li>
-                          <li [class.text-green-600]="passwordValidation.hasNumber" [class.font-semibold]="passwordValidation.hasNumber">
-                            <span [class.hidden]="!passwordValidation.hasNumber">✓</span>
-                            <span [class.hidden]="passwordValidation.hasNumber">•</span>
-                            Al menos un número (0-9)
-                          </li>
-                          <li [class.text-green-600]="passwordValidation.hasSpecialChar" [class.font-semibold]="passwordValidation.hasSpecialChar">
-                            <span [class.hidden]="!passwordValidation.hasSpecialChar">✓</span>
-                            <span [class.hidden]="passwordValidation.hasSpecialChar">•</span>
-                            Al menos un carácter especial (!@#$%^&amp;*()_+-=...)
-                          </li>
-                          <li [class.text-green-600]="passwordValidation.passwordsMatch" [class.font-semibold]="passwordValidation.passwordsMatch">
-                            <span [class.hidden]="!passwordValidation.passwordsMatch">✓</span>
-                            <span [class.hidden]="passwordValidation.passwordsMatch">•</span>
-                            Las contraseñas deben coincidir
-                          </li>
-                          <li [class.text-green-600]="passwordValidation.notContainsUsername" [class.font-semibold]="passwordValidation.notContainsUsername">
-                            <span [class.hidden]="!passwordValidation.notContainsUsername">✓</span>
-                            <span [class.hidden]="passwordValidation.notContainsUsername">•</span>
-                            No debe contener el nombre de usuario
-                          </li>
-                        </ul>
                       </div>
                     </div>
                   </div>
@@ -506,7 +667,7 @@
                   <!-- Mensaje de error justo encima de los botones -->
                   <div *ngIf="errorMessage" class="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-start gap-2">
                     <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm8-8a8 8 0 11-16 0 8 8 0 0116 0zM10 8a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2a1 1 0 01-1-1V8z" clip-rule="evenodd"></path>
                     </svg>
                     <span class="text-sm">{{ errorMessage }}</span>
                   </div>
@@ -526,78 +687,43 @@
                   </div>
                 </form>
 
-              <!-- Formulario para Gestor de Contenido -->
+              <!-- Formulario para GESTOR de Contenido -->
               <form *ngIf="newUser.rol === 'Gestor'" class="space-y-6">
 
-                <!-- Vista de éxito para Gestor -->
-                <div *ngIf="isSuccess" class="text-center py-8">
-                  <div class="w-20 h-20 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
-                    <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                  </div>
-                  <h4 class="text-xl font-bold text-gray-900 mb-3">¡Gestor de Contenido Creado!</h4>
-                  <p class="text-gray-600 mb-6">{{ successMessage }}</p>
-                  <div class="flex gap-3 justify-center">
-                    <button (click)="resetMessages()" 
-                      class="px-6 py-2.5 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition-all">
-                      Crear Otro
-                    </button>
-                    <button (click)="exitForm()" 
-                      class="px-6 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-all flex items-center gap-2">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                      </svg>
-                      Salir
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Mensaje de error para Gestor -->
-                <div *ngIf="errorMessage && !isSuccess" class="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg flex items-start gap-3">
-                  <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-                  </svg>
-                  <span class="text-sm">{{ errorMessage }}</span>
-                </div>
-
-                <!-- Formulario principal del Gestor (solo si no está en estado de éxito) -->
-                <div *ngIf="!isSuccess">
-                  <!-- Campos básicos -->
+                <!-- Campos básicos -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div class="space-y-2">
-                    <label for="gestorNombre" class="block text-sm font-medium text-gray-700">Nombre *</label>
+                    <label for="GESTORNombre" class="block text-sm font-medium text-gray-700">Nombre *</label>
                     <input
                       type="text"
-                      id="gestorNombre"
+                      id="GESTORNombre"
                       [(ngModel)]="newUser.nombre"
-                      name="gestorNombre"
-                      (ngModelChange)="validatePassword()"
+                      name="GESTORNombre"
                       required
                       [class.border-red-500]="fieldsWithError.includes('nombre')"
                       [class.border-green-500]="newUser.nombre && !fieldsWithError.includes('nombre')"
                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                      placeholder="Nombre del gestor">
+                      placeholder="Nombre del GESTOR">
                     <div *ngIf="fieldsWithError.includes('nombre')" class="text-red-600 text-sm flex items-center">
                       <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 000 2v4a1 1 0 002 0V7a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm8-8a8 8 0 11-16 0 8 8 0 0116 0zM10 8a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2a1 1 0 01-1-1V8z" clip-rule="evenodd"></path>
                       </svg>
                       El nombre es obligatorio
                     </div>
                   </div>
 
                   <div class="space-y-2">
-                    <label for="gestorApellidos" class="block text-sm font-medium text-gray-700">Apellidos *</label>
+                    <label for="GESTORApellidos" class="block text-sm font-medium text-gray-700">Apellidos *</label>
                     <input
                       type="text"
-                      id="gestorApellidos"
+                      id="GESTORApellidos"
                       [(ngModel)]="newUser.apellidos"
-                      name="gestorApellidos"
+                      name="GESTORApellidos"
                       required
                       [class.border-red-500]="fieldsWithError.includes('apellidos')"
                       [class.border-green-500]="newUser.apellidos && !fieldsWithError.includes('apellidos')"
                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                      placeholder="Apellidos del gestor">
+                      placeholder="Apellidos del GESTOR">
                     <div *ngIf="fieldsWithError.includes('apellidos')" class="text-red-600 text-sm flex items-center">
                       <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 000 2v4a1 1 0 002 0V7a1 1 0 00-1-1z" clip-rule="evenodd"></path>
@@ -607,7 +733,7 @@
                   </div>
                 </div>
 
-                <!-- Selección de foto de perfil (OBLIGATORIO para Gestor) -->
+                <!-- Selección de foto de perfil (OBLIGATORIO para GESTOR) -->
                 <div class="space-y-2">
                   <label class="block text-sm font-medium text-gray-700">
                     Foto de Perfil <span class="text-red-500">*</span>
@@ -630,12 +756,12 @@
 
                 <!-- Email -->
                 <div class="space-y-2">
-                  <label for="gestorEmail" class="block text-sm font-medium text-gray-700">Email *</label>
+                  <label for="GESTOREmail" class="block text-sm font-medium text-gray-700">Email *</label>
                   <input
                     type="email"
-                    id="gestorEmail"
+                    id="GESTOREmail"
                     [(ngModel)]="newUser.email"
-                    name="gestorEmail"
+                    name="GESTOREmail"
                     required
                     [class.border-red-500]="fieldsWithError.includes('email')"
                     [class.border-green-500]="newUser.email && !fieldsWithError.includes('email')"
@@ -651,13 +777,13 @@
 
                 <!-- Alias único -->
                 <div class="space-y-2">
-                  <label for="gestorAlias" class="block text-sm font-medium text-gray-700">Alias único *</label>
+                  <label for="GESTORAlias" class="block text-sm font-medium text-gray-700">Alias único *</label>
                   <div class="relative">
                     <input
                       type="text"
-                      id="gestorAlias"
+                      id="GESTORAlias"
                       [(ngModel)]="newUser.alias"
-                      name="gestorAlias"
+                      name="GESTORAlias"
                       required
                       [class.border-red-500]="fieldsWithError.includes('alias')"
                       [class.border-green-500]="newUser.alias && !fieldsWithError.includes('alias')"
@@ -666,7 +792,7 @@
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clip-rule="evenodd"></path>
-                      </svg>
+                    </svg>
                     </div>
                   </div>
                   <div *ngIf="fieldsWithError.includes('alias')" class="text-red-600 text-sm flex items-center">
@@ -680,24 +806,24 @@
 
                 <!-- Descripción -->
                 <div class="space-y-2">
-                  <label for="gestorDescripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
+                  <label for="GESTORDescripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
                   <textarea
-                    id="gestorDescripcion"
+                    id="GESTORDescripcion"
                     [(ngModel)]="newUser.descripcion"
-                    name="gestorDescripcion"
+                    name="GESTORDescripcion"
                     rows="3"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 resize-none"
-                    placeholder="Describe la experiencia y enfoque del gestor de contenido..."></textarea>
+                    placeholder="Describe la experiencia y enfoque del GESTOR de contenido..."></textarea>
                   <p class="text-sm text-gray-600">Opcional: Breve descripción del perfil profesional</p>
                 </div>
 
                 <!-- Especialidad -->
                 <div class="space-y-2">
-                  <label for="gestorEspecialidad" class="block text-sm font-medium text-gray-700">Especialidad *</label>
+                  <label for="GESTOREspecialidad" class="block text-sm font-medium text-gray-700">Especialidad *</label>
                   <select
-                    id="gestorEspecialidad"
+                    id="GESTOREspecialidad"
                     [(ngModel)]="newUser.especialidad"
-                    name="gestorEspecialidad"
+                    name="GESTOREspecialidad"
                     required
                     [class.border-red-500]="fieldsWithError.includes('especialidad')"
                     [class.border-green-500]="newUser.especialidad && !fieldsWithError.includes('especialidad')"
@@ -721,9 +847,9 @@
                   </div>
                 </div>
 
-                <!-- Tipo de contenido -->
+                <!-- TIPO de contenido -->
                 <fieldset class="space-y-2">
-                  <legend class="block text-sm font-medium text-gray-700">Tipo de contenido preferido *</legend>
+                  <legend class="block text-sm font-medium text-gray-700">TIPO de contenido preferido *</legend>
                   <div class="flex gap-4">
                     <label class="flex items-center space-x-2 cursor-pointer">
                       <input
@@ -756,64 +882,9 @@
                     <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 000 2v4a1 1 0 002 0V7a1 1 0 00-1-1z" clip-rule="evenodd"></path>
                     </svg>
-                    Selecciona un tipo de contenido
+                    Selecciona un TIPO de contenido
                   </div>
                 </fieldset>
-
-                <!-- Política de contraseñas para Gestor -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <div class="flex items-start gap-2">
-                    <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                    </svg>
-                    <div>
-                      <h4 class="text-sm font-semibold text-blue-900 mb-2">Política de Contraseñas Seguras</h4>
-                      <p class="text-xs text-blue-800 mb-2">La contraseña debe cumplir con los siguientes requisitos:</p>
-                      <ul class="text-xs text-blue-700 space-y-1">
-                        <li [class.text-green-600]="passwordValidation.minLength" [class.font-semibold]="passwordValidation.minLength">
-                          <span [class.hidden]="!passwordValidation.minLength">✓</span>
-                          <span [class.hidden]="passwordValidation.minLength">•</span>
-                          Mínimo 8 caracteres
-                        </li>
-                        <li [class.text-green-600]="passwordValidation.noStartsWithUpperCase" [class.font-semibold]="passwordValidation.noStartsWithUpperCase">
-                          <span [class.hidden]="!passwordValidation.noStartsWithUpperCase">✓</span>
-                          <span [class.hidden]="passwordValidation.noStartsWithUpperCase">•</span>
-                          No debe comenzar con letra mayúscula
-                        </li>
-                        <li [class.text-green-600]="passwordValidation.hasUpperCase" [class.font-semibold]="passwordValidation.hasUpperCase">
-                          <span [class.hidden]="!passwordValidation.hasUpperCase">✓</span>
-                          <span [class.hidden]="passwordValidation.hasUpperCase">•</span>
-                          Al menos una letra mayúscula (A-Z)
-                        </li>
-                        <li [class.text-green-600]="passwordValidation.hasLowerCase" [class.font-semibold]="passwordValidation.hasLowerCase">
-                          <span [class.hidden]="!passwordValidation.hasLowerCase">✓</span>
-                          <span [class.hidden]="passwordValidation.hasLowerCase">•</span>
-                          Al menos una letra minúscula (a-z)
-                        </li>
-                        <li [class.text-green-600]="passwordValidation.hasNumber" [class.font-semibold]="passwordValidation.hasNumber">
-                          <span [class.hidden]="!passwordValidation.hasNumber">✓</span>
-                          <span [class.hidden]="passwordValidation.hasNumber">•</span>
-                          Al menos un número (0-9)
-                        </li>
-                        <li [class.text-green-600]="passwordValidation.hasSpecialChar" [class.font-semibold]="passwordValidation.hasSpecialChar">
-                          <span [class.hidden]="!passwordValidation.hasSpecialChar">✓</span>
-                          <span [class.hidden]="passwordValidation.hasSpecialChar">•</span>
-                          Al menos un carácter especial (!@#$%^&amp;*()_+-=...)
-                        </li>
-                        <li [class.text-green-600]="passwordValidation.passwordsMatch" [class.font-semibold]="passwordValidation.passwordsMatch">
-                          <span [class.hidden]="!passwordValidation.passwordsMatch">✓</span>
-                          <span [class.hidden]="passwordValidation.passwordsMatch">•</span>
-                          Las contraseñas deben coincidir
-                        </li>
-                        <li [class.text-green-600]="passwordValidation.notContainsUsername" [class.font-semibold]="passwordValidation.notContainsUsername">
-                          <span [class.hidden]="!passwordValidation.notContainsUsername">✓</span>
-                          <span [class.hidden]="passwordValidation.notContainsUsername">•</span>
-                          No debe contener el nombre de usuario
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
 
                 <!-- Contraseñas -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -872,14 +943,6 @@
                   </div>
                 </div>
 
-                <!-- Mensaje de error justo encima de los botones -->
-                <div *ngIf="errorMessage" class="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-start gap-2">
-                  <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-                  </svg>
-                  <span class="text-sm">{{ errorMessage }}</span>
-                </div>
-
                 <!-- Botones -->
                 <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
                   <button type="button" (click)="toggleForm()" 
@@ -895,7 +958,6 @@
                     </svg>
                     Crear Gestor
                   </button>
-                </div>
                 </div>
               </form>
             </div>
@@ -1111,9 +1173,9 @@
             </div>
           </div>
 
-          <!-- Acciones rápidas -->
+          <!-- ACCIONES rápidas -->
           <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-            <h2 class="text-2xl font-semibold text-gray-900 mb-6 text-center">Acciones Rápidas</h2>
+            <h2 class="text-2xl font-semibold text-gray-900 mb-6 text-center">ACCIONES Rápidas</h2>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <button (click)="setActiveTab('usuarios')" 
                   class="flex items-center gap-3 p-3 border border-gray-200 rounded hover:bg-gray-50">
@@ -1158,6 +1220,416 @@
     
 
   <!-- Modal de Edición de Perfil -->
+  
+  
+  <!-- ============================================ -->
+  <!-- MODAL DE VISUALIZACIÓN DE PERFIL -->
+  <!-- ============================================ -->
+  <div *ngIf="showPerfilModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto border border-gray-200">
+      <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div class="flex items-center gap-3">
+          <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+          <div>
+            <h3 class="text-xl font-bold text-gray-900">Perfil de Usuario</h3>
+            <p class="text-sm text-gray-600 mt-1">Consulta de información </p>
+          </div>
+        </div>
+        <button (click)="cerrarPerfilModal()" class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg p-2 transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-6">
+        <div *ngIf="loadingPerfil" class="text-center py-12">
+          <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+          <p class="mt-4 text-gray-600">Cargando perfil...</p>
+        </div>
+
+        <div *ngIf="errorPerfil && !loadingPerfil" class="text-center py-12">
+          <svg class="w-16 h-16 mx-auto text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <h4 class="text-lg font-semibold text-gray-900 mb-2">Error al cargar el perfil</h4>
+          <p class="text-gray-600">{{ errorPerfil }}</p>
+          <button (click)="cerrarPerfilModal()" class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            Cerrar
+          </button>
+        </div>
+
+        <div *ngIf="perfilDetalle && !loadingPerfil" class="space-y-6">
+          <div class="flex items-start gap-6 p-6 bg-gray-50 rounded-lg">
+            <div class="flex-shrink-0">
+              <img *ngIf="perfilDetalle.foto" [src]="getFotoUrl(perfilDetalle.foto)" alt="Foto de perfil" class="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg">
+              <div *ngIf="!perfilDetalle.foto" class="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center border-4 border-white shadow-lg">
+                <span class="text-3xl font-bold text-white">{{ perfilDetalle.nombre.charAt(0) }}{{ perfilDetalle.apellidos.charAt(0) }}</span>
+              </div>
+            </div>
+            <div class="flex-1">
+              <h4 class="text-2xl font-bold text-gray-900">{{ perfilDetalle.nombre }} {{ perfilDetalle.apellidos }}</h4>
+              <p class="text-gray-600 mt-1">{{ perfilDetalle.email }}</p>
+              <div class="flex gap-2 mt-3">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                  [ngClass]="{
+                    'bg-amber-100 text-amber-700': perfilDetalle.rol === 'Administrador',
+                    'bg-blue-100 text-blue-700': perfilDetalle.rol === 'Gestor',
+                    'bg-gray-100 text-gray-700': perfilDetalle.rol === 'Visualizador'
+                  }">
+                  {{ perfilDetalle.rol }}
+                </span>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+                  [ngClass]="perfilDetalle.bloqueado ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'">
+                  <span class="w-2 h-2 rounded-full mr-1.5" 
+                    [ngClass]="perfilDetalle.bloqueado ? 'bg-red-500' : 'bg-green-500'"></span>
+                  {{ perfilDetalle.bloqueado ? 'Bloqueado' : 'Activo' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-4 bg-white border border-gray-200 rounded-lg">
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Correo Electrónico</label>
+              <p class="text-gray-900">{{ perfilDetalle.email }}</p>
+            </div>
+
+            <div class="p-4 bg-white border border-gray-200 rounded-lg">
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Fecha de Registro</label>
+              <p class="text-gray-900">{{ formatearFecha(perfilDetalle.fechaRegistro) }}</p>
+            </div>
+
+            <div *ngIf="perfilDetalle.rol === 'Administrador' && perfilDetalle.departamento" class="p-4 bg-white border border-gray-200 rounded-lg md:col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Departamento</label>
+              <p class="text-gray-900">{{ perfilDetalle.departamento }}</p>
+            </div>
+
+            <ng-container *ngIf="perfilDetalle.rol === 'Gestor'">
+              <div class="p-4 bg-white border border-gray-200 rounded-lg">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Alias</label>
+                <p class="text-gray-900">{{ perfilDetalle.alias || '-' }}</p>
+              </div>
+              <div class="p-4 bg-white border border-gray-200 rounded-lg">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Especialidad</label>
+                <p class="text-gray-900">{{ perfilDetalle.especialidad || '-' }}</p>
+              </div>
+              <div class="p-4 bg-white border border-gray-200 rounded-lg md:col-span-2">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">TIPO de Contenido</label>
+                <p class="text-gray-900">{{ perfilDetalle.tipoContenido || '-' }}</p>
+              </div>
+              <div class="p-4 bg-white border border-gray-200 rounded-lg md:col-span-2">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Descripción</label>
+                <p class="text-gray-900">{{ perfilDetalle.descripcion || '-' }}</p>
+              </div>
+            </ng-container>
+
+            <ng-container *ngIf="perfilDetalle.rol === 'Visualizador'">
+              <div class="p-4 bg-white border border-gray-200 rounded-lg">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Alias</label>
+                <p class="text-gray-900">{{ perfilDetalle.alias || '-' }}</p>
+              </div>
+              <div class="p-4 bg-white border border-gray-200 rounded-lg">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Edad</label>
+                <p class="text-gray-900">{{ perfilDetalle.edad || '-' }}</p>
+              </div>
+              <div class="p-4 bg-white border border-gray-200 rounded-lg md:col-span-2">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Fecha de Nacimiento</label>
+                <p class="text-gray-900">{{ formatearFecha(perfilDetalle.fechaNacimiento) }}</p>
+              </div>
+              <div class="p-4 bg-white border border-gray-200 rounded-lg md:col-span-2">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Estado VIP</label>
+                <p class="text-gray-900">{{ perfilDetalle.vip ? 'Sí' : 'No' }}</p>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal de Confirmación para Eliminar Usuario -->
+  <div *ngIf="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm" (click)="closeDeleteModal()">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4" (click)="$event.stopPropagation()">
+      <div class="relative"> <!-- Contenedor con posición relativa para permitir botón de cerrar absoluto -->
+        <!-- Botón cerrar absoluto en esquina superior derecha -->
+        <button 
+          (click)="closeDeleteModal()" 
+          class="absolute top-3 right-3 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 focus:outline-none"
+          aria-label="Cerrar">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+        
+        <!-- Header del Modal -->
+        <div class="bg-gradient-to-r from-red-600 to-red-800 text-white p-6 rounded-t-xl">
+          <h2 class="text-2xl font-bold">Eliminar Usuario</h2>
+          <p class="text-red-100 text-sm mt-1">Esta acción no se puede deshacer</p>
+        </div>
+
+        <!-- Contenido del Modal -->
+        <div class="p-6 space-y-4">
+          <div class="flex items-center justify-center">
+            <div class="bg-red-100 rounded-full p-4">
+              <svg class="w-16 h-16 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+          </div>
+
+          <div class="text-center">
+            <h3 class="text-lg font-bold text-gray-900 mb-2">¿Deseas eliminar el siguiente usuario?</h3>
+            <div *ngIf="usuarioAEliminar" class="bg-gray-50 p-4 rounded-lg mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                  <img *ngIf="usuarioAEliminar.foto" [src]="getFotoUrl(usuarioAEliminar.foto)" [alt]="usuarioAEliminar.nombre" class="w-full h-full object-cover">
+                  <div *ngIf="!usuarioAEliminar.foto" class="w-full h-full bg-blue-600 text-white flex items-center justify-center font-bold">
+                    {{ usuarioAEliminar.nombre.charAt(0).toUpperCase() }}
+                  </div>
+                </div>
+                <div class="text-left">
+                  <p class="font-bold text-gray-900">{{ usuarioAEliminar.nombre }} {{ usuarioAEliminar.apellidos }}</p>
+                  <p class="text-sm text-gray-600">{{ usuarioAEliminar.email }}</p>
+                  <span class="inline-flex items-center px-2 py-1 mt-1 text-xs font-medium rounded"
+                      [ngClass]="{
+                        'bg-amber-100 text-amber-700': usuarioAEliminar.rol === 'Administrador',
+                        'bg-blue-100 text-blue-700': usuarioAEliminar.rol === 'Gestor',
+                        'bg-gray-100 text-gray-700': usuarioAEliminar.rol === 'Visualizador'
+                      }">
+                      {{ usuarioAEliminar.rol || 'Visualizador' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p class="text-gray-500 mb-4">Esta acción eliminará permanentemente al usuario del sistema y todos sus datos asociados.</p>
+          </div>
+        </div>
+        
+        <!-- Footer del Modal -->
+        <div class="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end gap-3">
+          <button 
+            (click)="closeDeleteModal()"
+            [disabled]="isDeleting"
+            class="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+            Cancelar
+          </button>
+          <button 
+            (click)="deleteUser(); $event.preventDefault(); $event.stopPropagation();"
+            [disabled]="isDeleting"
+            class="px-5 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+            id="btn-eliminar-usuario">
+            <!-- Icono de carga cuando está eliminando -->
+            <svg *ngIf="isDeleting" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <!-- Icono de papelera cuando no está eliminando -->
+            <svg *ngIf="!isDeleting" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            {{ isDeleting ? 'Eliminando...' : 'Eliminar Usuario' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Confirmación para Bloquear/Desbloquear Usuario -->
+  <div *ngIf="showBloqueoModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm" (click)="cerrarModalBloqueo()">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4" (click)="$event.stopPropagation()">
+      <div class="relative">
+        <!-- Botón cerrar absoluto en esquina superior derecha -->
+        <button 
+          (click)="cerrarModalBloqueo()" 
+          [disabled]="loadingBloqueo"
+          class="absolute top-3 right-3 p-1.5 text-white rounded-full hover:opacity-80 focus:outline-none disabled:opacity-50"
+          [ngClass]="accionBloqueo === 'bloquear' ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'"
+          aria-label="Cerrar">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+        
+        <!-- Header del Modal -->
+        <div class="text-white p-6 rounded-t-xl"
+          [ngClass]="accionBloqueo === 'bloquear' ? 'bg-gradient-to-r from-red-600 to-red-800' : 'bg-gradient-to-r from-green-600 to-green-800'">
+          <h2 class="text-2xl font-bold">{{ accionBloqueo === 'bloquear' ? 'Bloquear' : 'Desbloquear' }} Usuario</h2>
+          <p class="text-sm mt-1" [ngClass]="accionBloqueo === 'bloquear' ? 'text-red-100' : 'text-green-100'">
+            {{ accionBloqueo === 'bloquear' ? 'El usuario no podrá iniciar sesión' : 'El usuario podrá iniciar sesión nuevamente' }}
+          </p>
+        </div>
+
+        <!-- Contenido del Modal -->
+        <div class="p-6 space-y-4">
+          <div class="flex items-center justify-center">
+            <div class="rounded-full p-4"
+              [ngClass]="accionBloqueo === 'bloquear' ? 'bg-red-100' : 'bg-green-100'">
+              <svg class="w-16 h-16" 
+                [ngClass]="accionBloqueo === 'bloquear' ? 'text-red-600' : 'text-green-600'"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path *ngIf="accionBloqueo === 'bloquear'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                <path *ngIf="accionBloqueo === 'desbloquear'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
+              </svg>
+            </div>
+          </div>
+
+          <div class="text-center">
+            <h3 class="text-lg font-bold text-gray-900 mb-2">
+              ¿Deseas {{ accionBloqueo }} el siguiente usuario?
+            </h3>
+            <div *ngIf="usuarioABloquear" class="bg-gray-50 p-4 rounded-lg mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                  <img *ngIf="usuarioABloquear.foto" [src]="getFotoUrl(usuarioABloquear.foto)" [alt]="usuarioABloquear.nombre" class="w-full h-full object-cover">
+                  <div *ngIf="!usuarioABloquear.foto" class="w-full h-full bg-blue-600 text-white flex items-center justify-center font-bold">
+                    {{ usuarioABloquear.nombre.charAt(0).toUpperCase() }}
+                  </div>
+                </div>
+                <div class="text-left">
+                  <p class="font-bold text-gray-900">{{ usuarioABloquear.nombre }} {{ usuarioABloquear.apellidos }}</p>
+                  <p class="text-sm text-gray-600">{{ usuarioABloquear.email }}</p>
+                  <span class="inline-flex items-center px-2 py-1 mt-1 text-xs font-medium rounded"
+                      [ngClass]="{
+                        'bg-amber-100 text-amber-700': usuarioABloquear.rol === 'Administrador',
+                        'bg-blue-100 text-blue-700': usuarioABloquear.rol === 'Gestor',
+                        'bg-gray-100 text-gray-700': usuarioABloquear.rol === 'Visualizador'
+                      }">
+                      {{ usuarioABloquear.rol || 'Visualizador' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Advertencia de doble confirmación -->
+            <div *ngIf="confirmBloqueoStep === 2" class="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg mb-4">
+              <p class="text-sm font-medium">
+                ¿Estás seguro de {{ accionBloqueo }} este usuario? Pulsa de nuevo para confirmar.
+              </p>
+            </div>
+
+            <!-- Mensaje de error -->
+            <div *ngIf="errorBloqueo" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+              <p class="text-sm font-medium">{{ errorBloqueo }}</p>
+            </div>
+
+            <p class="text-gray-500 mb-4">
+              {{ accionBloqueo === 'bloquear' 
+                ? 'El usuario no podrá iniciar sesión hasta que sea desbloqueado por un administrador.' 
+                : 'El usuario podrá volver a iniciar sesión normalmente en la plataforma.' }}
+            </p>
+          </div>
+        </div>
+        
+        <!-- Footer del Modal -->
+        <div class="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end gap-3">
+          <button 
+            (click)="cerrarModalBloqueo()"
+            [disabled]="loadingBloqueo"
+            class="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+            Cancelar
+          </button>
+          <button 
+            (click)="confirmarBloqueo(); $event.preventDefault(); $event.stopPropagation();"
+            [disabled]="loadingBloqueo"
+            class="px-5 py-2.5 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+            [ngClass]="accionBloqueo === 'bloquear' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'">
+            <!-- Icono de carga cuando está procesando -->
+            <svg *ngIf="loadingBloqueo" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <!-- Icono de candado -->
+            <svg *ngIf="!loadingBloqueo" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path *ngIf="accionBloqueo === 'bloquear'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+              <path *ngIf="accionBloqueo === 'desbloquear'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
+            </svg>
+            {{ loadingBloqueo ? 'Procesando...' : (confirmBloqueoStep === 1 
+              ? (accionBloqueo === 'bloquear' ? 'Bloquear Usuario' : 'Desbloquear Usuario') 
+              : (accionBloqueo === 'bloquear' ? 'Confirmar Bloqueo' : 'Confirmar Desbloqueo')) }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+
+
+
+
+
+  <!-- ============================================ -->
+  <!-- MODAL DE CONFIRMACIÓN PARA EDITAR USUARIO -->
+  <div *ngIf="showEditConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
+      <div class="p-6">
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div class="flex items-start gap-3">
+            <svg class="w-6 h-6 text-amber-600 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <div>
+              <h4 class="text-lg font-semibold text-amber-800 mb-2">¿Confirmar cambios en el usuario?</h4>
+              <p class="text-amber-700 text-sm mb-4">
+                Estás a punto de actualizar los datos de <strong>{{ editUserForm.nombre }} {{ editUserForm.apellidos }}</strong>. 
+                Esta acción modificará la información del usuario en el sistema.
+              </p>
+              
+              <div class="bg-white rounded-lg p-3 border border-amber-200">
+                <h5 class="font-medium text-amber-800 mb-2">Resumen de cambios:</h5>
+                <div class="space-y-1 text-sm">
+                  <div><span class="text-gray-600">Nombre:</span> <span class="font-medium">{{ editUserForm.nombre }}</span></div>
+                  <div><span class="text-gray-600">Apellidos:</span> <span class="font-medium">{{ editUserForm.apellidos }}</span></div>
+                  <div *ngIf="editUserForm.departamento"><span class="text-gray-600">Departamento:</span> <span class="font-medium">{{ editUserForm.departamento }}</span></div>
+                  <div *ngIf="editUserForm.apodo"><span class="text-gray-600">Apodo:</span> <span class="font-medium">{{ editUserForm.apodo }}</span></div>
+                  <div>
+                    <span class="text-gray-600">Estado:</span> 
+                    <span [class]="editUserForm.bloqueado ? 'font-medium text-red-600' : 'font-medium text-green-600'">
+                      {{ editUserForm.bloqueado ? 'Bloqueado' : 'Activo' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-6">
+          <button 
+            type="button"
+            (click)="cancelUserChanges()"
+            [disabled]="isUpdating"
+            class="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-colors">
+            Cancelar
+          </button>
+          <button 
+            type="button"
+            (click)="saveUserChanges()"
+            [disabled]="isUpdating"
+            class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center gap-2">
+            <svg *ngIf="isUpdating" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <svg *ngIf="!isUpdating" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            {{ isUpdating ? 'Guardando...' : 'Sí, Guardar Cambios' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Modal de Edición de Perfil -->
   <div *ngIf="showProfileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" (click)="closeProfileModal()">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4" (click)="$event.stopPropagation()">
       <!-- Header del Modal -->
@@ -1776,79 +2248,40 @@
                       <span [class]="editUserForm.bloqueado ? 'font-medium text-red-600' : 'font-medium text-green-600'">
                         {{ editUserForm.bloqueado ? 'Bloqueado' : 'Activo' }}
                       </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============================================ -->
-  <!-- MODAL DE CONFIRMACIÓN PARA EDITAR USUARIO -->
-  <div *ngIf="showEditConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
-      <div class="p-6">
-        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <div class="flex items-start gap-3">
-            <svg class="w-6 h-6 text-amber-600 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-            </svg>
-            <div>
-              <h4 class="text-lg font-semibold text-amber-800 mb-2">¿Confirmar cambios en el usuario?</h4>
-              <p class="text-amber-700 text-sm mb-4">
-                Estás a punto de actualizar los datos de <strong>{{ editUserForm.nombre }} {{ editUserForm.apellidos }}</strong>. 
-                Esta acción modificará la información del usuario en el sistema.
-              </p>
-              
-              <div class="bg-white rounded-lg p-3 border border-amber-200">
-                <h5 class="font-medium text-amber-800 mb-2">Resumen de cambios:</h5>
-                <div class="space-y-1 text-sm">
-                  <div><span class="text-gray-600">Nombre:</span> <span class="font-medium">{{ editUserForm.nombre }}</span></div>
-                  <div><span class="text-gray-600">Apellidos:</span> <span class="font-medium">{{ editUserForm.apellidos }}</span></div>
-                  <div *ngIf="editUserForm.departamento"><span class="text-gray-600">Departamento:</span> <span class="font-medium">{{ editUserForm.departamento }}</span></div>
-                  <div *ngIf="editUserForm.apodo"><span class="text-gray-600">Apodo:</span> <span class="font-medium">{{ editUserForm.apodo }}</span></div>
-                  <div>
-                    <span class="text-gray-600">Estado:</span> 
-                    <span [class]="editUserForm.bloqueado ? 'font-medium text-red-600' : 'font-medium text-green-600'">
-                      {{ editUserForm.bloqueado ? 'Bloqueado' : 'Activo' }}
-                    </span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="flex justify-end gap-3 mt-6">
-          <button 
-            type="button"
-            (click)="cancelUserChanges()"
-            [disabled]="isUpdating"
-            class="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-colors">
-            Cancelar
-          </button>
-          <button 
-            type="button"
-            (click)="saveUserChanges()"
-            [disabled]="isUpdating"
-            class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center gap-2">
-            <svg *ngIf="isUpdating" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <svg *ngIf="!isUpdating" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-            {{ isUpdating ? 'Guardando...' : 'Sí, Guardar Cambios' }}
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-
-
-</div>
+          <!-- Botones finales -->
+          <div class="flex justify-end gap-3">
+            <button 
+              type="button"
+              (click)="cancelUserChanges()"
+              [disabled]="isUpdating"
+              class="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-colors">
+              Cancelar
+            </button>
+            <button 
+              type="button"
+              (click)="saveUserChanges()"
+              [disabled]="isUpdating"
+              class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center gap-2">
+              <svg *ngIf="isUpdating" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <svg *ngIf="!isUpdating" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              {{ isUpdating ? 'Guardando...' : 'Sí, Guardar Cambios' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </div>
+
+
