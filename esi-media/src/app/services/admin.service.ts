@@ -183,14 +183,21 @@ export class AdminService {
     );
   }
   // ✅ MÉTODO CORREGIDO: Usar endpoints simples que funcionaban antes
+  // Obtener cualquier usuario por ID (usando endpoint existente)
+  getUserById(id: string): Observable<any> {
+    console.log('🔗 Obteniendo usuario por ID:', id);
+    const url = `${this.apiUrl}/users/${id}`;
+    console.log('🌐 URL:', url);
+    return this.http.get<any>(url)
+      .pipe(
+        timeout(10000),
+        catchError(this.handleError)
+      );
+  }
+
+  // Usar endpoint /users/{id}/profile para actualizar usuarios
   updateUser(id: string, userData: any, tipo: string): Observable<any> {
-    console.log('🔗 Actualizando usuario:', id, userData);
-    console.log('🎯 VOLVIENDO a estrategia simple que funcionaba antes');
-    
-    // VOLVER A LA ESTRATEGIA ORIGINAL: usar /users/{id}/profile que funcionaba
     const url = `${this.apiUrl}/users/${id}/profile`;
-    console.log('🌐 URL (endpoint simple SIN auth):', url);
-    console.log('📦 Datos enviados:', userData);
     
     // IMPORTANTE: NO usar headers de autorización para estos endpoints
     return this.http.put<any>(url, {userData, tipo});

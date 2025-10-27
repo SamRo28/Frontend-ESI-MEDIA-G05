@@ -124,6 +124,11 @@ export class AdminDashboardComponent implements OnInit {
     { id: 'perfil4.png', nombre: 'Perfil 4' }
   ];
 
+  // Utilidades de fecha para inputs de tipo date
+  todayStr: string = '';
+  minAllowedBirthStr: string = '';
+  maxBirthForFourYearsStr: string = '';
+
   constructor(
     private readonly adminService: AdminService,
     private readonly cdr: ChangeDetectorRef,
@@ -161,6 +166,26 @@ export class AdminDashboardComponent implements OnInit {
       this.loadUsuarios();
     }
     
+    this.loadUsuarios();
+
+    // Inicializar valores de fecha para inputs (usado en el modal de edición de visualizadores)
+    const today = new Date();
+    this.todayStr = AdminDashboardComponent.toDateInputValue(today);
+
+    // fecha máxima para que la persona tenga al menos 4 años => hoy - 4 años
+    const fourYearsAgo = new Date(today.getFullYear() - 4, today.getMonth(), today.getDate());
+    this.maxBirthForFourYearsStr = AdminDashboardComponent.toDateInputValue(fourYearsAgo);
+
+    // fecha mínima razonable (por ejemplo 100 años atrás)
+    const minBirth = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
+    this.minAllowedBirthStr = AdminDashboardComponent.toDateInputValue(minBirth);
+  }
+
+  static toDateInputValue(d: Date): string {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
     // Forzar detección de cambios para asegurar que la vista se actualice
     this.cdr.detectChanges();
   }
@@ -1125,12 +1150,13 @@ export class AdminDashboardComponent implements OnInit {
   }*/
 /*
   private processUserDetails(response: any, rol: string) {
+
     let userDetails: any;
-    
-    // ESTRATEGIA SIMPLIFICADA: Asumir que la respuesta ES directamente los datos del usuario
+
     if (response && typeof response === 'object') {
       userDetails = response;
     } else {
+      console.warn('⚠️ Respuesta inesperada:', response);
       this.errorMessage = 'Error: no se pudieron cargar los datos del usuario';
       return;
     }
@@ -1146,7 +1172,7 @@ export class AdminDashboardComponent implements OnInit {
       this.editUserForm.especialidad = userDetails.campoespecializacion;
     }
     
-    // 🔧 ARREGLO DE FECHAS: Convertir fechas al formato YYYY-MM-DD para inputs HTML
+    // ARREGLO DE FECHAS: Convertir fechas al formato YYYY-MM-DD para inputs HTML
     if (userDetails.fechaNac || userDetails.fechanac) {
       const fechaNac = userDetails.fechaNac || userDetails.fechanac;
       this.editUserForm.fechanac = this.formatDateForInput(fechaNac);
@@ -1160,13 +1186,14 @@ export class AdminDashboardComponent implements OnInit {
     if (userDetails.alias) {
       this.editUserForm.alias = userDetails.alias;
     }
+    
     this.cdr.detectChanges(); // Forzar actualización de la vista
   }
     */
 
   /*
 
-  // 🔧 NUEVO: Método para formatear fechas para inputs HTML
+  // Método para formatear fechas para inputs HTML utilizando YYYY-MM-DD
   private formatDateForInput(dateValue: any): string {
     if (!dateValue) return '';
     
@@ -1281,6 +1308,36 @@ export class AdminDashboardComponent implements OnInit {
 
     this.loadingBloqueo = true;
     this.errorBloqueo = '';
+    // Mostrar confirmación
+    // Si el usuario es Visualizador y se proporcionó una fecha de nacimiento, hay que validarla
+    if (this.editUserForm.rol === 'Visualizador' && this.editUserForm.fechanac) {
+      const err = this.validateBirthDateForAdmin(this.editUserForm.fechanac, 4);
+      if (err) {
+        this.errorMessage = err;
+        // Mantener el modal abierto para que el administrador corrija la fecha
+        return;
+      }
+    }
+
+    this.showEditConfirmation = true;
+    this.resetMessages();
+  }
+
+  // Validador para la fecha de nacimiento en el admin-dashboard
+  validateBirthDateForAdmin(dateStr: string, minYears: number): string | null {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Fecha de nacimiento inválida';
+    const today = new Date();
+    if (d > today) return 'La fecha de nacimiento no puede ser futura';
+    const cutoff = new Date(today.getFullYear() - minYears, today.getMonth(), today.getDate());
+    if (d > cutoff) return `El usuario debe tener al menos ${minYears} años`;
+    return null;
+  }
+
+  // Segundo paso: confirmar cambios
+  async saveUserChanges() {
+    if (!this.editingUser || this.isUpdating) return;
 
     const accion$ = this.accionBloqueo === 'bloquear'
       ? this.adminService.bloquearUsuario(this.usuarioABloquear.id!, adminId)

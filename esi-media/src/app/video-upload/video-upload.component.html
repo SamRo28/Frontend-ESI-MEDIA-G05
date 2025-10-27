@@ -163,6 +163,10 @@
             <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('minutos') || getFieldError('segundos')">
               {{ getFieldError('minutos') || getFieldError('segundos') }}
             </div>
+            <!-- Error cuando la duración total es 0 segundos -->
+            <div class="text-red-400 text-sm mt-1" *ngIf="(((videoForm.value.minutos || 0) * 60 + (videoForm.value.segundos || 0)) <= 0) && (videoForm.get('minutos')?.touched || videoForm.get('segundos')?.touched)">
+              La duración debe ser al menos 1 segundo.
+            </div>
           </div>
 
           <!-- Resolución -->
@@ -260,6 +264,9 @@
               class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:border-purple-400 focus:outline-none transition-colors"
             >
             <div class="text-white/60 text-sm mt-1">Deja vacío para disponibilidad permanente</div>
+            <div class="text-red-400 text-sm mt-1" *ngIf="videoForm.get('fechaDisponibleHasta')?.touched && videoForm.get('fechaDisponibleHasta')?.errors?.['notInFuture']">
+              Selecciona una fecha posterior a hoy.
+            </div>
           </div>
 
           <!-- Opciones -->
@@ -296,13 +303,13 @@
           </div>
 
           <!-- Mensaje de resultado -->
-          <div *ngIf="uploadMessage" 
-               [class]="uploadSuccess ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'"
+          <div *ngIf="uploadMessage"
+               [ngClass]="uploadSuccess ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'"
                class="p-6 border-2 rounded-lg text-center font-semibold">
             {{ uploadMessage }}
           </div>
 
-          <!-- Botón OK para volver al dashboard (solo visible en éxito) -->
+          <!-- Botón OK para volver al dashboard (solo visible en éxito, después redirige automáticamente) -->
           <button 
             *ngIf="uploadSuccess"
             type="button" 
@@ -315,16 +322,16 @@
           <button 
             *ngIf="!uploadSuccess"
             type="submit" 
-            [disabled]="!videoForm.valid || isUploading"
-            [class]="(videoForm.valid && !isUploading) 
+            [disabled]="!videoForm.valid || isUploading || (((videoForm.value.minutos || 0) * 60 + (videoForm.value.segundos || 0)) <= 0)"
+            [class]="(videoForm.valid && !isUploading && (((videoForm.value.minutos || 0) * 60 + (videoForm.value.segundos || 0)) > 0)) 
               ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transform hover:scale-105' 
               : 'bg-gray-600 cursor-not-allowed'"
             class="w-full py-4 text-white font-bold rounded-lg disabled:opacity-50 transition-all duration-300"
           >
-            <span *ngIf="!isUploading && videoForm.valid" class="flex items-center justify-center">
+            <span *ngIf="!isUploading && (videoForm.valid && (((videoForm.value.minutos || 0) * 60 + (videoForm.value.segundos || 0)) > 0))" class="flex items-center justify-center">
               🎬 Subir Video
             </span>
-            <span *ngIf="!isUploading && !videoForm.valid" class="flex items-center justify-center">
+            <span *ngIf="!isUploading && (!(videoForm.valid && (((videoForm.value.minutos || 0) * 60 + (videoForm.value.segundos || 0)) > 0)))" class="flex items-center justify-center">
               ⚠️ Completa todos los campos
             </span>
             <span *ngIf="isUploading" class="flex items-center justify-center">
@@ -340,7 +347,7 @@
             <ul class="text-yellow-200 text-sm space-y-1">
               <li *ngIf="!isFieldComplete('titulo')">• Título requerido</li>
               <li *ngIf="!isFieldComplete('tags')">• Tags requeridos</li>
-              <li *ngIf="!isFieldComplete('minutos') || !isFieldComplete('segundos')">• Duración requerida</li>
+              <li *ngIf="!isFieldComplete('minutos') || !isFieldComplete('segundos') || (((videoForm.value.minutos || 0) * 60 + (videoForm.value.segundos || 0)) <= 0)">• Duración requerida</li>
               <li *ngIf="!isFieldComplete('resolucion')">• Resolución requerida</li>
               <li *ngIf="!isFieldComplete('edadVisualizacion')">• Edad mínima requerida</li>
               <li *ngIf="!isFieldComplete('url')">• URL del video requerida</li>
@@ -353,8 +360,14 @@
   </div>
 
   <!-- Modal de Confirmación para Subir Video -->
-  <div *ngIf="showUploadConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm" (click)="cancelUpload()">
-    <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-2xl w-full max-w-2xl mx-4 border border-purple-500/20" (click)="$event.stopPropagation()">
+  <div *ngIf="showUploadConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm"
+    (click)="cancelUpload()"
+    (keydown.escape)="cancelUpload()">
+    <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-2xl w-full max-w-2xl mx-4 border border-purple-500/20"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="cancelUpload()"
+      (keydown.enter)="$event.stopPropagation()"
+      (keydown.space)="$event.stopPropagation(); $event.preventDefault()">
       <!-- Header del modal -->
       <div class="flex items-center justify-between p-6 border-b border-gray-700 bg-gradient-to-r from-purple-600/20 to-pink-600/20">
         <div>
@@ -408,13 +421,13 @@
             </div>
             <div>
               <span class="text-gray-400 font-medium">Edad mínima:</span>
-              <span class="ml-2 text-white">{{ videoForm.value.edadVisualizacion }}+</span>
+              <span class="ml-2 text-white">{{ getEdadVisualizacionText(videoForm.value.edadVisualizacion) }}</span>
             </div>
             <div class="md:col-span-2" *ngIf="selectedTags.length > 0">
               <span class="text-gray-400 font-medium">Tags:</span>
               <div class="mt-1 flex flex-wrap gap-1">
                 <span *ngFor="let tag of selectedTags" class="inline-flex items-center px-2 py-1 text-xs font-medium bg-purple-500/20 text-purple-300 rounded">
-                  {{ tag }}
+                  {{ getTagLabel(tag) }}
                 </span>
               </div>
             </div>

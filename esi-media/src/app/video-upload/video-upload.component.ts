@@ -1,8 +1,26 @@
-import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Component, ChangeDetectorRef } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ContentService, VideoUploadData, UploadResponse } from '../services/content.service';
+
+// Validador para fechas que deben ser estrictamente posteriores a hoy
+function futureDateValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const value = control.value;
+    if (!value) return null; // Campo vacío permitido (es opcional)
+    
+    const selectedDate = new Date(value);
+    if (Number.isNaN(selectedDate.getTime())) return { invalidDate: true };
+    
+    // Comparar solo la parte de fecha (sin horas) para evitar problemas de zona horaria
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+    
+    return selectedDate > today ? null : { notInFuture: true };
+  };
+}
 
 @Component({
   selector: 'app-video-upload',
@@ -18,7 +36,7 @@ export class VideoUploadComponent {
   uploadSuccess = false;
   showUploadConfirmation = false;
 
-  // Tags predefinidos para video
+  // Tags predefinidos para videos
   availableVideoTags = [
     { value: 'cocina', label: 'Cocina' },
     { value: 'programacion', label: 'Programación' },
@@ -40,9 +58,10 @@ export class VideoUploadComponent {
   selectedTags: string[] = [];
 
   constructor(
-    private fb: FormBuilder,
-    private contentService: ContentService,
-    private router: Router
+    private readonly fb: FormBuilder,
+    private readonly contentService: ContentService,
+    private readonly router: Router,
+    private readonly cdr: ChangeDetectorRef
   ) {
     this.videoForm = this.fb.group({
       titulo: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
@@ -52,7 +71,7 @@ export class VideoUploadComponent {
       segundos: ['', [Validators.required, Validators.min(0), Validators.max(59)]],
       vip: [false, [Validators.required]],
       edadVisualizacion: ['', [Validators.required]],
-      fechaDisponibleHasta: [''],
+      fechaDisponibleHasta: ['', [futureDateValidator()]],
       visible: [true, [Validators.required]],
       url: ['', [Validators.required, Validators.pattern(/^https?:\/\/[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*(?:[/#?].*)?$/)]],
       resolucion: ['', [Validators.required]],
@@ -97,6 +116,15 @@ export class VideoUploadComponent {
   }
 
   onSubmit() {
+    const minutos = Number(this.videoForm.value.minutos) || 0;
+    const segundos = Number(this.videoForm.value.segundos) || 0;
+    if ((minutos * 60 + segundos) <= 0) {
+      this.uploadMessage = 'La duración debe ser al menos 1 segundo.';
+      this.videoForm.get('minutos')?.markAsTouched();
+      this.videoForm.get('segundos')?.markAsTouched();
+      return;
+    }
+
     if (this.videoForm.valid) {
       // Mostrar modal de confirmación antes de subir
       this.showUploadConfirmation = true;
@@ -117,12 +145,12 @@ export class VideoUploadComponent {
     
     const minutos = Number(this.videoForm.value.minutos) || 0;
     const segundos = Number(this.videoForm.value.segundos) || 0;
-    const formValues = this.videoForm.value; // Guardar todos los valores
-      
-      // BLOQUEAR FORMULARIO COMPLETO
-      this.videoForm.disable();
+    const formValues = this.videoForm.value;
 
-      // Usar selectedTags directamente (ya están como array)
+    // Bloquear formulario completo una vez se decide subir el video
+    this.videoForm.disable();
+
+      // Usar selectedTags directamente
       const tagsArray = this.selectedTags.length > 0 ? this.selectedTags : [];
 
       // Convertir minutos y segundos a total de segundos con validación
@@ -132,7 +160,7 @@ export class VideoUploadComponent {
         titulo: formValues.titulo,
         descripcion: formValues.descripcion || undefined,
         tags: tagsArray,
-        duracion: totalSegundos > 0 ? totalSegundos : 1, // Mínimo 1 segundo
+        duracion: totalSegundos > 0 ? totalSegundos : 1,
         vip: formValues.vip,
         edadVisualizacion: Number(formValues.edadVisualizacion),
         fechaDisponibleHasta: formValues.fechaDisponibleHasta && formValues.fechaDisponibleHasta.trim() !== ''
@@ -150,6 +178,12 @@ export class VideoUploadComponent {
           if (response.success) {
             this.uploadSuccess = true;
             this.uploadMessage = '¡Video subido exitosamente! 🎉';
+            // Forzar detección de cambios para que la UI muestre el estado de éxito inmediatamente
+            this.cdr.detectChanges();
+            // Redirigir al dashboard de gestores tras mostrar feedback 3 segundos
+            setTimeout(() => {
+              this.router.navigate(['/gestor-dashboard']);
+            }, 3000);
           } else {
             this.uploadSuccess = false;
             this.uploadMessage = `❌ Error: ${response.message}`;
@@ -223,7 +257,7 @@ export class VideoUploadComponent {
     return !hasError && !!(field?.touched);
   }
 
-  // Calcular progreso del formulario para feedback visual
+  // Calcular barra de progreso del formulario para feedback visual
   getFormProgress(): number {
     const basicFields = ['titulo', 'url', 'resolucion', 'edadVisualizacion'];
     const completedBasicFields = basicFields.filter(field => {
@@ -231,10 +265,9 @@ export class VideoUploadComponent {
       return control && control.valid && control.value !== '';
     });
     
-    // Contar duración como una sola unidad (minutos Y segundos completos)
+    // Contar duración como una sola unidad (minutos Y segundos deben estar completos)
     const durationComplete = this.isFieldComplete('minutos') && this.isFieldComplete('segundos');
     
-    // Contar tags como requerido
     const tagsComplete = this.selectedTags.length > 0;
     
     const totalRequired = 6; // titulo, url, resolucion, edadVisualizacion, duracion (minutos+segundos), tags
@@ -347,10 +380,9 @@ export class VideoUploadComponent {
     return `✓ Duración: ${totalMinutos}m ${totalSegundos}s`;
   }
 
-  // Solo permitir números en campos de duración
+  // Solo permitiremos números en los campos de duración
   onlyNumbers(event: KeyboardEvent): void {
     const key = event.key;
-    // Permitir: números 0-9, backspace, delete, tab, escape, enter, flechas
     const allowedKeys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
                          'Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 
                          'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
@@ -360,12 +392,29 @@ export class VideoUploadComponent {
     }
   }
 
-  // Prevenir entrada de teclado en campos de fecha (solo permitir selector)
+  // Solo permitir el uso del selector de fecha, no entrada manual
   preventKeyboardInput(event: KeyboardEvent): void {
-    // Permitir solo teclas de navegación y funcionales, no letras/números
     const allowedKeys = ['Tab', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Delete', 'Backspace'];
     if (!allowedKeys.includes(event.key)) {
       event.preventDefault();
     }
+  }
+
+  // Obtener texto descriptivo para edad de visualización
+  getEdadVisualizacionText(edad: string): string {
+    switch(edad) {
+      case 'TP':
+        return 'Todo Público';
+      case '18':
+        return '+18 (Adultos)';
+      default:
+        return edad || 'No especificado';
+    }
+  }
+
+  // Obtener el label de un tag por su valor
+  getTagLabel(tagValue: string): string {
+    const tagObj = this.availableVideoTags.find(t => t.value === tagValue);
+    return tagObj ? tagObj.label : tagValue;
   }
 }
