@@ -9,45 +9,31 @@ import { isPlatformBrowser } from '@angular/common';
  * 
  */
 export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: HttpHandlerFn): Observable<HttpEvent<any>> => {
-  // Agregar el token a peticiones hacia nuestro backend
-  if (req.url.includes('localhost:8080/gestor')) {
-    // Determinar qué token usar según el endpoint
-    let token: string = sessionStorage.getItem('token') || '';
-    
-    // Agregar el header de autorización
-    const authReq = req.clone({
-      setHeaders: {
-        Authorization: `${token}`
-      }
-    });
-  const platformId = inject(PLATFORM_ID);
   
+  const platformId = inject(PLATFORM_ID);
+
   // Si no estamos en el navegador (SSR), NO INTERCEPTAR - deja que la petición continúe sin token
   // El componente se encargará de recargar cuando esté en el navegador
   if (!isPlatformBrowser(platformId)) {
     console.log('� INTERCEPTOR - SSR detectado, saltando interceptor para:', req.url);
     return next(req);
   }
-  
 
-  
   // Solo agregar el token a peticiones hacia nuestro backend
   if (req.url.includes('localhost:8080/gestor') || req.url.includes('localhost:8080/users/listar')) {
 
-    
+
     let token = '';
-    
+
     // Acceder a sessionStorage directamente (ya sabemos que estamos en el navegador)
     try {
-      token = sessionStorage.getItem('token') || 
-              sessionStorage.getItem('authToken') || 
-              '';
+      token = sessionStorage.getItem('token') ||
+        sessionStorage.getItem('authToken') ||
+        '';
     } catch (error) {
       console.error('Error accediendo a sessionStorage:', error);
     }
-    
 
-    
     // Agregar el header de autorización si hay token
     if (token) {
 
@@ -60,7 +46,7 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
       return next(authReq);
     }
   }
-  
   // Para otras peticiones o sin token, continuar sin modificar
   return next(req);
-};
+
+}

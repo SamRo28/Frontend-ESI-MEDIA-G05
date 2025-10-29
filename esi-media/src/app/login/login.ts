@@ -17,9 +17,14 @@ export class Login {
   email: string = '';
   password: string = '';
   errorMsg: string = '';
+  showPassword: boolean = false;
 
   // Compatibilidad con la plantilla que usa "loginError"
   get loginError(): string { return this.errorMsg; }
+
+  togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
+  }
 
   constructor(
     private router: Router, 

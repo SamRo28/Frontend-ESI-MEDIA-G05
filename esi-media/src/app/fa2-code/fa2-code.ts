@@ -80,7 +80,7 @@ export class Fa2Code {
         return;
       }
       else{
-        sessionStorage.setItem('token', res.sesionstoken.token);
+        sessionStorage.setItem('token', res);
         this.router.navigate(['/dashboard']);
       }
     },

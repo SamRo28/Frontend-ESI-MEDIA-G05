@@ -1072,7 +1072,7 @@ export class AdminDashboardComponent implements OnInit {
     // Cierra el modal de confirmación sin aplicar cambios
     this.showEditConfirmation = false;
   }
-/*
+
   async saveUserChanges() {
     // Si no hay datos cargados para editar, simplemente cierra
     if (!this.editUserForm || !this.editUserForm.id) {
@@ -1098,7 +1098,7 @@ export class AdminDashboardComponent implements OnInit {
       this.cdr.detectChanges();
     }
   }
-*/
+
   closePerfilModal() {
     this.showPerfilModal = false;
     this.usuarioADetalle = null;

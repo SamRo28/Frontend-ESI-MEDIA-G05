@@ -172,6 +172,55 @@
     border-color: rgba(255, 255, 255, 0.2);
 }
 
+/* Password Input Wrapper */
+.password-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-input-wrapper .form-input {
+    width: 100%;
+    padding-right: 50px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    border-radius: 6px;
+    z-index: 10;
+}
+
+.toggle-password:hover {
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.toggle-password:focus {
+    outline: none;
+    color: #a855f7;
+}
+
+.toggle-password:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.toggle-password svg {
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
+}
+
 /* Forgot Password */
 .forgot-password {
     text-align: right;

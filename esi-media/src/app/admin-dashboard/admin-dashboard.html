@@ -210,13 +210,13 @@
                       <h4 class="text-2xl font-bold text-gray-900">{{ detalleContenido.titulo }}</h4>
                       <div class="flex gap-2 mt-3">
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
-                          [ngClass]="detalleContenido?.tipo === 'Video' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700'">
+                          [ngClass]="detalleContenido.tipo === 'Video' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700'">
                           {{ detalleContenido.tipo }}
                         </span>
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
-                          [ngClass]="detalleContenido?.estado ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
-                          <span class="w-2 h-2 rounded-full mr-1.5" [ngClass]="detalleContenido?.estado ? 'bg-green-500' : 'bg-red-500'"></span>
-                          {{ detalleContenido?.estado ? 'Visible' : 'Oculto' }}
+                          [ngClass]="detalleContenido.estado ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                          <span class="w-2 h-2 rounded-full mr-1.5" [ngClass]="detalleContenido.estado ? 'bg-green-500' : 'bg-red-500'"></span>
+                          {{ detalleContenido.estado ? 'Visible' : 'Oculto' }}
                         </span>
                       </div>
                     </div>
