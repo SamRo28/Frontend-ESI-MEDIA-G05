@@ -27,9 +27,7 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
 
     // Acceder a sessionStorage directamente (ya sabemos que estamos en el navegador)
     try {
-      token = sessionStorage.getItem('token') ||
-        sessionStorage.getItem('authToken') ||
-        '';
+      token = sessionStorage.getItem('token') || '';
     } catch (error) {
       console.error('Error accediendo a sessionStorage:', error);
     }

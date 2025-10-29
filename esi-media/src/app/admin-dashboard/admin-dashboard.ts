@@ -162,11 +162,17 @@ export class AdminDashboardComponent implements OnInit {
         }
       }
       
-      // Cargar usuarios para mostrar estadísticas en la vista de inicio
       this.loadUsuarios();
+      
+      // Cargar contenidos inmediatamente para mostrar en la vista de inicio
+      const adminId = this.obtenerAdminId();
+      if (adminId) {
+        this.loadContenidos();
+      } else {
+        // Si no hay admin ID aún, marcar como pendiente para cargar después
+        this.pendingLoadContenidos = true;
+      }
     }
-    
-    this.loadUsuarios();
 
     // Inicializar valores de fecha para inputs (usado en el modal de edición de visualizadores)
     const today = new Date();
@@ -191,11 +197,33 @@ export class AdminDashboardComponent implements OnInit {
   ngAfterViewInit() {
     // Segunda carga después de que la vista esté completamente inicializada
     // Esto asegura que las estadísticas se muestren correctamente desde el inicio
-    if (isPlatformBrowser(this.platformId) && this.usuarios.length === 0) {
-      console.log('🔄 AfterViewInit - Recargando usuarios para estadísticas...');
-      setTimeout(() => {
-        this.loadUsuarios();
-      }, 100); // Pequeño delay para asegurar que la vista esté lista
+    if (isPlatformBrowser(this.platformId)) {
+      console.log('🔄 AfterViewInit - Asegurando que usuarios estén cargados para estadísticas...');
+      
+      // Si no hay usuarios cargados o es muy poca cantidad, recargar
+      if (this.usuarios.length === 0) {
+        setTimeout(() => {
+          this.loadUsuarios();
+        }, 100); // Pequeño delay para asegurar que la vista esté lista
+      } else {
+        // Si ya hay usuarios, forzar actualización de estadísticas
+        this.aplicarFiltros();
+        this.cdr.detectChanges();
+      }
+      
+      // Asegurar también que los contenidos estén cargados para las estadísticas
+      if (this.contenidos.length === 0) {
+        const adminId = this.obtenerAdminId();
+        if (adminId) {
+          setTimeout(() => {
+            this.loadContenidos();
+          }, 200); // Pequeño delay adicional para contenidos
+        }
+      } else {
+        // Si ya hay contenidos, forzar actualización de filtros
+        this.aplicarFiltrosContenidos();
+        this.cdr.detectChanges();
+      }
     }
   }
 
@@ -221,14 +249,18 @@ export class AdminDashboardComponent implements OnInit {
         } catch {}
 
         // Cargar contenidos si quedó pendiente y ahora hay Admin-ID
-        if (this.activeTab === 'contenidos' && this.pendingLoadContenidos) {
+        if (this.pendingLoadContenidos) {
           const adminId = this.obtenerAdminId();
           if (adminId) {
             this.pendingLoadContenidos = false;
+            console.log('🔄 Cargando contenidos que quedaron pendientes...');
             this.loadContenidos();
           }
         }
-        this.aplicarFiltros(); // Aplicar filtros despuÃ©s de cargar usuarios
+        this.aplicarFiltros(); // Aplicar filtros después de cargar usuarios
+        
+        // Forzar actualización de vista para estadísticas
+        this.cdr.detectChanges();
       },
       error: (error: any) => {
         console.error('❌ Error al cargar usuarios:', error);
