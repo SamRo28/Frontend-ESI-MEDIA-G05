@@ -367,7 +367,7 @@ export class AdminDashboardComponent implements OnInit {
   verDetalleContenido(c: any) {
     const adminId = this.obtenerAdminId();
     if (!adminId) {
-      this.errorContenido = 'No se pudo identificar al administrador';
+        this.errorContenido = 'No se pudo identificar al administrador';
       return;
     }
     this.showContenidoModal = true;
@@ -376,24 +376,24 @@ export class AdminDashboardComponent implements OnInit {
     this.detalleContenido = null;
     this.adminService.getContenidoDetalle(c.id, adminId).subscribe({
       next: (det) => {
-        this.detalleContenido = det;
-        this.loadingContenido = false;
+          this.detalleContenido = det;
+          this.loadingContenido = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error contenido detalle:', err);
-        this.errorContenido = 'No se pudo cargar el detalle';
-        this.loadingContenido = false;
+          this.errorContenido = 'No se pudo cargar el detalle';
+          this.loadingContenido = false;
         this.cdr.detectChanges();
       }
     });
   }
 
   cerrarContenidoModal() {
-    this.showContenidoModal = false;
-    this.detalleContenido = null;
-    this.loadingContenido = false;
-    this.errorContenido = '';
+      this.showContenidoModal = false;
+      this.detalleContenido = null;
+      this.loadingContenido = false;
+      this.errorContenido = '';
   }
   toggleForm() {
     this.showForm = !this.showForm;
@@ -1000,9 +1000,9 @@ export class AdminDashboardComponent implements OnInit {
    */
   verPerfil(usuario: Usuario) {
     if (!usuario?.id) {
-      this.errorPerfil = 'ID de usuario no disponible';
+        this.errorPerfil = 'ID de usuario no disponible';
       this.showPerfilModal = true;
-      this.loadingPerfil = false;
+        this.loadingPerfil = false;
       this.perfilDetalle = null;
       this.cdr.detectChanges();
       return;
@@ -1039,27 +1039,27 @@ export class AdminDashboardComponent implements OnInit {
     this.adminService.obtenerPerfil(usuario.id, adminId).subscribe({
       next: (perfil) => {
         clearTimeout(backupTimeout);
-        this.perfilDetalle = perfil;
-        this.loadingPerfil = false;
+          this.perfilDetalle = perfil;
+          this.loadingPerfil = false;
         this.cdr.detectChanges();
       },
       error: (error) => {
         clearTimeout(backupTimeout);
-        this.loadingPerfil = false;
+          this.loadingPerfil = false;
         // Mapear mensaje de error de forma robusta
-        let mensaje = 'Error al cargar el perfil del usuario';
-        if (error?.status === 0) {
+          let mensaje = 'Error al cargar el perfil del usuario';
+          if (error?.status === 0) {
           mensaje = 'No hay conexiÃ³n con el servidor. Â¿EstÃ¡ el backend levantado en http://localhost:8080?';
-        } else if (error?.status === 'timeout' || error?.name === 'TimeoutError') {
-          mensaje = 'Tiempo de espera agotado al consultar el perfil.';
-        } else if (error?.error?.mensaje) {
-          mensaje = error.error.mensaje;
-        } else if (error?.error?.message) {
-          mensaje = error.error.message;
-        } else if (error?.message) {
-          mensaje = error.message;
-        }
-        this.errorPerfil = mensaje;
+          } else if (error?.status === 'timeout' || error?.name === 'TimeoutError') {
+            mensaje = 'Tiempo de espera agotado al consultar el perfil.';
+          } else if (error?.error?.mensaje) {
+            mensaje = error.error.mensaje;
+          } else if (error?.error?.message) {
+            mensaje = error.error.message;
+          } else if (error?.message) {
+            mensaje = error.message;
+          }
+          this.errorPerfil = mensaje;
         this.cdr.detectChanges();
       }
     });
@@ -1069,10 +1069,10 @@ export class AdminDashboardComponent implements OnInit {
    * Cierra el modal de perfil
    */
   cerrarPerfilModal() {
-    this.showPerfilModal = false;
-    this.perfilDetalle = null;
-    this.errorPerfil = '';
-    this.loadingPerfil = false;
+      this.showPerfilModal = false;
+      this.perfilDetalle = null;
+      this.errorPerfil = '';
+      this.loadingPerfil = false;
   }
 
   /**
@@ -1338,19 +1338,52 @@ export class AdminDashboardComponent implements OnInit {
 
     this.loadingBloqueo = true;
     this.errorBloqueo = '';
-    // Mostrar confirmación
-    // Si el usuario es Visualizador y se proporcionó una fecha de nacimiento, hay que validarla
-    if (this.editUserForm.rol === 'Visualizador' && this.editUserForm.fechanac) {
-      const err = this.validateBirthDateForAdmin(this.editUserForm.fechanac, 4);
-      if (err) {
-        this.errorMessage = err;
-        // Mantener el modal abierto para que el administrador corrija la fecha
-        return;
-      }
-    }
 
-    this.showEditConfirmation = true;
-    this.resetMessages();
+    const accion$ = this.accionBloqueo === 'bloquear'
+      ? this.adminService.bloquearUsuario(this.usuarioABloquear!.id!, adminId)
+      : this.adminService.desbloquearUsuario(this.usuarioABloquear!.id!, adminId);
+
+    // Fallback por si algo deja el loading en true más de 7s
+    const backup = setTimeout(() => {
+      if (this.loadingBloqueo) {
+        this.loadingBloqueo = false;
+        this.errorBloqueo = 'La operación tardó más de lo esperado. Refresca la lista para ver el estado.';
+        this.cdr.detectChanges();
+      }
+    }, 7000);
+
+    accion$.subscribe({
+      next: async (response) => {
+        console.log('✅ Usuario', this.accionBloqueo === 'bloquear' ? 'bloqueado' : 'desbloqueado');
+        
+        // Actualizar el estado local INMEDIATAMENTE (usuarios y filtrados)
+        const nuevoEstado = this.accionBloqueo === 'bloquear';
+        const idObjetivo = this.usuarioABloquear?.id;
+        if (idObjetivo) {
+          // Actualizar referencia directa (objeto seleccionado)
+          this.usuarioABloquear!.bloqueado = nuevoEstado;
+
+          // Actualizar lista principal
+          this.usuarios = this.usuarios.map(u => u.id === idObjetivo ? { ...u, bloqueado: nuevoEstado } : u);
+
+          // Sincronizar con servidor tras un pequeño delay para evitar sobrescribir con datos obsoletos
+          setTimeout(() => this.loadUsuarios(), 600);
+        }
+        
+        // Cerrar modal
+        this.cerrarModalBloqueo();
+        this.loadingBloqueo = false;
+        clearTimeout(backup);
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('🛑 Error:', error);
+        this.errorBloqueo = error.message || `Error al ${this.accionBloqueo} usuario`;
+        this.loadingBloqueo = false;
+        clearTimeout(backup);
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   // Validador para la fecha de nacimiento en el admin-dashboard
@@ -1365,7 +1398,7 @@ export class AdminDashboardComponent implements OnInit {
     return null;
   }
 
-  /*// Segundo paso: confirmar cambios
+  /** Segundo paso: confirmar cambios
   async saveUserChanges() {
     if (!this.editingUser || this.isUpdating) return;
 
@@ -1437,7 +1470,8 @@ export class AdminDashboardComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
-  }*/
+  }
+  */
 
   /**
    * Cierra el modal de bloqueo
