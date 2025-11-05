@@ -152,7 +152,7 @@ export class AudioUploadComponent {
     }
   }
 
-  // Detecta formato de audio por magic-bytes y devuelve 'mp3'|'wav'|'ogg'|'m4a' o null si no se reconoce
+  // Detecta formato de audio por magic-bytes y devuelve la extensión detectada o null si no se reconoce
   private async detectAudioFormatByMagicBytes(file: File): Promise<string | null> {
     // Debemos leer primeros 12 bytes para tener suficiente información de los magic-bytes
     const slice = file.slice(0, 12);
