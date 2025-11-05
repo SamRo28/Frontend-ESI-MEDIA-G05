@@ -88,6 +88,19 @@ export class VideoUploadComponent {
         segundosControl?.enable();
       }
     });
+
+    // POLÍTICA 4K: solo disponible para contenido VIP
+    // Cuando VIP cambia, verificar y ajustar resolución si es necesario
+    this.videoForm.get('vip')?.valueChanges.subscribe(vipStatus => {
+      const resolucionControl = this.videoForm.get('resolucion');
+      const currentResolution = resolucionControl?.value;
+      
+      // Si se desactiva VIP y la resolución actual es 4K, cambiar automáticamente a 1080p
+      if (!vipStatus && currentResolution === '2160p') {
+        resolucionControl?.setValue('1080p');
+        console.log('🔄 Resolución cambiada automáticamente a 1080p (contenido no VIP)');
+      }
+    });
   }
 
   // Métodos para manejar selección múltiple de tags
@@ -416,5 +429,19 @@ export class VideoUploadComponent {
   getTagLabel(tagValue: string): string {
     const tagObj = this.availableVideoTags.find(t => t.value === tagValue);
     return tagObj ? tagObj.label : tagValue;
+  }
+
+  // NUEVA FUNCIONALIDAD: Verificar si 4K está disponible (solo para VIP)
+  is4KAvailable(): boolean {
+    return this.videoForm.get('vip')?.value === true;
+  }
+
+  // Obtener mensaje explicativo para la política de 4K
+  get4KPolicyMessage(): string {
+    if (this.is4KAvailable()) {
+      return '✅ 4K disponible (contenido VIP activo)';
+    } else {
+      return '🔒 4K solo disponible para contenido VIP';
+    }
   }
 }
