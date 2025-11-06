@@ -1,0 +1,23 @@
+<div class="detalle-container" *ngIf="!cargando">
+  <ng-container *ngIf="detalle; else errorTpl">
+    <h1>{{ detalle!.titulo }}</h1>
+    <p class="desc" *ngIf="detalle!.descripcion">{{ detalle!.descripcion }}</p>
+
+    <div *ngIf="detalle!.tipo === 'VIDEO'" class="player">
+      <video controls width="640" [src]="detalle!.referenciaReproduccion"></video>
+      <p class="fallback">
+        Si el vídeo no se reproduce, <a [href]="detalle!.referenciaReproduccion" target="_blank" rel="noopener">ábrelo en una pestaña nueva</a>.
+      </p>
+    </div>
+
+    <div *ngIf="detalle!.tipo === 'AUDIO'" class="player">
+      <audio controls [src]="audioUrl || ''"></audio>
+    </div>
+  </ng-container>
+</div>
+
+<ng-template #errorTpl>
+  <div class="error" *ngIf="error">{{ error }}</div>
+</ng-template>
+
+<div *ngIf="cargando">Cargando...</div>

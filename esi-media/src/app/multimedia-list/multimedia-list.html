@@ -1,0 +1,22 @@
+<div class="mm-container">
+  <h1>Multimedia</h1>
+
+  <div *ngIf="cargando">Cargando...</div>
+  <div *ngIf="errores" class="error">{{ errores }}</div>
+
+  <div class="grid" *ngIf="!cargando && !errores">
+    <a class="card" *ngFor="let item of contenido" [routerLink]="['/multimedia', item.id]">
+      <div class="thumb" [class.vip]="item.vip">
+        <span class="badge" *ngIf="item.vip">VIP</span>
+        <span class="tipo">{{ item.tipo }}</span>
+      </div>
+      <div class="title">{{ item.titulo }}</div>
+    </a>
+  </div>
+
+  <div class="paginacion" *ngIf="!cargando && contenido.length">
+    <button (click)="anterior()" [disabled]="pagina === 0">Anterior</button>
+    <span>Página {{ pagina + 1 }}</span>
+    <button (click)="siguiente()">Siguiente</button>
+  </div>
+</div>

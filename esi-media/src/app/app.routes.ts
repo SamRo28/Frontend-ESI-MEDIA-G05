@@ -14,6 +14,9 @@ import { Fa3CodeGuard } from './guards/fa3code.guard';
 import { RegistroVisualizadorComponent } from './registro-visualizador/registro-visualizador.component';
 import { VisuDashboard } from './visu-dashboard/visu-dashboard';
 import { GestorDashboardComponent } from './gestor-dashboard/gestor-dashboard';
+import { MultimediaListComponent } from './multimedia-list/multimedia-list';
+import { MultimediaDetailComponent } from './multimedia-detail/multimedia-detail';
+import { MultimediaGuard } from './guards/multimedia.guard';
 
 export const routes: Routes = [
   {
@@ -71,5 +74,15 @@ export const routes: Routes = [
   {
     path: 'gestor-dashboard',
     component: GestorDashboardComponent
+  },
+  {
+    path: 'multimedia',
+    component: MultimediaListComponent,
+    canActivate: [MultimediaGuard]
+  },
+  {
+    path: 'multimedia/:id',
+    component: MultimediaDetailComponent,
+    canActivate: [MultimediaGuard]
   }
 ];
