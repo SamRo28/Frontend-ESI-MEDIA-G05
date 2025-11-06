@@ -1,12 +1,30 @@
 <div class="mm-container">
-  <h1>Multimedia</h1>
+  <h1 class="mm-title">Multimedia</h1>
 
-  <div *ngIf="cargando">Cargando...</div>
-  <div *ngIf="errores" class="error">{{ errores }}</div>
+  <!-- Loader Skeleton -->
+  <div class="grid" *ngIf="cargando">
+    <div class="card skeleton" *ngFor="let s of [].constructor(tamano); let i = index">
+      <div class="thumb mm-skeleton"></div>
+      <div class="line mm-skeleton"></div>
+    </div>
+  </div>
 
-  <div class="grid" *ngIf="!cargando && !errores">
+  <!-- Error -->
+  <div *ngIf="!cargando && errores" class="error">{{ errores }}</div>
+
+  <!-- Estado vacío -->
+  <div *ngIf="!cargando && !errores && contenido.length === 0" class="empty">
+    <div class="empty-card">
+      <div class="empty-icon">🎧</div>
+      <div class="empty-title">No hay contenidos disponibles</div>
+      <div class="empty-desc">Vuelve más tarde o explora otras secciones</div>
+    </div>
+  </div>
+
+  <!-- Grid de contenido -->
+  <div class="grid" *ngIf="!cargando && !errores && contenido.length">
     <a class="card" *ngFor="let item of contenido" [routerLink]="['/multimedia', item.id]">
-      <div class="thumb" [class.vip]="item.vip">
+      <div class="thumb" [class.vip]="item.vip" [style.background-image]="caratulaUrl(item) ? 'url(' + caratulaUrl(item) + ')' : ''">
         <span class="badge" *ngIf="item.vip">VIP</span>
         <span class="tipo">{{ item.tipo }}</span>
       </div>
@@ -14,9 +32,10 @@
     </a>
   </div>
 
+  <!-- Paginación -->
   <div class="paginacion" *ngIf="!cargando && contenido.length">
-    <button (click)="anterior()" [disabled]="pagina === 0">Anterior</button>
-    <span>Página {{ pagina + 1 }}</span>
-    <button (click)="siguiente()">Siguiente</button>
+    <button class="btn secondary" (click)="anterior()" [disabled]="pagina === 0">Anterior</button>
+    <span class="page-info">Página {{ pagina + 1 }}<ng-container *ngIf="totalPaginas != null"> de {{ totalPaginas }}</ng-container></span>
+    <button class="btn primary" (click)="siguiente()" [disabled]="esUltimaPagina()">Siguiente</button>
   </div>
 </div>

@@ -16,7 +16,8 @@ export class MultimediaListComponent implements OnInit {
   cargando = false;
   errores: string | null = null;
   contenido: ContenidoResumenDTO[] = [];
-  totalPaginas = 0;
+  totalPaginas: number | null = null;
+  totalElementos: number | null = null;
 
   constructor(private multimedia: MultimediaService) {}
 
@@ -30,7 +31,8 @@ export class MultimediaListComponent implements OnInit {
     this.multimedia.listar(pagina, this.tamano).subscribe({
       next: (resp: PageResponse<ContenidoResumenDTO>) => {
         this.contenido = resp.content || [];
-        this.totalPaginas = resp.totalPages ?? (this.contenido.length < this.tamano ? pagina + 1 : pagina + 2);
+        this.totalPaginas = typeof resp.totalPages === 'number' ? resp.totalPages : null;
+        this.totalElementos = typeof resp.totalElements === 'number' ? resp.totalElements : null;
         this.pagina = pagina;
         this.cargando = false;
       },
@@ -49,6 +51,28 @@ export class MultimediaListComponent implements OnInit {
   }
 
   siguiente(): void {
-    this.cargar(this.pagina + 1);
+    if (!this.esUltimaPagina()) {
+      this.cargar(this.pagina + 1);
+    }
+  }
+
+  esUltimaPagina(): boolean {
+    if (this.totalPaginas != null) {
+      return this.pagina >= this.totalPaginas - 1;
+    }
+    // Fallback heurístico si el backend no envía totalPages
+    return this.contenido.length < this.tamano;
+  }
+
+  caratulaUrl(item: ContenidoResumenDTO): string | null {
+    const c: any = (item as any).caratula;
+    if (!c) return null;
+    if (typeof c === 'string') return c; // puede ser data URL o URL absoluta
+    if (typeof c === 'object') {
+      if (typeof c.url === 'string') return c.url;
+      if (typeof c.src === 'string') return c.src;
+      if (typeof c.data === 'string') return c.data; // base64 ya preparado
+    }
+    return null;
   }
 }
