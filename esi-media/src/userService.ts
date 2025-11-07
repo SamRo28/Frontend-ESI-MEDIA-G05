@@ -30,17 +30,8 @@ export class UserService {
     verify3ACode(id: string, code: string): Observable<any> {
         return this.client.post<any>(`http://localhost:8080/users/verify3AuthCode`, { id, code });
     }
-    /*verify2FACode(email: string, code: string): Observable<any> {
-        return this.client.post<any>(`http://localhost:8080/users/verify2FACode`, { email, code },
-    { responseType: 'text' });
-    }*/
-
-    verify2FACode(email: string, code: string) {
-  return this.client.post(
-    `http://localhost:8080/users/verify2FACode`,
-    { email, code },
-    { responseType: 'text' } // <--- ESTA ES LA CLAVE
-  );
-}
+    verify2FACode(email: string, code: string): Observable<any> {
+        return this.client.post<any>(`http://localhost:8080/users/verify2FACode`, { email, code });
+    }
 
 }
