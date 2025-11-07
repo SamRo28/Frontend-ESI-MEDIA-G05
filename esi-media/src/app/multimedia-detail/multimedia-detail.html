@@ -28,13 +28,16 @@
       </p>
     </div>
 
-    <!-- AUDIO -->
+    <!-- AUDIO (carga diferida) -->
     <div *ngIf="detalle!.tipo === 'AUDIO'" class="player-card">
+      <div *ngIf="!audioUrl && !audioCargando && !audioError" class="deferred">
+        <button class="retry-btn" (click)="descargarAudio()">Cargar audio</button>
+      </div>
       <ng-container *ngIf="audioCargando">
-        <div class="audio-loader">Preparando audio...</div>
+        <div class="audio-loader">Descargando audio...</div>
       </ng-container>
-      <ng-container *ngIf="!audioCargando && !audioError">
-        <audio controls [src]="audioUrl || ''"></audio>
+      <ng-container *ngIf="audioUrl && !audioCargando && !audioError">
+        <audio controls [src]="audioUrl"></audio>
       </ng-container>
       <div class="audio-error" *ngIf="audioError">
         {{ audioError }}

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { shareReplay, take } from 'rxjs/operators';
 
 export interface ContenidoResumenDTO {
   id: string;
@@ -32,11 +33,19 @@ export interface PageResponse<T> {
 @Injectable({ providedIn: 'root' })
 export class MultimediaService {
   private readonly baseUrl = 'http://localhost:8080/multimedia';
+  private pageCache = new Map<string, Observable<PageResponse<ContenidoResumenDTO>>>();
 
   constructor(private http: HttpClient) {}
 
   listar(page = 0, size = 12): Observable<PageResponse<ContenidoResumenDTO>> {
-    return this.http.get<PageResponse<ContenidoResumenDTO>>(`${this.baseUrl}?page=${page}&size=${size}`);
+    const key = `p=${page}&s=${size}`;
+    const cached = this.pageCache.get(key);
+    if (cached) return cached;
+    const obs = this.http
+      .get<PageResponse<ContenidoResumenDTO>>(`${this.baseUrl}?page=${page}&size=${size}`)
+      .pipe(shareReplay(1));
+    this.pageCache.set(key, obs);
+    return obs;
   }
 
   detalle(id: string): Observable<ContenidoDetalleDTO> {
@@ -46,5 +55,14 @@ export class MultimediaService {
   descargarAudio(id: string): Observable<Blob> {
     // Ruta correcta en backend: /multimedia/audio/{id}
     return this.http.get(`${this.baseUrl}/audio/${id}`, { responseType: 'blob' });
+  }
+
+  prefetch(page = 0, size = 12): void {
+    // Dispara la carga y se completa al primer valor; si ya está en caché no hace red
+    this.listar(page, size).pipe(take(1)).subscribe({ next: () => {}, error: () => {} });
+  }
+
+  clearCache(): void {
+    this.pageCache.clear();
   }
 }

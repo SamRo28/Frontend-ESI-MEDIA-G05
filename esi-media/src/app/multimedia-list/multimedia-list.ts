@@ -42,6 +42,8 @@ export class MultimediaListComponent implements OnInit {
         this.totalElementos = typeof resp.totalElements === 'number' ? resp.totalElements : null;
         this.pagina = pagina;
         this.cargando = false;
+        // Prefetch de la siguiente página para navegación fluida
+        this.prefetchSiguiente();
       },
       error: (err) => {
         console.error('Error cargando contenidos', err);
@@ -81,5 +83,20 @@ export class MultimediaListComponent implements OnInit {
       if (typeof c.data === 'string') return c.data; // base64 ya preparado
     }
     return null;
+  }
+
+  trackById(index: number, item: ContenidoResumenDTO): string { return item.id; }
+
+  private prefetchSiguiente(): void {
+    const siguiente = this.pagina + 1;
+    // Si conocemos totalPaginas, solo prefetch si hay siguiente
+    if (this.totalPaginas != null) {
+      if (siguiente < this.totalPaginas) this.multimedia.prefetch(siguiente, this.tamano);
+      return;
+    }
+    // Si no conocemos totalPaginas, usa heurística: prefetch si llenamos la página
+    if (this.contenido.length >= this.tamano) {
+      this.multimedia.prefetch(siguiente, this.tamano);
+    }
   }
 }
