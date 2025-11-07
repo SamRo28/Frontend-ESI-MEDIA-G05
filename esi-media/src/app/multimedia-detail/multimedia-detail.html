@@ -54,16 +54,10 @@
       <div class="buffering" *ngIf="buffering">Bufferizando...</div>
     </div>
 
-    <!-- AUDIO (carga diferida) -->
+    <!-- AUDIO: reproducción directa con <audio> y token en query (?auth=) -->
     <div *ngIf="detalle!.tipo === 'AUDIO'" class="player-card">
-      <div *ngIf="!audioUrl && !audioCargando && !audioError" class="deferred">
-        <button class="retry-btn" (click)="descargarAudio()">Cargar audio</button>
-      </div>
-      <ng-container *ngIf="audioCargando">
-        <div class="audio-loader">Descargando audio...</div>
-      </ng-container>
-      <ng-container *ngIf="audioUrl && !audioCargando && !audioError">
-        <audio controls [src]="audioUrl"></audio>
+      <ng-container *ngIf="!audioError">
+        <audio controls [src]="audioSrc()" (error)="onAudioError($event)" (loadedmetadata)="onAudioLoaded($event)"></audio>
       </ng-container>
       <div class="audio-error" *ngIf="audioError">
         {{ audioError }}

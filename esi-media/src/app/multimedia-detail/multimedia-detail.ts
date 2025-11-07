@@ -20,8 +20,8 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   cargando = false;
   error: string | null = null;
   detalle: ContenidoDetalleDTO | null = null;
-  audioUrl: string | null = null;
-  audioCargando = false;
+  audioUrl: string | null = null; // ya no se usa para reproducción directa, se mantiene por compatibilidad
+  audioCargando = false; // obsoleto con reproducción directa
   audioError: string | null = null;
   // Estado avanzado de reproductor de vídeo
   playerReady = false; // true cuando iframe YouTube carga o <video> tiene metadata/canplay
@@ -30,6 +30,8 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   // Cache estable para evitar recarga continua del iframe YouTube
   isYoutube = false;
   youtubeSafeUrl: SafeResourceUrl | null = null;
+  // Token para uso en query (evitar sessionStorage directo en plantilla)
+  token: string = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -42,6 +44,12 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     // Evitar peticiones en SSR
     if (!isPlatformBrowser(this.platformId)) {
       return;
+    }
+    // Capturamos token una sola vez (evita acceso global en plantilla)
+    try {
+      this.token = sessionStorage.getItem('token') || '';
+    } catch (e) {
+      this.token = '';
     }
     // Suscribirse a cambios de parámetro para soportar navegación a otros ids reutilizando el componente
     this.route.paramMap.subscribe(pm => {
@@ -124,19 +132,8 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   }
 
   descargarAudio(): void {
-    this.audioCargando = true;
+    // Mantenido por compatibilidad; ya no se usa al reproducir directo con <audio src>
     this.audioError = null;
-    this.multimedia.descargarAudio(this.id).subscribe({
-      next: (blob) => {
-        this.audioUrl = URL.createObjectURL(blob);
-        this.audioCargando = false;
-      },
-      error: (err) => {
-        console.error('Error descargando audio', err);
-        this.audioError = (err?.error?.mensaje) || 'No se pudo descargar el audio';
-        this.audioCargando = false;
-      }
-    });
   }
 
   // --- Helpers VIDEO ---
@@ -146,6 +143,29 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     if (this.detalle?.tipo === 'AUDIO') {
       this.descargarAudio();
     }
+  }
+
+  audioSrc(): string {
+    if (!this.detalle || this.detalle.tipo !== 'AUDIO') return '';
+    let base = this.detalle.referenciaReproduccion || '';
+    // Si viene como ruta relativa (empieza por '/'), anteponer dominio backend
+    if (/^\//.test(base)) {
+      base = 'http://localhost:8080' + base;
+    }
+    // Evitar duplicar protocolo si accidentalmente ya contiene http://http://
+    base = base.replace(/^(https?:\/\/)+(https?:\/\/)/i, '$1');
+    const sep = base.includes('?') ? '&' : '?';
+    const tokenParam = this.token ? 'auth=' + encodeURIComponent(this.token) : '';
+    return tokenParam ? (base + sep + tokenParam) : base;
+  }
+
+  onAudioError(ev: Event): void {
+    console.error('[MultimediaDetail] Error evento <audio>', ev);
+    this.audioError = 'No se pudo cargar el audio (recurso no encontrado o sin permiso)';
+  }
+
+  onAudioLoaded(ev: Event): void {
+    console.log('[MultimediaDetail] Audio metadata cargada');
   }
 
   caratulaUrl(): string | null {
