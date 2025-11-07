@@ -37,12 +37,13 @@ export class MultimediaService {
 
   constructor(private http: HttpClient) {}
 
-  listar(page = 0, size = 12): Observable<PageResponse<ContenidoResumenDTO>> {
-    const key = `p=${page}&s=${size}`;
+  listar(page = 0, size = 12, tipo?: 'AUDIO' | 'VIDEO'): Observable<PageResponse<ContenidoResumenDTO>> {
+    const key = `p=${page}&s=${size}&t=${tipo ?? 'ALL'}`;
     const cached = this.pageCache.get(key);
     if (cached) return cached;
+    const url = `${this.baseUrl}?page=${page}&size=${size}` + (tipo ? `&tipo=${tipo}` : '');
     const obs = this.http
-      .get<PageResponse<ContenidoResumenDTO>>(`${this.baseUrl}?page=${page}&size=${size}`)
+      .get<PageResponse<ContenidoResumenDTO>>(url)
       .pipe(shareReplay(1));
     this.pageCache.set(key, obs);
     return obs;
@@ -57,9 +58,9 @@ export class MultimediaService {
     return this.http.get(`${this.baseUrl}/audio/${id}`, { responseType: 'blob' });
   }
 
-  prefetch(page = 0, size = 12): void {
+  prefetch(page = 0, size = 12, tipo?: 'AUDIO' | 'VIDEO'): void {
     // Dispara la carga y se completa al primer valor; si ya está en caché no hace red
-    this.listar(page, size).pipe(take(1)).subscribe({ next: () => {}, error: () => {} });
+    this.listar(page, size, tipo).pipe(take(1)).subscribe({ next: () => {}, error: () => {} });
   }
 
   clearCache(): void {

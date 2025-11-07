@@ -22,10 +22,36 @@
 
     <!-- VIDEO -->
     <div *ngIf="detalle!.tipo === 'VIDEO'" class="player-card">
-      <video controls [src]="detalle!.referenciaReproduccion" class="video-player"></video>
+      <div class="player-wrapper">
+        <!-- Player: siempre renderizado; skeleton superpuesto hasta ready -->
+        <ng-container *ngIf="esYoutube(); else videoDirecto">
+          <iframe
+            class="video-player"
+            [src]="youtubeSafeUrl"
+            width="100%" height="360"
+            frameborder="0"
+            (load)="onIframeLoaded()"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen>
+          </iframe>
+        </ng-container>
+        <ng-template #videoDirecto>
+          <video controls [src]="detalle!.referenciaReproduccion" class="video-player" preload="metadata"
+            (loadedmetadata)="onVideoLoaded()"
+            (canplay)="onVideoCanPlay()"
+            (waiting)="onVideoWaiting()"
+            (playing)="onVideoPlaying()"></video>
+        </ng-template>
+        <!-- Skeleton overlay -->
+        <div class="player-skeleton" *ngIf="!playerReady">
+          <div class="shimmer"></div>
+          <span>Preparando reproductor...</span>
+        </div>
+      </div>
       <p class="fallback">
         ¿Problemas? <a [href]="detalle!.referenciaReproduccion" target="_blank" rel="noopener">Abrir en pestaña nueva</a>.
       </p>
+      <div class="buffering" *ngIf="buffering">Bufferizando...</div>
     </div>
 
     <!-- AUDIO (carga diferida) -->

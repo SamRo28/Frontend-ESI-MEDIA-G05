@@ -81,6 +81,16 @@ export const routes: Routes = [
     canActivate: [MultimediaGuard]
   },
   {
+    path: 'multimedia/videos',
+    component: MultimediaListComponent,
+    canActivate: [MultimediaGuard]
+  },
+  {
+    path: 'multimedia/audios',
+    component: MultimediaListComponent,
+    canActivate: [MultimediaGuard]
+  },
+  {
     path: 'multimedia/:id',
     component: MultimediaDetailComponent,
     canActivate: [MultimediaGuard]

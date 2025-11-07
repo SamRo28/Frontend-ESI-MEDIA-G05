@@ -1,5 +1,6 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { CommonModule, NgIf, NgFor } from '@angular/common';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { MultimediaService, ContenidoDetalleDTO } from '../services/multimedia.service';
 import { PLATFORM_ID } from '@angular/core';
@@ -8,9 +9,10 @@ import { isPlatformBrowser } from '@angular/common';
 @Component({
   selector: 'app-multimedia-detail',
   standalone: true,
-  imports: [CommonModule],
+  // Añadimos NgIf y NgFor explícitamente para entornos que requieren import directo de las directivas estructurales
+  imports: [CommonModule, NgIf, NgFor],
   templateUrl: './multimedia-detail.html',
-  styleUrl: './multimedia-detail.css'
+  styleUrls: ['./multimedia-detail.css']
 })
 export class MultimediaDetailComponent implements OnInit, OnDestroy {
   private platformId = inject(PLATFORM_ID);
@@ -21,40 +23,102 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   audioUrl: string | null = null;
   audioCargando = false;
   audioError: string | null = null;
+  // Estado avanzado de reproductor de vídeo
+  playerReady = false; // true cuando iframe YouTube carga o <video> tiene metadata/canplay
+  buffering = false;   // true cuando el vídeo entra en estado de espera tras haber estado listo
+  private detalleTimeout: any | null = null;
+  // Cache estable para evitar recarga continua del iframe YouTube
+  isYoutube = false;
+  youtubeSafeUrl: SafeResourceUrl | null = null;
 
-  constructor(private route: ActivatedRoute, private multimedia: MultimediaService) {}
+  constructor(
+    private route: ActivatedRoute,
+    private multimedia: MultimediaService,
+    private sanitizer: DomSanitizer,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
-    this.id = this.route.snapshot.paramMap.get('id')!;
     // Evitar peticiones en SSR
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
-    this.cargar();
+    // Suscribirse a cambios de parámetro para soportar navegación a otros ids reutilizando el componente
+    this.route.paramMap.subscribe(pm => {
+      const nuevoId = pm.get('id');
+      if (nuevoId && nuevoId !== this.id) {
+        this.id = nuevoId;
+        this.cargar();
+      } else if (!this.detalle) {
+        // Primera carga
+        this.id = nuevoId || this.id;
+        this.cargar();
+      }
+    });
   }
 
   ngOnDestroy(): void {
     if (this.audioUrl) {
       URL.revokeObjectURL(this.audioUrl);
     }
+    if (this.detalleTimeout) {
+      clearTimeout(this.detalleTimeout);
+      this.detalleTimeout = null;
+    }
   }
 
   cargar(): void {
     this.cargando = true;
     this.error = null;
+    console.log('[MultimediaDetail] Iniciando carga detalle id=', this.id);
+    if (this.detalleTimeout) {
+      clearTimeout(this.detalleTimeout);
+    }
+    // Fallback de seguridad: si en 8s no llega respuesta, apagamos loader y mostramos error genérico
+    this.detalleTimeout = setTimeout(() => {
+      if (this.cargando) {
+        console.warn('[MultimediaDetail] Timeout de detalle, apagando loader');
+        this.cargando = false;
+        if (!this.detalle && !this.error) {
+          this.error = 'Tiempo de espera agotado al cargar el contenido';
+        }
+      }
+    }, 8000);
     this.multimedia.detalle(this.id).subscribe({
       next: (d) => {
         this.detalle = d;
-        if (d.tipo === 'AUDIO') {
-          this.descargarAudio();
-        } else {
+        // Para VIDEO: dejamos de mostrar loader general (datos recibidos) pero activamos skeleton hasta ready
+        if (d.tipo === 'VIDEO') {
           this.cargando = false;
+          this.playerReady = false;
+          this.buffering = false;
+          console.log('[MultimediaDetail] Detalle VIDEO recibido, loader off, esperando eventos del reproductor');
+          this.cdr.markForCheck();
+          const url = d.referenciaReproduccion || '';
+          this.isYoutube = /youtube\.com\/watch\?v=|youtu\.be\//i.test(url);
+          if (this.isYoutube) {
+            const watchMatch = url.match(/[?&]v=([^&#]+)/);
+            const shortMatch = url.match(/youtu\.be\/([^?&#]+)/);
+            const id = (watchMatch && watchMatch[1]) || (shortMatch && shortMatch[1]) || null;
+            this.youtubeSafeUrl = id ? this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.youtube.com/embed/${id}`) : null;
+          } else {
+            this.youtubeSafeUrl = null;
+          }
         }
+        // Para AUDIO mantenemos cargando sólo hasta el botón (descarga diferida), así que apagamos también
+        if (d.tipo === 'AUDIO') {
+          this.cargando = false;
+          console.log('[MultimediaDetail] Detalle AUDIO recibido, loader off');
+          this.cdr.markForCheck();
+        }
+        if (this.detalleTimeout) { clearTimeout(this.detalleTimeout); this.detalleTimeout = null; }
       },
       error: (err) => {
         console.error('Error cargando detalle', err);
         this.error = (err?.error?.mensaje) || 'No se pudo cargar el detalle';
         this.cargando = false;
+        this.cdr.markForCheck();
+        if (this.detalleTimeout) { clearTimeout(this.detalleTimeout); this.detalleTimeout = null; }
       }
     });
   }
@@ -66,16 +130,17 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
       next: (blob) => {
         this.audioUrl = URL.createObjectURL(blob);
         this.audioCargando = false;
-        this.cargando = false;
       },
       error: (err) => {
         console.error('Error descargando audio', err);
         this.audioError = (err?.error?.mensaje) || 'No se pudo descargar el audio';
         this.audioCargando = false;
-        this.cargando = false;
       }
     });
   }
+
+  // --- Helpers VIDEO ---
+  esYoutube(): boolean { return this.isYoutube; }
 
   reintentarAudio(): void {
     if (this.detalle?.tipo === 'AUDIO') {
@@ -107,5 +172,47 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     const anyDetalle: any = this.detalle;
     const d = anyDetalle?.duracion;
     return (typeof d === 'number' && d >= 0) ? d : null;
+  }
+
+  // --- Eventos del reproductor de VIDEO ---
+  onIframeLoaded(): void {
+    console.log('[MultimediaDetail] iframe load');
+    setTimeout(() => {
+      this.playerReady = true;
+      this.buffering = false;
+      this.cdr.markForCheck();
+    }, 0);
+  }
+  onVideoLoaded(): void {
+    // loadedmetadata: ya tenemos duración, podemos mostrar el player
+    console.log('[MultimediaDetail] video loadedmetadata');
+    setTimeout(() => {
+      this.playerReady = true;
+      this.cdr.markForCheck();
+    }, 0);
+  }
+  onVideoCanPlay(): void {
+    console.log('[MultimediaDetail] video canplay');
+    setTimeout(() => {
+      this.playerReady = true;
+      this.buffering = false;
+      this.cdr.markForCheck();
+    }, 0);
+  }
+  onVideoWaiting(): void {
+    console.log('[MultimediaDetail] video waiting');
+    setTimeout(() => {
+      if (this.playerReady) {
+        this.buffering = true;
+        this.cdr.markForCheck();
+      }
+    }, 0);
+  }
+  onVideoPlaying(): void {
+    console.log('[MultimediaDetail] video playing');
+    setTimeout(() => {
+      this.buffering = false;
+      this.cdr.markForCheck();
+    }, 0);
   }
 }

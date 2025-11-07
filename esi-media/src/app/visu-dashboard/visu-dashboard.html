@@ -10,10 +10,9 @@
       </div>
 
       <nav class="nav-menu">
-        <a routerLink="/dashboard" class="nav-link active">Inicio</a>
-        <a routerLink="/multimedia" class="nav-link">Música</a>
-        <a routerLink="/multimedia" class="nav-link">Películas</a>
-        <a routerLink="/multimedia" class="nav-link">Podcasts</a>
+        <a routerLink="/multimedia" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" class="nav-link">Inicio</a>
+        <a routerLink="/multimedia/videos" routerLinkActive="active" class="nav-link">Videos</a>
+        <a routerLink="/multimedia/audios" routerLinkActive="active" class="nav-link">Audios</a>
       </nav>
 
       <div class="user-section">
