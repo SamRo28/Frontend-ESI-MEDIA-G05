@@ -46,7 +46,7 @@ export class Login {
         if(response.usuario.twoFactorAutenticationEnabled){
            this.router.navigate(['/2verification'], { state: { allowFa2Code: true } });
         }
-        else if (!response.twoFactorAutenticationEnabled && response.tipo !== 'visualizador'){
+        else if (!response.twoFactorAutenticationEnabled && response.tipo !== 'Visualizador'){
           this.router.navigate(['/2fa'], { state: { allowFa2: true } });
         }
         else{
