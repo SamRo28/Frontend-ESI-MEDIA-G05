@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Router } from '@angular/router';
+import { MultimediaService } from '../services/multimedia.service';
 
 interface Star {
   left: number;
@@ -19,6 +20,7 @@ interface Star {
 export class VisuDashboard implements OnInit {
   stars: Star[] = [];
 
+  private multimedia = inject(MultimediaService);
   constructor(private router: Router) {}
 
   ngOnInit(): void {
@@ -48,9 +50,9 @@ export class VisuDashboard implements OnInit {
 
   logout(): void {
     console.log('Cerrando sesión...');
-    
-    // Aquí iría tu lógica de logout
-    // this.authService.logout();
-    // this.router.navigate(['/login']);
+    // Limpiar token sesión y cache multimedia
+    try { sessionStorage.removeItem('token'); } catch {}
+    this.multimedia.clearCache();
+    this.router.navigate(['/login']);
   }
 }
