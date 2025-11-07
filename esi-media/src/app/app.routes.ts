@@ -84,5 +84,6 @@ export const routes: Routes = [
     path: 'multimedia/:id',
     component: MultimediaDetailComponent,
     canActivate: [MultimediaGuard]
-  }
+  },
+  
 ];

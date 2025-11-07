@@ -44,6 +44,7 @@ export class MultimediaService {
   }
 
   descargarAudio(id: string): Observable<Blob> {
+    // Ruta correcta en backend: /multimedia/audio/{id}
     return this.http.get(`${this.baseUrl}/audio/${id}`, { responseType: 'blob' });
   }
 }

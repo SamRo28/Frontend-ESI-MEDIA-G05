@@ -15,7 +15,6 @@ export class MultimediaGuard implements CanActivate {
     if (token && token.trim().length > 0) {
       return true;
     }
-
     // Redirigir a login y preservar returnUrl para volver tras autenticación
     return this.router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
   }

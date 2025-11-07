@@ -1,7 +1,9 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MultimediaService, ContenidoResumenDTO, PageResponse } from '../services/multimedia.service';
+import { PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 @Component({
   selector: 'app-multimedia-list',
@@ -11,6 +13,7 @@ import { MultimediaService, ContenidoResumenDTO, PageResponse } from '../service
   styleUrl: './multimedia-list.css'
 })
 export class MultimediaListComponent implements OnInit {
+  private platformId = inject(PLATFORM_ID);
   pagina = 0;
   tamano = 12;
   cargando = false;
@@ -22,6 +25,10 @@ export class MultimediaListComponent implements OnInit {
   constructor(private multimedia: MultimediaService) {}
 
   ngOnInit(): void {
+    // Evitar peticiones en SSR
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
     this.cargar();
   }
 
