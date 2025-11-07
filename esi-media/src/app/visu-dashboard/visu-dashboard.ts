@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { GestionListasComponent } from '../gestion-listas/gestion-listas';
 
 interface Star {
   left: number;
@@ -11,12 +12,13 @@ interface Star {
 @Component({
   selector: 'app-visu-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, GestionListasComponent],
   templateUrl: './visu-dashboard.html',
   styleUrl: './visu-dashboard.css'
 })
 export class VisuDashboard implements OnInit {
   stars: Star[] = [];
+  mostrarListasPrivadas = false;
 
   constructor(private router: Router) {}
 
@@ -33,6 +35,14 @@ export class VisuDashboard implements OnInit {
         delay: Math.random() * 3
       });
     }
+  }
+
+  toggleListasPrivadas(): void {
+    this.mostrarListasPrivadas = !this.mostrarListasPrivadas;
+  }
+
+  navigateToGestionListas(): void {
+    this.router.navigate(['/gestion-listas']);
   }
 
   toggleUserMenu(): void {

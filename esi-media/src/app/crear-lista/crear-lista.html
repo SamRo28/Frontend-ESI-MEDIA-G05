@@ -1,0 +1,70 @@
+<form [formGroup]="listaForm" (ngSubmit)="onSubmit()" class="crear-lista-form">
+  <h3>Crear Nueva Lista</h3>
+
+  <!-- Campo Nombre -->
+  <div class="form-field">
+    <label for="nombre">Nombre de la lista *</label>
+    <input 
+      id="nombre"
+      type="text" 
+      formControlName="nombre"
+      class="full-width"
+      placeholder="Ej: Mi lista de música favorita">
+    <div class="error" *ngIf="listaForm.get('nombre')?.invalid && listaForm.get('nombre')?.touched">
+      <span *ngIf="listaForm.get('nombre')?.errors?.['required']">El nombre es requerido</span>
+      <span *ngIf="listaForm.get('nombre')?.errors?.['minlength']">Mínimo 3 caracteres</span>
+    </div>
+  </div>
+
+  <!-- Campo Descripción -->
+  <div class="form-field">
+    <label for="descripcion">Descripción *</label>
+    <textarea 
+      id="descripcion"
+      formControlName="descripcion"
+      rows="3"
+      class="full-width"
+      placeholder="Describe tu lista..."></textarea>
+    <div class="error" *ngIf="listaForm.get('descripcion')?.invalid && listaForm.get('descripcion')?.touched">
+      <span *ngIf="listaForm.get('descripcion')?.errors?.['required']">La descripción es requerida</span>
+      <span *ngIf="listaForm.get('descripcion')?.errors?.['minlength']">Mínimo 10 caracteres</span>
+    </div>
+  </div>
+
+  <!-- Campo Tags -->
+  <div class="form-field">
+    <label for="tagsInput">Etiquetas</label>
+    <input 
+      id="tagsInput"
+      type="text" 
+      formControlName="tagsInput"
+      class="full-width"
+      placeholder="rock, pop, jazz (separadas por comas)">
+    <div class="hint">Separa las etiquetas con comas</div>
+  </div>
+
+  <!-- Campo Visible (solo para gestores) -->
+  <div class="form-field" *ngIf="modo === 'gestor'">
+    <label class="checkbox-label">
+      <input type="checkbox" formControlName="visible">
+      Lista pública
+    </label>
+    <div class="hint">Las listas públicas son visibles para todos los usuarios</div>
+  </div>
+
+  <!-- Botones de acción -->
+  <div class="form-actions">
+    <button type="button" class="btn btn-secondary" (click)="onCancelar()">
+      <span class="icon">❌</span>
+      Cancelar
+    </button>
+    <button 
+      type="submit" 
+      class="btn btn-primary" 
+      [disabled]="listaForm.invalid || guardando">
+      <span class="icon" *ngIf="guardando">⏳</span>
+      <span class="icon" *ngIf="!guardando">💾</span>
+      {{ guardando ? 'Guardando...' : 'Crear Lista' }}
+    </button>
+  </div>
+</form>

@@ -91,6 +91,11 @@ export class GestorDashboardComponent implements OnInit {
   }
 
 
+  // Navegar a la página de gestión de listas
+  navigateToGestionListas() {
+    this.router.navigate(['/gestion-listas']);
+  }
+
   // Cerrar sesión
   logout() {
     // borrar usuario completo, token y metadatos de sesión, limpiar estado y redirigir

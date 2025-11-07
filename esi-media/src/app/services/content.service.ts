@@ -129,4 +129,13 @@ export class ContentService {
   checkVideoStatus(): Observable<any> {
     return this.http.get(`${this.baseUrl}/video/estado`);
   }
+
+
+  /**
+   * Busca contenidos por nombre
+   * El token de autenticación es añadido automáticamente por el interceptor
+   */
+  buscarPorNombre(nombre: string): Observable<any> {
+    return this.http.get(`http://localhost:8080/api/contenidos/buscar?nombre=${encodeURIComponent(nombre)}`);
+  }
 }

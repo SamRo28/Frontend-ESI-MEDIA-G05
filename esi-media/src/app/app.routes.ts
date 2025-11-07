@@ -14,6 +14,8 @@ import { Fa3CodeGuard } from './guards/fa3code.guard';
 import { RegistroVisualizadorComponent } from './registro-visualizador/registro-visualizador.component';
 import { VisuDashboard } from './visu-dashboard/visu-dashboard';
 import { GestorDashboardComponent } from './gestor-dashboard/gestor-dashboard';
+import { GestionListasComponent } from './gestion-listas/gestion-listas';
+import { CrearListaComponent } from './crear-lista/crear-lista';
 
 export const routes: Routes = [
   {
@@ -71,5 +73,13 @@ export const routes: Routes = [
   {
     path: 'gestor-dashboard',
     component: GestorDashboardComponent
+  },
+  {
+    path: 'gestion-listas',
+    component: GestionListasComponent
+  },
+  {
+    path: 'gestion-listas/crear',
+    component: CrearListaComponent
   }
 ];
