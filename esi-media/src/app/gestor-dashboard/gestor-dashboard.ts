@@ -56,10 +56,22 @@ export class GestorDashboardComponent implements OnInit {
     if (isPlatformBrowser(this.platformId)) {
       // Obtener el resto de información del usuario del sessionStorage
       const userJson = sessionStorage.getItem('user');
-        let parsedUser: any = null;
-        if (userJson) {
-          try { parsedUser = JSON.parse(userJson); } catch (e) { parsedUser = null; }
+      let parsedUser: any = null;
+      if (userJson) {
+        try {
+          parsedUser = JSON.parse(userJson);
+        } catch (e) {
+          // Manejo explícito del error de parseo: registrar el error y eliminar la entrada corrupta
+          console.error('Failed to parse session user JSON:', e);
+          parsedUser = null;
+          // Evitar futuros errores por el mismo valor corrupto
+          try {
+            sessionStorage.removeItem('user');
+          } catch (error_) {
+            console.error('Failed to remove corrupt session user key:', error_);
+          }
         }
+      }
       this.userName = parsedUser?.alias || 'Gestor';
       //Ahora obtenemos el tipo contenido video o audio
       this.gestorType = parsedUser?.tipocontenidovideooaudio || 'audio';
