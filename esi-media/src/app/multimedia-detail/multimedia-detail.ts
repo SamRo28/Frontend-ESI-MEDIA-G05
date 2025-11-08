@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, NgIf, NgFor } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
 import { MultimediaService, ContenidoDetalleDTO } from '../services/multimedia.service';
 import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
@@ -10,7 +10,7 @@ import { isPlatformBrowser } from '@angular/common';
   selector: 'app-multimedia-detail',
   standalone: true,
   // Añadimos NgIf y NgFor explícitamente para entornos que requieren import directo de las directivas estructurales
-  imports: [CommonModule, NgIf, NgFor],
+  imports: [CommonModule, NgIf, NgFor, RouterLink, RouterLinkActive],
   templateUrl: './multimedia-detail.html',
   styleUrls: ['./multimedia-detail.css']
 })

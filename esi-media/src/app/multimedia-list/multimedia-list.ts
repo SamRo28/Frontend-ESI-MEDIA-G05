@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MultimediaService, ContenidoResumenDTO, PageResponse } from '../services/multimedia.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PLATFORM_ID } from '@angular/core';
@@ -9,7 +9,7 @@ import { isPlatformBrowser } from '@angular/common';
 @Component({
   selector: 'app-multimedia-list',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, RouterLinkActive],
   templateUrl: './multimedia-list.html',
   styleUrl: './multimedia-list.css'
 })
