@@ -4,6 +4,9 @@ import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ContentService, VideoUploadData, UploadResponse } from '../services/content.service';
 
+// Tipo para estados visuales de los campos
+type FieldVisualState = 'success' | 'error' | 'neutral';
+
 // Validador para fechas que deben ser estrictamente posteriores a hoy
 function futureDateValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -261,7 +264,14 @@ export class VideoUploadComponent {
       const minutosField = this.videoForm.get('minutos');
       const segundosField = this.videoForm.get('segundos');
       const hasError = this.getFieldError('minutos') || this.getFieldError('segundos');
-      const hasTouched = !!(minutosField?.touched || segundosField?.touched);
+      const hasTouched = !!(minutosField?.touched || segundosField?.touched || minutosField?.dirty || segundosField?.dirty);
+      
+      // Si nunca se han tocado los campos, mostrar mensaje inicial
+      if (!hasTouched) {
+        return true;
+      }
+      
+      // Si se han tocado pero no hay errores, mostrar confirmación
       return !hasError && hasTouched;
     }
     
@@ -364,33 +374,26 @@ export class VideoUploadComponent {
 
   // Mensaje de ayuda específico para duración
   getDurationHelpMessage(): string {
-    const minutos = this.videoForm.get('minutos')?.value || 0;
-    const segundos = this.videoForm.get('segundos')?.value || 0;
+    const minutosField = this.videoForm.get('minutos');
+    const segundosField = this.videoForm.get('segundos');
+    const minutos = minutosField?.value || 0;
+    const segundos = segundosField?.value || 0;
     
-    if (minutos === '' && segundos === '') {
-      return 'Especifica la duración de tu video (máximo 4 horas)';
-    }
-    
-    if (minutos === '' || segundos === '') {
-      return 'Completa tanto minutos como segundos';
+    // Si nunca se han tocado los campos, mostrar mensaje inicial
+    const hasTouched = !!(minutosField?.touched || segundosField?.touched || minutosField?.dirty || segundosField?.dirty);
+    if (!hasTouched) {
+      return 'Máximo 240 minutos';
     }
     
     const totalMinutos = Number(minutos);
     const totalSegundos = Number(segundos);
     
-    if (totalMinutos === 0 && totalSegundos === 0) {
-      return 'La duración debe ser mayor a 0';
+    // Si hay valores válidos, mostrar confirmación
+    if (totalMinutos >= 0 && totalSegundos >= 0 && (totalMinutos > 0 || totalSegundos > 0)) {
+      return `✓ Duración: ${totalMinutos}m ${totalSegundos}s`;
     }
     
-    if (totalMinutos > 240) {
-      return 'La duración máxima es 4 horas (240 minutos)';
-    }
-    
-    if (totalSegundos > 59) {
-      return 'Los segundos no pueden ser mayor a 59';
-    }
-    
-    return `✓ Duración: ${totalMinutos}m ${totalSegundos}s`;
+    return '';
   }
 
   // Solo permitiremos números en los campos de duración
@@ -442,6 +445,131 @@ export class VideoUploadComponent {
       return '✅ 4K disponible (contenido VIP activo)';
     } else {
       return '🔒 4K solo disponible para contenido VIP';
+    }
+  }
+
+  // === SISTEMA DE FEEDBACK VISUAL ===
+  
+  // Determina el estado visual de un campo: 'success' | 'error' | 'neutral'
+  getFieldVisualState(fieldName: string): FieldVisualState {
+    const field = this.videoForm.get(fieldName);
+    if (!field) return 'neutral';
+
+    // Si el campo no ha sido tocado ni modificado, estado neutral
+    if (!field.touched && !field.dirty) return 'neutral';
+
+    // Lógica especial para duración
+    if (fieldName === 'minutos' || fieldName === 'segundos') {
+      return this.getDurationFieldVisualState(fieldName);
+    }
+
+    // Lógica especial para tags (no es un control de formulario estándar)
+    if (fieldName === 'tags') {
+      return this.selectedTags.length > 0 ? 'success' : 'error';
+    }
+
+    // Para campos estándar: si tiene errores = error, si no = success
+    if (field.errors) {
+      return 'error';
+    }
+
+    // Si el campo es requerido y tiene valor válido = success
+    // Si el campo es opcional y tiene valor válido = success
+    // Si el campo es opcional y está vacío = neutral
+    const isRequired = this.isFieldRequired(fieldName);
+    
+    if (field.value && field.value !== '') {
+      return 'success';
+    } else if (isRequired) {
+      return 'error';
+    }
+    
+    return 'neutral';
+  }
+
+  // Lógica especial para campos de duración
+  private getDurationFieldVisualState(fieldName: 'minutos' | 'segundos'): FieldVisualState {
+    const minutosField = this.videoForm.get('minutos');
+    const segundosField = this.videoForm.get('segundos');
+    
+    if (!minutosField || !segundosField) return 'neutral';
+
+    // Si ningún campo ha sido tocado, estado neutral
+    if (!minutosField.touched && !segundosField.touched && !minutosField.dirty && !segundosField.dirty) {
+      return 'neutral';
+    }
+
+    const currentField = fieldName === 'minutos' ? minutosField : segundosField;
+    
+    // Si el campo específico tiene errores de validación, error
+    if (currentField.errors) {
+      return 'error';
+    }
+
+    // Si el campo tiene un valor válido, success
+    if (currentField.value !== null && currentField.value !== '' && Number(currentField.value) >= 0) {
+      return 'success';
+    }
+
+    // Si el campo ha sido tocado pero no tiene valor, error
+    if (currentField.touched || currentField.dirty) {
+      return 'error';
+    }
+
+    return 'neutral';
+  }
+
+  // Obtiene las clases CSS para el estado visual del campo
+  getFieldClasses(fieldName: string): string {
+    const baseClasses = 'w-full px-4 py-3 bg-white/5 rounded-lg text-white placeholder-white/50 focus:outline-none transition-colors';
+    const state = this.getFieldVisualState(fieldName);
+    
+    switch (state) {
+      case 'success':
+        return `${baseClasses} border-2 border-green-500 focus:border-green-400`;
+      case 'error':
+        return `${baseClasses} border-2 border-red-500 focus:border-red-400`;
+      default:
+        return `${baseClasses} border border-white/20 focus:border-purple-400`;
+    }
+  }
+
+  // Versión específica para selects que pueden tener clases diferentes
+  getSelectFieldClasses(fieldName: string): string {
+    const baseClasses = 'w-full px-4 py-3 bg-white/5 rounded-lg text-white focus:outline-none transition-colors';
+    const state = this.getFieldVisualState(fieldName);
+    
+    switch (state) {
+      case 'success':
+        return `${baseClasses} border-2 border-green-500 focus:border-green-400`;
+      case 'error':
+        return `${baseClasses} border-2 border-red-500 focus:border-red-400`;
+      default:
+        return `${baseClasses} border border-white/20 focus:border-purple-400`;
+    }
+  }
+
+  // Determina si un campo es requerido
+  private isFieldRequired(fieldName: string): boolean {
+    const requiredFields = ['titulo', 'url', 'resolucion', 'edadVisualizacion'];
+    return requiredFields.includes(fieldName);
+  }
+
+  // Maneja eventos blur para validación inmediata
+  onFieldBlur(fieldName: string): void {
+    const field = this.videoForm.get(fieldName);
+    if (field) {
+      field.markAsTouched();
+      field.updateValueAndValidity();
+    }
+  }
+
+  // Maneja eventos change para selectores de fecha
+  onFieldChange(fieldName: string): void {
+    const field = this.videoForm.get(fieldName);
+    if (field) {
+      field.markAsDirty();
+      field.updateValueAndValidity();
     }
   }
 }
