@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MultimediaService, ContenidoResumenDTO, PageResponse } from '../services/multimedia.service';
@@ -15,6 +15,7 @@ import { isPlatformBrowser } from '@angular/common';
 })
 export class MultimediaListComponent implements OnInit {
   private platformId = inject(PLATFORM_ID);
+  private cdr = inject(ChangeDetectorRef);
   pagina = 0;
   tamano = 12;
   cargando = false;
@@ -56,6 +57,8 @@ export class MultimediaListComponent implements OnInit {
   cargar(pagina: number = this.pagina): void {
     this.cargando = true;
     this.errores = null;
+    // Zoneless: asegurar refresco de vista
+    this.cdr.markForCheck();
     this.multimedia.listar(pagina, this.tamano, this.filtroTipo ?? undefined).subscribe({
       next: (resp: PageResponse<ContenidoResumenDTO>) => {
         const items = resp.content || [];
@@ -68,11 +71,15 @@ export class MultimediaListComponent implements OnInit {
         this.cargando = false;
         // Prefetch de la siguiente página para navegación fluida
         this.prefetchSiguiente();
+        // Zoneless: asegurar refresco de vista
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error cargando contenidos', err);
         this.errores = (err?.error?.mensaje) || 'No se pudo cargar el contenido';
         this.cargando = false;
+        // Zoneless: asegurar refresco de vista
+        this.cdr.markForCheck();
       }
     });
   }
