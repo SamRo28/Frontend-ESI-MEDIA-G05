@@ -1962,14 +1962,6 @@
               <span class="text-gray-500">Tipo de Usuario:</span>
               <span class="ml-2 font-medium">{{ getUserTypeDisplayName(editUserForm.rol) }}</span>
             </div>
-            <div>
-              <span class="text-gray-500">Email:</span>
-              <span class="ml-2 font-medium">{{ editUserForm.email }}</span>
-            </div>
-            <div>
-              <span class="text-gray-500">ID:</span>
-              <span class="ml-2 font-mono text-xs">{{ editUserForm.id }}</span>
-            </div>
           </div>
         </div>
 
@@ -1978,6 +1970,22 @@
 
           <!-- Formulario para ADMINISTRADORES -->
           <div *ngIf="editUserForm.rol === 'Administrador'">
+
+            <!-- Email (solo lectura) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label for="edit-admin-email" class="block text-sm font-medium text-gray-700 mb-2">
+                  Email (Solo lectura)
+                </label>
+                <input 
+                  id="edit-admin-email"
+                  type="email" 
+                  [value]="editUserForm.email"
+                  readonly
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+              </div>
+            </div>
+
             <!-- Nombre y Apellidos -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -2005,19 +2013,6 @@
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Apellidos del administrador">
               </div>
-            </div>
-
-            <!-- Email (solo lectura) -->
-            <div>
-              <label for="edit-admin-email" class="block text-sm font-medium text-gray-700 mb-2">
-                Email (No editable)
-              </label>
-              <input 
-                id="edit-admin-email"
-                type="email" 
-                [value]="editUserForm.email"
-                readonly
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
             </div>
 
             <!-- Departamento -->
@@ -2054,6 +2049,60 @@
 
           <!-- Formulario para GESTORES DE CONTENIDO -->
           <div *ngIf="editUserForm.rol === 'Gestor'">
+            <!-- Email (solo lectura) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label for="edit-gestor-email" class="block text-sm font-medium text-gray-700 mb-2">
+                  Email (Solo lectura)
+                </label>
+                <input 
+                  id="edit-gestor-email"
+                  type="email" 
+                  [value]="editUserForm.email"
+                  readonly
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+              </div>
+
+              <!-- Tipo de contenido (solo lectura) -->
+              <div>
+                <label for="edit-gestor-tipocontenido" class="block text-sm font-medium text-gray-700 mb-2">
+                  Tipo de contenido (Solo lectura)
+                </label>
+                <input 
+                  id="edit-gestor-tipocontenido"
+                  type="text" 
+                  [value]="editUserForm.tipocontenidovideooaudio || 'No especificado'"
+                  readonly
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+              </div>
+
+              <!-- Estado (solo lectura) -->
+              <div>
+                <label for="edit-estado-gestor" class="block text-sm font-medium text-gray-700 mb-2">
+                  Estado (Solo lectura)
+                </label>
+                <input 
+                  id="edit-estado-gestor"
+                  type="text" 
+                  [value]="editUserForm.bloqueado ? 'Bloqueado' : 'Activo'"
+                  readonly
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+              </div>
+
+              <!-- Fecha de registro (solo lectura) -->
+              <div>
+                <label for="edit-gestor-fecharegistro" class="block text-sm font-medium text-gray-700 mb-2">
+                  Fecha de registro (Solo lectura)
+                </label>
+                <input 
+                  id="edit-gestor-fecharegistro"
+                  type="text" 
+                  [value]="editUserForm.fecharegistro ? (editUserForm.fecharegistro | date:'dd/MM/yyyy') : 'No disponible'"
+                  readonly
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+              </div>
+            </div>
+
             <!-- Nombre y Apellidos -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -2081,19 +2130,6 @@
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Apellidos del gestor">
               </div>
-            </div>
-
-            <!-- Email (solo lectura) -->
-            <div>
-              <label for="edit-gestor-email" class="block text-sm font-medium text-gray-700 mb-2">
-                Email (No editable)
-              </label>
-              <input 
-                id="edit-gestor-email"
-                type="email" 
-                [value]="editUserForm.email"
-                readonly
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
             </div>
 
             <!-- Campos específicos para GESTORES -->
@@ -2148,19 +2184,6 @@
                 placeholder="Descripción del gestor"></textarea>
             </div>
 
-            <!-- Tipo de contenido (solo lectura) -->
-            <div>
-              <label for="edit-gestor-tipocontenido" class="block text-sm font-medium text-gray-700 mb-2">
-                Tipo de contenido (Solo lectura)
-              </label>
-              <input 
-                id="edit-gestor-tipocontenido"
-                type="text" 
-                [value]="editUserForm.tipocontenidovideooaudio || 'No especificado'"
-                readonly
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
-            </div>
-
             <!-- Foto de Perfil -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -2177,36 +2200,65 @@
                 </div>
               </div>
             </div>
-
-            <!-- Estado de bloqueo (solo lectura) -->
-            <div>
-              <label for="edit-estado-gestor" class="block text-sm font-medium text-gray-700 mb-2">
-                Estado (Solo lectura)
-              </label>
-              <input 
-                id="edit-estado-gestor"
-                type="text" 
-                [value]="editUserForm.bloqueado ? 'Bloqueado' : 'Activo'"
-                readonly
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
-            </div>
-
-            <!-- Fecha de registro (solo lectura) -->
-            <div>
-              <label for="edit-gestor-fecharegistro" class="block text-sm font-medium text-gray-700 mb-2">
-                Fecha de registro (Solo lectura)
-              </label>
-              <input 
-                id="edit-gestor-fecharegistro"
-                type="text" 
-                [value]="editUserForm.fecharegistro ? (editUserForm.fecharegistro | date:'dd/MM/yyyy') : 'No disponible'"
-                readonly
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
-            </div>
           </div>
 
           <!-- Formulario para VISUALIZADORES -->
           <div *ngIf="editUserForm.rol === 'Visualizador'">
+            
+            <!-- Email (solo lectura) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label for="edit-visualizador-email" class="block text-sm font-medium text-gray-700 mb-2">
+                  Email (Solo lectura)
+                </label>
+                <input 
+                  id="edit-visualizador-email"
+                  type="email" 
+                  [value]="editUserForm.email"
+                  readonly
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+              </div>
+
+              <!-- Estado (solo lectura) -->
+              <div>
+                <label for="edit-estado" class="block text-sm font-medium text-gray-700 mb-2">
+                  Estado (Solo lectura)
+                </label>
+                <input 
+                  id="edit-estado"
+                  type="text" 
+                  [value]="editUserForm.bloqueado ? 'Bloqueado' : 'Activo'"
+                  readonly
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+              </div>
+
+              <!-- Estado VIP (solo lectura) -->
+              <div>
+                <label for="edit-estado-vip" class="block text-sm font-medium text-gray-700 mb-2">
+                  Estado VIP (Solo lectura)
+                </label>
+                <input 
+                  id="edit-estado-vip"
+                  type="text" 
+                  [value]="editUserForm.vip ? 'VIP' : 'Estándar'"
+                  readonly
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+              </div>
+
+              <!-- Fecha de registro (solo lectura) -->
+              <div>
+                <label for="edit-visualizador-fecharegistro" class="block text-sm font-medium text-gray-700 mb-2">
+                  Fecha de registro (Solo lectura)
+                </label>
+                <input 
+                  id="edit-visualizador-fecharegistro"
+                  type="text" 
+                  [value]="editUserForm.fecharegistro ? (editUserForm.fecharegistro | date:'dd/MM/yyyy') : 'No disponible'"
+                  readonly
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
+              </div>
+            </div>
+
             <!-- Nombre y Apellidos -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -2234,19 +2286,6 @@
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Apellidos del visualizador">
               </div>
-            </div>
-
-            <!-- Email (solo lectura) -->
-            <div>
-              <label for="edit-visualizador-email" class="block text-sm font-medium text-gray-700 mb-2">
-                Email (No editable)
-              </label>
-              <input 
-                id="edit-visualizador-email"
-                type="email" 
-                [value]="editUserForm.email"
-                readonly
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
             </div>
 
             <!-- Campos específicos para VISUALIZADORES -->
@@ -2294,46 +2333,6 @@
                   <p class="text-xs text-center mt-1 text-gray-600">{{ foto.nombre }}</p>
                 </div>
               </div>
-            </div>
-
-            <!-- Campos de solo lectura para VISUALIZADORES -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label for="edit-estado" class="block text-sm font-medium text-gray-700 mb-2">
-                  Estado (Solo lectura)
-                </label>
-                <input 
-                  id="edit-estado"
-                  type="text" 
-                  [value]="editUserForm.bloqueado ? 'Bloqueado' : 'Activo'"
-                  readonly
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
-              </div>
-
-              <div>
-                <label for="edit-estado-vip" class="block text-sm font-medium text-gray-700 mb-2">
-                  Estado VIP (Solo lectura)
-                </label>
-                <input 
-                  id="edit-estado-vip"
-                  type="text" 
-                  [value]="editUserForm.vip ? 'VIP' : 'Estándar'"
-                  readonly
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
-              </div>
-            </div>
-
-            <!-- Fecha de registro (solo lectura) -->
-            <div>
-              <label for="edit-visualizador-fecharegistro" class="block text-sm font-medium text-gray-700 mb-2">
-                Fecha de registro (Solo lectura)
-              </label>
-              <input 
-                id="edit-visualizador-fecharegistro"
-                type="text" 
-                [value]="editUserForm.fecharegistro ? (editUserForm.fecharegistro | date:'dd/MM/yyyy') : 'No disponible'"
-                readonly
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed">
             </div>
           </div>
 
