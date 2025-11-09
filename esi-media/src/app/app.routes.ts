@@ -72,6 +72,23 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     component: VisuDashboard,
+    component: VisuDashboard
+  },
+  {
+    path: 'dashboard/listas',
+    component: GestionListasComponent
+  },
+  {
+    path: 'dashboard/listas/crear',
+    component: CrearListaComponent
+  },
+  {
+    path: 'gestor-dashboard',
+    component: GestorDashboardComponent
+  },
+  {
+    path: 'multimedia',
+    component: MultimediaListComponent,
     canActivate: [MultimediaGuard]
   },
   {
@@ -99,6 +116,7 @@ export const routes: Routes = [
   { path: 'multimedia/audios', redirectTo: 'dashboard/audios', pathMatch: 'full' },
   { path: 'multimedia/:id', redirectTo: 'dashboard/:id', pathMatch: 'full' },
   {
+  
     path: 'gestion-listas',
     component: GestionListasComponent
   },

@@ -15,16 +15,12 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
   // Si no estamos en el navegador (SSR), NO INTERCEPTAR - deja que la petición continúe sin token
   // El componente se encargará de recargar cuando esté en el navegador
   if (!isPlatformBrowser(platformId)) {
-    console.log('� INTERCEPTOR - SSR detectado, saltando interceptor para:', req.url);
+    console.log(' INTERCEPTOR - SSR detectado, saltando interceptor para:', req.url);
     return next(req);
   }
 
-  // Solo agregar el token a peticiones hacia nuestro backend que requieren auth
-  if (
-    req.url.includes('localhost:8080/gestor') ||
-    req.url.includes('localhost:8080/users/listar') ||
-    req.url.includes('localhost:8080/multimedia')
-  ) {
+  // Solo agregar el token a peticiones hacia nuestro backend  que requieren auth
+  if (req.url.includes('localhost:8080/gestor') || req.url.includes('localhost:8080/users/listar') || req.url.includes('localhost:8080/listas') || req.url.includes('localhost:8080/contenidos/buscar') || req.url.includes('localhost:8080/listas/usuario') || req.url.includes('localhost:8080/listas/gestor') || req.url.includes('localhost:8080/multimedia')) {
 
 
     let token = '';
@@ -41,7 +37,7 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
 
       const authReq = req.clone({
         setHeaders: {
-          Authorization: `${token}`
+          Authorization: `Bearer ${token}`
         }
       });
 
