@@ -17,6 +17,8 @@ import { GestorDashboardComponent } from './gestor-dashboard/gestor-dashboard';
 import { MultimediaListComponent } from './multimedia-list/multimedia-list';
 import { MultimediaDetailComponent } from './multimedia-detail/multimedia-detail';
 import { MultimediaGuard } from './guards/multimedia.guard';
+import { GestionListasComponent } from './gestion-listas/gestion-listas';
+import { CrearListaComponent } from './crear-lista/crear-lista';
 
 export const routes: Routes = [
   {
@@ -96,4 +98,11 @@ export const routes: Routes = [
     canActivate: [MultimediaGuard]
   },
   
+    path: 'gestion-listas',
+    component: GestionListasComponent
+  },
+  {
+    path: 'gestion-listas/crear',
+    component: CrearListaComponent
+  }
 ];

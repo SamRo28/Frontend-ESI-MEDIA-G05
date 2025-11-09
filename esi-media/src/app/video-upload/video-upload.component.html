@@ -62,8 +62,9 @@
               type="text" 
               id="titulo"
               formControlName="titulo"
-              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
+              [class]="getFieldClasses('titulo')"
               placeholder="Título de tu video"
+              (blur)="onFieldBlur('titulo')"
             >
             <div class="text-blue-300 text-sm mt-1" *ngIf="shouldShowHelpMessage('titulo')">
               {{ getFieldHelpMessage('titulo') }}
@@ -80,8 +81,9 @@
               id="descripcion"
               formControlName="descripcion"
               rows="3"
-              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors resize-none"
+              [class]="getFieldClasses('descripcion')"
               placeholder="Descripción opcional del video"
+              (blur)="onFieldBlur('descripcion')"
             ></textarea>
             <div class="text-white/60 text-sm mt-1">Opcional - Describe tu video (máximo 500 caracteres)</div>
             <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('descripcion')">
@@ -143,7 +145,8 @@
                   min="0" 
                   max="240"
                   (keydown)="onlyNumbers($event)"
-                  class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
+                  [class]="getFieldClasses('minutos')"
+                  (blur)="onFieldBlur('minutos')"
                 >
               </div>
               <div>
@@ -155,11 +158,14 @@
                   min="0" 
                   max="59"
                   (keydown)="onlyNumbers($event)"
-                  class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
+                  [class]="getFieldClasses('segundos')"
+                  (blur)="onFieldBlur('segundos')"
                 >
               </div>
             </div>
-            <div class="text-white/60 text-sm mt-1">Máximo 4 horas (240 minutos)</div>
+            <div class="text-blue-300 text-sm mt-1" *ngIf="shouldShowHelpMessage('duracion')">
+              {{ getDurationHelpMessage() }}
+            </div>
             <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('minutos') || getFieldError('segundos')">
               {{ getFieldError('minutos') || getFieldError('segundos') }}
             </div>
@@ -180,13 +186,29 @@
             <select 
               id="resolucion"
               formControlName="resolucion"
-              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:border-purple-400 focus:outline-none transition-colors"
+              [class]="getSelectFieldClasses('resolucion')"
+              (blur)="onFieldBlur('resolucion')"
+              (change)="onFieldChange('resolucion')"
             >
               <option value="" disabled>Selecciona resolución</option>
               <option value="720p">720p (HD)</option>
               <option value="1080p">1080p (Full HD)</option>
-              <option value="2160p">2160p (4K)</option>
+              <option value="2160p" [disabled]="!is4KAvailable()">
+                2160p (4K) {{ !is4KAvailable() ? '- Solo VIP' : '' }}
+              </option>
             </select>
+            
+            <!-- Mensaje informativo sobre política 4K -->
+            <div class="text-blue-300 text-sm mt-1" *ngIf="shouldShowHelpMessage('resolucion')">
+              {{ getFieldHelpMessage('resolucion') }}
+            </div>
+            <div class="text-purple-300 text-sm mt-1" *ngIf="!is4KAvailable()">
+              💎 {{ get4KPolicyMessage() }}
+            </div>
+            <div class="text-green-400 text-sm mt-1" *ngIf="is4KAvailable()">
+              💎 {{ get4KPolicyMessage() }}
+            </div>
+            
             <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('resolucion')">
               {{ getFieldError('resolucion') }}
             </div>
@@ -203,7 +225,9 @@
             <select 
               id="edadVisualizacion"
               formControlName="edadVisualizacion"
-              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:border-purple-400 focus:outline-none transition-colors"
+              [class]="getSelectFieldClasses('edadVisualizacion')"
+              (blur)="onFieldBlur('edadVisualizacion')"
+              (change)="onFieldChange('edadVisualizacion')"
             >
               <option value="" disabled>Selecciona clasificación de edad</option>
               <option value="TP">TP (Todo Público)</option>
@@ -229,8 +253,9 @@
               type="url" 
               id="url"
               formControlName="url"
-              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
+              [class]="getFieldClasses('url')"
               placeholder="https://youtube.com/watch?v=..."
+              (blur)="onFieldBlur('url')"
             >
             <div class="text-blue-300 text-sm mt-1" *ngIf="shouldShowHelpMessage('url')">
               {{ getFieldHelpMessage('url') }}
@@ -261,7 +286,9 @@
               formControlName="fechaDisponibleHasta"
               (keydown)="preventKeyboardInput($event)"
               (paste)="$event.preventDefault()"
-              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:border-purple-400 focus:outline-none transition-colors"
+              [class]="getFieldClasses('fechaDisponibleHasta')"
+              (blur)="onFieldBlur('fechaDisponibleHasta')"
+              (change)="onFieldChange('fechaDisponibleHasta')"
             >
             <div class="text-white/60 text-sm mt-1">Deja vacío para disponibilidad permanente</div>
             <div class="text-red-400 text-sm mt-1" *ngIf="videoForm.get('fechaDisponibleHasta')?.touched && videoForm.get('fechaDisponibleHasta')?.errors?.['notInFuture']">
@@ -418,10 +445,22 @@
             <div>
               <span class="text-gray-400 font-medium">Resolución:</span>
               <span class="ml-2 text-white">{{ videoForm.value.resolucion }}</span>
+              <span *ngIf="videoForm.value.resolucion === '2160p'" class="ml-1 text-yellow-400 text-xs">💎 4K VIP</span>
+            </div>
+            <div>
+              <span class="text-gray-400 font-medium">Tipo:</span>
+              <span class="ml-2" [ngClass]="videoForm.value.vip ? 'text-yellow-400' : 'text-white'">
+                {{ videoForm.value.vip ? 'VIP Premium' : 'Estándar' }}
+              </span>
+              <span *ngIf="videoForm.value.vip" class="ml-1 text-yellow-400 text-xs">👑</span>
             </div>
             <div>
               <span class="text-gray-400 font-medium">Edad mínima:</span>
               <span class="ml-2 text-white">{{ getEdadVisualizacionText(videoForm.value.edadVisualizacion) }}</span>
+            </div>
+            <div>
+              <span class="text-gray-400 font-medium">Visibilidad:</span>
+              <span class="ml-2 text-white">{{ videoForm.value.visible ? 'Público' : 'Privado' }}</span>
             </div>
             <div class="md:col-span-2" *ngIf="selectedTags.length > 0">
               <span class="text-gray-400 font-medium">Tags:</span>
@@ -435,6 +474,19 @@
               <span class="text-gray-400 font-medium">Descripción:</span>
               <p class="ml-2 text-white text-sm mt-1">{{ videoForm.value.descripcion }}</p>
             </div>
+          </div>
+          
+          <!-- Aviso especial sobre política 4K -->
+          <div *ngIf="videoForm.value.resolucion === '2160p'" class="mt-4 p-3 bg-yellow-400/10 border border-yellow-400/30 rounded-lg">
+            <div class="flex items-center gap-2 text-yellow-400 text-sm font-medium">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Política 4K: Este video en calidad 4K solo estará disponible mientras mantenga el estado VIP.
+            </div>
+            <p class="text-yellow-200 text-xs mt-1">
+              Si el estado VIP se desactiva posteriormente, la calidad se reducirá automáticamente a 1080p.
+            </p>
           </div>
         </div>
 

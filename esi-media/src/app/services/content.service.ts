@@ -66,9 +66,11 @@ export class ContentService {
       formData.append('descripcion', audioData.descripcion);
     }
     
-    audioData.tags.forEach((tag, index) => {
-      formData.append(`tags[${index}]`, tag);
-    });
+    let tagIndex = 0;
+    for (const tag of audioData.tags) {
+      formData.append(`tags[${tagIndex}]`, tag);
+      tagIndex++;
+    }
     
     formData.append('duracion', audioData.duracion.toString());
     formData.append('vip', audioData.vip.toString());
@@ -128,5 +130,14 @@ export class ContentService {
    */
   checkVideoStatus(): Observable<any> {
     return this.http.get(`${this.baseUrl}/video/estado`);
+  }
+
+
+  /**
+   * Busca contenidos por nombre
+   * El token de autenticación es añadido automáticamente por el interceptor
+   */
+  buscarPorNombre(nombre: string): Observable<any> {
+    return this.http.get(`http://localhost:8080/api/contenidos/buscar?nombre=${encodeURIComponent(nombre)}`);
   }
 }

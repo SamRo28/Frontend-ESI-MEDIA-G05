@@ -30,6 +30,15 @@
 
   <!-- Main Content -->
   <main class="dashboard-main">
+    <!-- Panel de Listas Privadas -->
+    <section class="listas-privadas-panel" *ngIf="mostrarListasPrivadas">
+      <div class="panel-header">
+        <h2 class="panel-title">Mis Listas Privadas</h2>
+        <button class="btn-cerrar-panel" (click)="toggleListasPrivadas()">✕</button>
+      </div>
+      <app-gestion-listas [modo]="'visualizador'"></app-gestion-listas>
+    </section>
+
     <div class="coming-soon-section">
       <div class="stars-background">
         <div class="star" *ngFor="let star of stars" [style.left.%]="star.left" [style.top.%]="star.top" [style.animation-delay.s]="star.delay"></div>
@@ -66,6 +75,20 @@
             <h3 class="feature-title">Podcasts exclusivos</h3>
             <p class="feature-description">Historias que te inspirarán</p>
           </div>
+        </div>
+
+        <!-- Botón para gestionar listas privadas -->
+        <div class="action-buttons">
+          <button class="btn-listas-privadas primary" (click)="navigateToGestionListas()">
+            <span class="btn-icon">📋</span>
+            <span class="btn-text">Gestionar Mis Listas</span>
+            <span class="btn-subtitle">Crea y organiza tus listas personales</span>
+          </button>
+          <button class="btn-listas-privadas secondary" (click)="toggleListasPrivadas()">
+            <span class="btn-icon">�️</span>
+            <span class="btn-text">{{ mostrarListasPrivadas ? 'Ocultar Panel' : 'Ver Panel Rápido' }}</span>
+            <span class="btn-subtitle">{{ mostrarListasPrivadas ? 'Cerrar vista rápida' : 'Acceso rápido a tus listas' }}</span>
+          </button>
         </div>
 
         <div class="info-message">

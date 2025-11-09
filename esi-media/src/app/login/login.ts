@@ -46,12 +46,13 @@ export class Login {
         if(response.usuario.twoFactorAutenticationEnabled){
            this.router.navigate(['/2verification'], { state: { allowFa2Code: true } });
         }
-        else if (!response.twoFactorAutenticationEnabled && response.tipo !== 'visualizador'){
+        else if (!response.twoFactorAutenticationEnabled && response.tipo !== 'Visualizador'){
           this.router.navigate(['/2fa'], { state: { allowFa2: true } });
         }
         else{
-          this.router.navigate(['/dashboard']);
-          sessionStorage.setItem('token', response.sesionstoken.token);
+          const tokens = response.usuario.sesionstoken;
+          const ultimoToken = tokens[tokens.length - 1].token;
+          sessionStorage.setItem('token', ultimoToken);
           this.router.navigate(['/dashboard']);
         }
       },
