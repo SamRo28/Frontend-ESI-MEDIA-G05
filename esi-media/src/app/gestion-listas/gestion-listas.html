@@ -1,219 +1,67 @@
-<div class="gestion-listas-container">
-  <!-- Header bar similar al visu-dashboard -->
-  <div class="header-bar">
-    <h2>🎵 Gestión de Listas</h2>
-    <button class="btn btn-secondary" (click)="volverAlDashboard()">🏠 Volver al Dashboard</button>
+<section class="gestion-listas-wrapper">
+  <div *ngIf="loading" class="state">Cargando listas...</div>
+  
+  <div *ngIf="!loading && listas.length === 0" class="state">
+    {{ modo === 'gestor' ? 'No hay listas disponibles' : 'No hay listas públicas disponibles' }}
   </div>
 
-  <!-- Barra de acciones -->
-  <div class="top-bar">
-    <div class="top-bar-left">
-      <h3>Mis listas</h3>
-    </div>
-    <a 
-      class="btn-create" 
-      routerLink="/dashboard/listas/crear"
-      title="Crear nueva lista">
-      <span class="icon">+</span>
-      Crear lista
-    </a>
-  </div>
-
-  <!-- Mostrar mensajes de éxito o error -->
-  <div *ngIf="mensajeExito" class="alert alert-success">
-    {{ mensajeExito }}
-  </div>
-  <div *ngIf="mensajeError" class="alert alert-error">
-    {{ mensajeError }}
-  </div>
-
-  <!-- Formulario de edición (sólo aparece cuando se está editando) -->
-  <div class="card formulario-section" *ngIf="listaEditando">
-    <div class="card-header">
-      <h3 class="card-title">
-        <span class="icon">✏️</span>
-        Editar Lista
-      </h3>
-    </div>
-    
-    <div class="card-content">
-      <form [formGroup]="listaForm" (ngSubmit)="guardarLista()">
-        <div class="form-field">
-          <label for="nombre">Nombre *</label>
-          <input 
-            id="nombre"
-            type="text"
-            formControlName="nombre"
-            placeholder="Nombre de la lista"
-            class="full-width"
-          />
-          <small class="error" *ngIf="listaForm.get('nombre')?.hasError('required') && listaForm.get('nombre')?.touched">
-            El nombre es obligatorio
-          </small>
-          <small class="error" *ngIf="listaForm.get('nombre')?.hasError('minlength') && listaForm.get('nombre')?.touched">
-            El nombre debe tener al menos 3 caracteres
-          </small>
-        </div>
-
-        <div class="form-field">
-          <label for="descripcion">Descripción *</label>
-          <textarea 
-            id="descripcion"
-            formControlName="descripcion"
-            rows="3"
-            placeholder="Describe tu lista..."
-            class="full-width"
-          ></textarea>
-          <small class="error" *ngIf="listaForm.get('descripcion')?.hasError('required') && listaForm.get('descripcion')?.touched">
-            La descripción es obligatoria
-          </small>
-          <small class="error" *ngIf="listaForm.get('descripcion')?.hasError('minlength') && listaForm.get('descripcion')?.touched">
-            La descripción debe tener al menos 10 caracteres
-          </small>
-        </div>
-
-        <div class="checkbox-section" *ngIf="modo === 'gestor'">
-          <label class="checkbox-label">
-            <input type="checkbox" formControlName="visible">
-            Hacer lista pública
-          </label>
-          <small class="hint">Las listas públicas son visibles para otros usuarios</small>
-        </div>
-
-        <div class="form-field">
-          <label for="tagsInput">Etiquetas</label>
-          <input 
-            id="tagsInput"
-            type="text"
-            formControlName="tagsInput"
-            placeholder="rock, pop, indie"
-            class="full-width"
-          />
-          <small class="hint">Separadas por comas</small>
-        </div>
-
-        <div class="form-group">
-          <span class="contenidos-label">Contenidos en la lista: {{ contenidosCount }}</span>
-          <div class="contenidos-list" *ngIf="contenidosIds.length > 0">
-            <div *ngFor="let contenidoId of contenidosIds" class="contenido-item">
-              <span>ID: {{ contenidoId }}</span>
-              <button 
-                class="btn btn-danger btn-small"
-                (click)="quitarContenido(contenidoId)"
-                title="Eliminar contenido"
-                [disabled]="contenidosIds.length === 1"
-              >
-                <span class="icon">🗑️</span>
-              </button>
-            </div>
-          </div>
-          <div *ngIf="contenidosIds.length === 0" class="empty-state">
-            No hay contenidos en esta lista
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button 
-            class="btn btn-primary"
-            type="submit"
-            [disabled]="listaForm.invalid || guardando"
-          >
-            <span class="icon" *ngIf="guardando">⏳</span>
-            <span class="icon" *ngIf="!guardando">✏️</span>
-            {{ guardando ? 'Guardando...' : 'Actualizar' }}
-          </button>
-          <button 
-            class="btn btn-secondary"
-            type="button"
-            (click)="cancelarEdicion()"
-          >
-            <span class="icon">❌</span>
-            Cancelar
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Listado de listas existentes -->
-  <div class="listas-section">
-    <!-- Estado de carga -->
-    <div *ngIf="cargando" class="loading">
-      <div class="spinner"></div>
-      <p>Cargando listas...</p>
-    </div>
-
-    <!-- Estado vacío mejorado -->
-    <div *ngIf="!cargando && listas.length === 0" class="empty-state">
-      <span class="empty-icon">📂</span>
-      <h3>No tienes listas todavía</h3>
-      <p>Crea tu primera lista para empezar.</p>
-    </div>
-
-    <!-- Grid de tarjetas responsivo -->
-    <div class="listas-grid" *ngIf="!cargando && listas.length > 0">
-      <div *ngFor="let lista of listas" class="card lista-card">
-        <!-- Header de la tarjeta -->
-        <div class="card-header">
-          <h4 class="card-title">{{ lista.nombre }}</h4>
-          <span class="chip" [ngClass]="lista.visible ? 'chip-primary' : 'chip-secondary'">
-            <span class="icon">{{ lista.visible ? '🌐' : '🔒' }}</span>
-            {{ lista.visible ? '🌐 Pública' : '🔒 Privada' }}
-          </span>
-        </div>
+  <div class="grid" *ngIf="!loading && listas.length > 0">
+    <div class="playlist-card" *ngFor="let l of listas">
+      <!-- Contenido principal de la tarjeta -->
+      <button class="card-content" 
+              (click)="verListaCompleta(l)"
+              [attr.aria-label]="'Ver lista completa: ' + l.nombre">
+        <div class="thumb"></div>
+        <h3 class="title">{{ l.nombre }}</h3>
+        <p class="meta">Lista de reproducción</p>
+        <p class="description" *ngIf="l.descripcion">{{ l.descripcion }}</p>
+        <p class="link">Ver lista de reproducción completa</p>
+      </button>
+      
+      <!-- Información adicional -->
+      <div class="card-info">
+        <span class="content-count" *ngIf="l.contenidosIds && l.contenidosIds.length">
+          {{ l.contenidosIds.length }} contenido{{ l.contenidosIds.length !== 1 ? 's' : '' }}
+        </span>
+        <span class="visibility-badge" *ngIf="l.visible === true" title="Lista pública">🌐</span>
+        <span class="visibility-badge" *ngIf="l.visible === false" title="Lista privada">🔒</span>
         
-        <!-- Contenido de la tarjeta -->
-        <div class="card-content">
-          <p class="lista-descripcion">{{ lista.descripcion }}</p>
-          
-          <!-- Metadatos -->
-          <div class="lista-meta">
-            <div class="meta-item">
-              <span class="icon">📁</span>
-              <span>{{ lista.contenidosIds?.length || 0 }} contenidos</span>
-            </div>
-            <div class="meta-item" *ngIf="lista.tags && lista.tags.length > 0">
-              <span class="icon">🏷️</span>
-              <span>{{ lista.tags.join(', ') }}</span>
-            </div>
-            <div class="meta-item" *ngIf="lista.fechaCreacion">
-              <span class="icon">⏰</span>
-              <span>{{ formatDate(lista.fechaCreacion) }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Acciones de la tarjeta -->
-        <div class="card-actions">
+        <!-- Botones de acción para gestores -->
+        <div class="card-actions" *ngIf="modo === 'gestor' && puedeEditar(l)">
           <button 
-            class="btn btn-primary btn-small"
-            (click)="editarLista(lista)"
+            class="btn-action btn-edit"
+            (click)="editarLista(l, $event)"
             title="Editar lista"
-          >
-            <span class="icon">✏️</span>
-            Editar
+            aria-label="Editar lista">
+            ✏️
           </button>
           <button 
-            class="btn btn-danger btn-small"
-            (click)="eliminarLista(lista.id!)"
+            class="btn-action btn-delete"
+            (click)="eliminarLista(l, $event)"
+            *ngIf="puedeEliminar(l)"
             title="Eliminar lista"
-            *ngIf="lista.creadorId === userId"
-          >
-            <span class="icon">🗑️</span>
-            Eliminar
-          </button>
-          <button 
-            class="btn btn-success btn-small"
-            (click)="mostrarAgregarContenido(lista)"
-            title="Añadir contenido"
-          >
-            <span class="icon">➕</span>
-            Contenido
+            aria-label="Eliminar lista">
+            🗑️
           </button>
         </div>
       </div>
     </div>
   </div>
+</section>
 
-
+<!-- Modal de edición -->
+<div class="modal-overlay" *ngIf="mostrarModalEdicion" 
+     (click)="onCancelarEdicion()"
+     (keydown.escape)="onCancelarEdicion()">
+  <div class="modal-container" 
+       (click)="$event.stopPropagation()"
+       (keydown)="$event.stopPropagation()">
+    <crear-lista
+      [modal]="true"
+      [modo]="modo"
+      [listaParaEditar]="listaParaEditar"
+      (editada)="onListaEditada($event)"
+      (cerrar)="onCancelarEdicion()">
+    </crear-lista>
+  </div>
 </div>

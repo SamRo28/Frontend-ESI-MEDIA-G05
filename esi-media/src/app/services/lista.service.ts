@@ -198,4 +198,129 @@ export class ListaService {
       { headers }
     );
   }
+
+  /**
+   * Obtiene una lista específica por su ID
+   * GET /api/listas/gestor/{id} o /api/listas/usuario/{id}
+   * 
+   * @param id ID de la lista
+   * @returns Observable con la respuesta que contiene la lista
+   */
+  obtenerListaPorId(id: string): Observable<ListaResponse> {
+    const endpointBase = this.getEndpointBase();
+    return this.http.get<ListaResponse>(`${endpointBase}/${id}`);
+  }
+
+  /**
+   * Obtiene los contenidos de una lista específica
+   * GET /api/listas/gestor/{id}/contenidos o /api/listas/usuario/{id}/contenidos
+   * 
+   * @param id ID de la lista
+   * @returns Observable con la respuesta que contiene los contenidos de la lista
+   */
+  obtenerContenidosLista(id: string): Observable<any> {
+    const endpointBase = this.getEndpointBase();
+    return this.http.get<any>(`${endpointBase}/${id}/contenidos`);
+  }
+
+  /**
+   * Obtiene todas las listas públicas de gestores
+   * Disponible solo para visualizadores
+   * GET /listas/usuario/publicas
+   * 
+   * @returns Observable con la respuesta que contiene las listas públicas
+   */
+  obtenerListasPublicas(): Observable<ListasResponse> {
+    return this.http.get<ListasResponse>(`${this.baseUrl}/usuario/publicas`);
+  }
+
+  /**
+   * Verifica si el usuario actual puede eliminar una lista
+   * Solo el creador de la lista puede eliminarla
+   * 
+   * @param lista La lista a verificar
+   * @returns true si puede eliminar, false en caso contrario
+   */
+  puedeEliminarLista(lista: any): boolean {
+    const userStr = sessionStorage.getItem('user');
+    if (!userStr) return false;
+    
+    try {
+      const user = JSON.parse(userStr);
+      return lista.creadorId === user.id;
+    } catch (error) {
+      console.error('Error verificando permisos:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Verifica si el usuario actual puede editar una lista
+   * Solo el creador de la lista puede editarla
+   * 
+   * @param lista La lista a verificar
+   * @returns true si puede editar, false en caso contrario
+   */
+  puedeEditarLista(lista: any): boolean {
+    return this.puedeEliminarLista(lista); // Mismo criterio por ahora
+  }
+
+  /**
+   * Valida los datos de una lista antes de crear/editar
+   * 
+   * @param datosLista Datos de la lista a validar
+   * @returns Objeto con validación y mensaje de error si hay
+   */
+  validarDatosLista(datosLista: any): { esValida: boolean; mensaje?: string } {
+    // Validar nombre
+    if (!datosLista.nombre || datosLista.nombre.trim().length < 3) {
+      return { esValida: false, mensaje: 'El nombre debe tener al menos 3 caracteres' };
+    }
+
+    // Validar descripción
+    if (!datosLista.descripcion || datosLista.descripcion.trim().length < 10) {
+      return { esValida: false, mensaje: 'La descripción debe tener al menos 10 caracteres' };
+    }
+
+    // Validar contenidos
+    if (!datosLista.contenidosIds || datosLista.contenidosIds.length === 0) {
+      return { esValida: false, mensaje: 'La lista debe tener al menos un contenido' };
+    }
+
+    // Validar especialización para gestores
+    const currentUserClass = sessionStorage.getItem('currentUserClass');
+    if (currentUserClass === 'Gestor' && (!datosLista.especializacionGestor || datosLista.especializacionGestor.trim().length === 0)) {
+      return { esValida: false, mensaje: 'La especialización del gestor es requerida' };
+    }
+
+    // Validar sin duplicados en contenidos
+    const contenidosUnicos = new Set(datosLista.contenidosIds);
+    if (contenidosUnicos.size !== datosLista.contenidosIds.length) {
+      return { esValida: false, mensaje: 'No se pueden repetir contenidos en la lista' };
+    }
+
+    return { esValida: true };
+  }
+
+  /**
+   * Obtiene información del usuario actual
+   */
+  private obtenerUsuarioActual(): any {
+    try {
+      const userStr = sessionStorage.getItem('user');
+      return userStr ? JSON.parse(userStr) : null;
+    } catch (error) {
+      console.error('Error obteniendo usuario actual:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Verifica si es necesario validar nombres únicos
+   * Solo para listas públicas de gestores
+   */
+  requiereNombreUnico(datosLista: any): boolean {
+    const currentUserClass = sessionStorage.getItem('currentUserClass');
+    return currentUserClass === 'Gestor' && datosLista.visible === true;
+  }
 }

@@ -835,12 +835,12 @@ export class AdminDashboardComponent implements OnInit {
 
   logout() {
     if (isPlatformBrowser(this.platformId)) {
-      // Limpiar localStorage
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('sessionToken');
+      // Limpiar sessionStorage
+      sessionStorage.removeItem('currentUserClass');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('email');
       
-      // Mostrar mensaje y redirigir
-      this.successMessage = 'SesiÃ³n cerrada';
       setTimeout(() => {
         this.router.navigate(['/home']);
       }, 1000);
