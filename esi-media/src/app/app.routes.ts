@@ -71,6 +71,7 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
+    component: VisuDashboard,
     component: VisuDashboard
   },
   {
@@ -91,20 +92,29 @@ export const routes: Routes = [
     canActivate: [MultimediaGuard]
   },
   {
-    path: 'multimedia/videos',
-    component: MultimediaListComponent,
+    path: 'dashboard/videos',
+    component: VisuDashboard,
     canActivate: [MultimediaGuard]
   },
   {
-    path: 'multimedia/audios',
-    component: MultimediaListComponent,
+    path: 'dashboard/audios',
+    component: VisuDashboard,
     canActivate: [MultimediaGuard]
   },
   {
-    path: 'multimedia/:id',
+    path: 'dashboard/:id',
     component: MultimediaDetailComponent,
     canActivate: [MultimediaGuard]
   },
+  {
+    path: 'gestor-dashboard',
+    component: GestorDashboardComponent
+  },
+  // Redirecciones legacy desde /multimedia* a /dashboard*
+  { path: 'multimedia', redirectTo: 'dashboard', pathMatch: 'full' },
+  { path: 'multimedia/videos', redirectTo: 'dashboard/videos', pathMatch: 'full' },
+  { path: 'multimedia/audios', redirectTo: 'dashboard/audios', pathMatch: 'full' },
+  { path: 'multimedia/:id', redirectTo: 'dashboard/:id', pathMatch: 'full' },
   {
   
     path: 'gestion-listas',

@@ -55,14 +55,29 @@
 
   <!-- Main Content -->
   <main class="dashboard-main">
-    <!-- Panel de Listas Privadas -->
-    <section class="listas-privadas-panel" *ngIf="mostrarListasPrivadas">
+    <section class="dashboard-section">
+      <div class="section-header">
+        <h2 class="section-title">Contenido Multimedia</h2>
+        <div class="section-actions">
+          <button class="btn-toggle-panel" (click)="toggleListasPrivadas()">
+            {{ mostrarListasPrivadas ? 'Ocultar Listas' : 'Ver Mis Listas' }}
+          </button>
+          <button class="btn-create-list" (click)="navigateToGestionListas()">Gestionar Listas</button>
+        </div>
+      </div>
+      <!-- Lista multimedia reutilizada sin header interno -->
+  <app-multimedia-list [showHeader]="false" [showTitle]="false" [tipoForzado]="filtroTipo"></app-multimedia-list>
+    </section>
+    <!-- Panel lateral de listas privadas -->
+    <aside class="listas-privadas-panel" *ngIf="mostrarListasPrivadas">
       <div class="panel-header">
         <h2 class="panel-title">Mis Listas Privadas</h2>
         <div class="panel-actions">
           <button class="btn-cerrar-panel" (click)="toggleListasPrivadas()">✕</button>
         </div>
       </div>
+      <app-gestion-listas [modo]="'visualizador'"></app-gestion-listas>
+    </aside>
       <app-listas-privadas 
         (cerrarPanel)="toggleListasPrivadas()" 
         (abrirCrearModal)="openCrearListaModal()"
