@@ -1,8 +1,5 @@
 import { Component, OnInit, AfterViewInit, inject, PLATFORM_ID } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
-import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { Router } from '@angular/router';
 import { MultimediaService } from '../services/multimedia.service';
 import { GestionListasComponent } from '../gestion-listas/gestion-listas';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
@@ -19,13 +16,10 @@ interface Star {
 @Component({
   selector: 'app-visu-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, ListasPrivadas, CrearListaComponent],
-  imports: [CommonModule, RouterLink, RouterLinkActive],
-  imports: [CommonModule, GestionListasComponent],
+  imports: [CommonModule, RouterLink, RouterLinkActive, RouterModule, ListasPrivadas, CrearListaComponent],
   templateUrl: './visu-dashboard.html',
   styleUrl: './visu-dashboard.css'
 })
-export class VisuDashboard implements OnInit, OnDestroy {
 export class VisuDashboard implements OnInit, AfterViewInit {
   stars: Star[] = [];
   mostrarListasPrivadas = false;
@@ -41,12 +35,11 @@ export class VisuDashboard implements OnInit, AfterViewInit {
   private documentClickHandler = (event: Event) => this.onDocumentClick(event);
   private escapeKeyHandler = (event: KeyboardEvent) => { if ((event as KeyboardEvent).key === 'Escape') this.onEscapeKey(); };
 
-  constructor(private router: Router, @Inject(PLATFORM_ID) private platformId: Object) {
-    this.isBrowser = isPlatformBrowser(this.platformId);
-  }
 
   private multimedia = inject(MultimediaService);
-  constructor(private router: Router) {}
+  constructor(private router: Router) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+  }
   private platformId = inject(PLATFORM_ID);
 
   ngOnInit(): void {
@@ -80,16 +73,10 @@ export class VisuDashboard implements OnInit, AfterViewInit {
   ngAfterViewInit(): void {
     // Redirección sólo en navegador para evitar SSR/hidratación problemática
     if (isPlatformBrowser(this.platformId)) {
-      setTimeout(() => this.router.navigate(['/multimedia']), 0);
+      //setTimeout(() => this.router.navigate(['/multimedia']), 0);
     }
   }
 
-  ngAfterViewInit(): void {
-    // Redirección sólo en navegador para evitar SSR/hidratación problemática
-    if (isPlatformBrowser(this.platformId)) {
-      setTimeout(() => this.router.navigate(['/multimedia']), 0);
-    }
-  }
 
   generateStars(): void {
     // Generar 50 estrellas con posiciones aleatorias

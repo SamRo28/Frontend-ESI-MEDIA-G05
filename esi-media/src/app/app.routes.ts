@@ -105,6 +105,7 @@ export const routes: Routes = [
     component: MultimediaDetailComponent,
     canActivate: [MultimediaGuard]
   },
+  {
   
     path: 'gestion-listas',
     component: GestionListasComponent
