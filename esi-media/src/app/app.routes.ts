@@ -14,6 +14,8 @@ import { Fa3CodeGuard } from './guards/fa3code.guard';
 import { RegistroVisualizadorComponent } from './registro-visualizador/registro-visualizador.component';
 import { VisuDashboard } from './visu-dashboard/visu-dashboard';
 import { GestorDashboardComponent } from './gestor-dashboard/gestor-dashboard';
+import { ForgotPasswordComponent } from './auth/forgot-password/forgot-password';
+import { ResetPasswordComponent } from './auth/reset-password/reset-password';
 
 export const routes: Routes = [
   {
@@ -55,6 +57,14 @@ export const routes: Routes = [
   {
     path: 'login',
     component: Login
+  },
+  {
+    path: 'forgot-password',
+    component: ForgotPasswordComponent
+  },
+  {
+    path: 'reset-password',
+    component: ResetPasswordComponent
   },
   {
     path: 'audio/subir',

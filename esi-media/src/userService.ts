@@ -34,4 +34,14 @@ export class UserService {
         return this.client.post<any>(`http://localhost:8080/users/verify2FACode`, { email, code });
     }
 
+    // Solicitar recuperación de contraseña (envía email con token)
+    forgotPassword(email: string, frontendUrl: string): Observable<any> {
+        return this.client.post<any>(`http://localhost:8080/auth/forgot-password`, { email, frontendUrl });
+    }
+
+    // Restablecer contraseña usando token
+    resetPassword(token: string, newPassword: string): Observable<any> {
+        return this.client.post<any>(`http://localhost:8080/auth/reset-password`, { token, newPassword });
+    }
+
 }
