@@ -1,0 +1,44 @@
+<div class="code-inputs" (paste)="onPaste($event)">
+  <input 
+    type="text" 
+    class="code-input" 
+    maxlength="1" 
+    #input1
+    (input)="onInput($event, input1, input2)"
+    (keydown)="onKeyDown($event, null, input1)">
+  <input 
+    type="text" 
+    class="code-input" 
+    maxlength="1"
+    #input2
+    (input)="onInput($event, input2, input3)"
+    (keydown)="onKeyDown($event, input1, input2)">
+  <input 
+    type="text" 
+    class="code-input" 
+    maxlength="1"
+    #input3
+    (input)="onInput($event, input3, input4)"
+    (keydown)="onKeyDown($event, input2, input3)">
+  <input 
+    type="text" 
+    class="code-input" 
+    maxlength="1"
+    #input4
+    (input)="onInput($event, input4, input5)"
+    (keydown)="onKeyDown($event, input3, input4)">
+  <input 
+    type="text" 
+    class="code-input" 
+    maxlength="1"
+    #input5
+    (input)="onInput($event, input5, input6)"
+    (keydown)="onKeyDown($event, input4, input5)">
+  <input 
+    type="text" 
+    class="code-input" 
+    maxlength="1"
+    #input6
+    (input)="onInput($event, input6, null)"
+    (keydown)="onKeyDown($event, input5, input6)">
+</div>
