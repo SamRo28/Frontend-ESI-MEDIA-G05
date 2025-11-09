@@ -66,9 +66,11 @@ export class ContentService {
       formData.append('descripcion', audioData.descripcion);
     }
     
-    audioData.tags.forEach((tag, index) => {
-      formData.append(`tags[${index}]`, tag);
-    });
+    let tagIndex = 0;
+    for (const tag of audioData.tags) {
+      formData.append(`tags[${tagIndex}]`, tag);
+      tagIndex++;
+    }
     
     formData.append('duracion', audioData.duracion.toString());
     formData.append('vip', audioData.vip.toString());

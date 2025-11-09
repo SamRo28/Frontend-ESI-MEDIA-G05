@@ -1,0 +1,87 @@
+<header class="dashboard-header">
+  <div class="header-content">
+    <div class="logo-section">
+      <div class="logo">
+        <span class="logo-icon">🎵</span>
+        <span class="logo-text">EsiMedia</span>
+      </div>
+    </div>
+    <nav class="nav-menu">
+      <a routerLink="/multimedia" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" class="nav-link">Inicio</a>
+      <a routerLink="/multimedia/videos" routerLinkActive="active" class="nav-link">Videos</a>
+      <a routerLink="/multimedia/audios" routerLinkActive="active" class="nav-link">Audios</a>
+    </nav>
+    <div class="user-section">
+      <div class="user-avatar">U</div>
+      <span class="user-name">Usuario</span>
+    </div>
+  </div>
+</header>
+<div class="detalle-wrapper">
+  <!-- Loader -->
+  <div class="loader" *ngIf="cargando && !detalle">Cargando...</div>
+
+  <!-- Error general -->
+  <div class="error-banner" *ngIf="!cargando && error">{{ error }}</div>
+
+  <div class="detalle" *ngIf="!cargando && detalle">
+    <div class="cabecera">
+      <div class="caratula" *ngIf="caratulaUrl()" [style.background-image]="'url(' + caratulaUrl() + ')'">
+        <div class="vip-badge" *ngIf="detalle!.vip">VIP</div>
+      </div>
+      <div class="cabecera-info">
+        <h1 class="titulo">{{ detalle!.titulo }}</h1>
+        <p class="descripcion" *ngIf="detalle!.descripcion">{{ detalle!.descripcion }}</p>
+        <div class="meta" *ngIf="duracion() || tags().length">
+          <span class="chip" *ngIf="duracion()">⏱ {{ duracion() }}s</span>
+          <span class="chip" *ngFor="let tag of tags()">#{{ tag }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIDEO -->
+    <div *ngIf="detalle!.tipo === 'VIDEO'" class="player-card">
+      <div class="player-wrapper">
+        <!-- Player: siempre renderizado; skeleton superpuesto hasta ready -->
+        <ng-container *ngIf="esYoutube(); else videoDirecto">
+          <iframe
+            class="video-player"
+            [src]="youtubeSafeUrl"
+            width="100%" height="360"
+            frameborder="0"
+            (load)="onIframeLoaded()"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen>
+          </iframe>
+        </ng-container>
+        <ng-template #videoDirecto>
+          <video controls [src]="detalle!.referenciaReproduccion" class="video-player" preload="metadata"
+            (loadedmetadata)="onVideoLoaded()"
+            (canplay)="onVideoCanPlay()"
+            (waiting)="onVideoWaiting()"
+            (playing)="onVideoPlaying()"></video>
+        </ng-template>
+        <!-- Skeleton overlay -->
+        <div class="player-skeleton" *ngIf="!playerReady">
+          <div class="shimmer"></div>
+          <span>Preparando reproductor...</span>
+        </div>
+      </div>
+      <p class="fallback">
+        ¿Problemas? <a [href]="detalle!.referenciaReproduccion" target="_blank" rel="noopener">Abrir en pestaña nueva</a>.
+      </p>
+      <div class="buffering" *ngIf="buffering">Bufferizando...</div>
+    </div>
+
+    <!-- AUDIO: reproducción directa con <audio> y token en query (?auth=) -->
+    <div *ngIf="detalle!.tipo === 'AUDIO'" class="player-card">
+      <ng-container *ngIf="!audioError">
+        <audio controls [src]="audioSrc()" (error)="onAudioError($event)" (loadedmetadata)="onAudioLoaded($event)"></audio>
+      </ng-container>
+      <div class="audio-error" *ngIf="audioError">
+        {{ audioError }}
+        <button class="retry-btn" (click)="reintentarAudio()">Reintentar</button>
+      </div>
+    </div>
+  </div>
+</div>

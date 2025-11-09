@@ -22,6 +22,9 @@ function futureDateValidator(): ValidatorFn {
   };
 }
 
+// Tipo para el estado visual de los campos
+type FieldVisualState = 'success' | 'error' | 'neutral';
+
 @Component({
   selector: 'app-audio-upload',
   standalone: true,
@@ -99,57 +102,66 @@ export class AudioUploadComponent {
     if (file) {
       // Validar tipo de archivo en función del MIME type
       if (!file.type.includes('audio/mpeg') && !file.type.includes('audio/mp3')) {
-        this.fileError = 'Solo se permiten archivos MP3';
-        this.selectedFile = null;
-        // limpiar input para permitir volver a seleccionar el mismo archivo si fuese necesario
-        inputEl.value = '';
-        this.cdr.detectChanges();
+        this.showFileError('Solo se permiten archivos MP3', inputEl);
         return;
       }
 
       // Validar tamaño (2MB máximo)
       if (file.size > 2 * 1024 * 1024) {
-        this.fileError = 'El archivo excede el tamaño máximo de 2MB';
-        this.selectedFile = null;
-        inputEl.value = '';
-        this.cdr.detectChanges();
+        this.showFileError('El archivo excede el tamaño máximo de 2MB', inputEl);
         return;
       }
 
       // Debemos aceptar solo archivos que sean REALMENTE .mp3
       // Por ello validamos tanto la extensión como los magic-bytes
       if (!file.name.toLowerCase().endsWith('.mp3')) {
-        this.fileError = 'Se requiere archivo con extensión .mp3';
-        this.selectedFile = null;
-        inputEl.value = '';
-        this.cdr.detectChanges();
+        this.showFileError('Se requiere archivo con extensión .mp3', inputEl);
         return;
       }
 
       try {
         const detected = await this.detectAudioFormatByMagicBytes(file);
         if (detected !== 'mp3') {
-          this.fileError = `Se requiere un archivo MP3 /// (Formato detectado: ${detected || 'desconocido'})`;
-          this.selectedFile = null;
-          inputEl.value = '';
-          this.cdr.detectChanges();
+          this.showFileError(`Se requiere un archivo MP3 /// (Formato detectado: ${detected || 'desconocido'})`, inputEl);
           return;
         }
       } catch (err) {
         console.error('Error comprobando magic bytes:', err);
-        this.fileError = 'No se pudo verificar el tipo del archivo';
-        this.selectedFile = null;
+        this.showFileError('No se pudo verificar el tipo del archivo', inputEl);
         return;
       }
 
       this.selectedFile = file;
       this.audioForm.patchValue({ archivo: file });
+      // Limpiar errores previos del control 'archivo' para permitir que el formulario sea válido
+      const archivoControl = this.audioForm.get('archivo');
+      if (archivoControl) {
+        archivoControl.setErrors(null);
+        archivoControl.markAsDirty();
+      }
       this.uploadMessage = '';
       // limpiar valor del input para permitir re-selección del mismo fichero si el usuario lo desea
       inputEl.value = '';
       // forzar detección de cambios en la UI inmediatamente
       this.cdr.detectChanges();
     }
+  }
+
+  // Helper para mostrar errores relacionados con el archivo de manera consistente
+  private showFileError(message: string, inputEl?: HTMLInputElement): void {
+    this.fileError = message;
+    this.selectedFile = null;
+    // marcar control como inválido para que el feedback visual lo detecte
+    const archivoControl = this.audioForm.get('archivo');
+    if (archivoControl) {
+      archivoControl.setErrors({ invalidFile: true });
+      archivoControl.markAsTouched();
+    }
+    if (inputEl) {
+      inputEl.value = '';
+    }
+    // Forzar detección de cambios inmediatamente
+    this.cdr.detectChanges();
   }
 
   // Detecta formato de audio por magic-bytes y devuelve la extensión detectada o null si no se reconoce
@@ -336,7 +348,14 @@ export class AudioUploadComponent {
       const minutosField = this.audioForm.get('minutos');
       const segundosField = this.audioForm.get('segundos');
       const hasError = this.getFieldError('minutos') || this.getFieldError('segundos');
-      const hasTouched = !!(minutosField?.touched || segundosField?.touched);
+      const hasTouched = !!(minutosField?.touched || segundosField?.touched || minutosField?.dirty || segundosField?.dirty);
+      
+      // Si nunca se han tocado los campos, mostrar mensaje inicial
+      if (!hasTouched) {
+        return true;
+      }
+      
+      // Si se han tocado pero no hay errores, mostrar confirmación
       return !hasError && hasTouched;
     }
     
@@ -433,33 +452,26 @@ export class AudioUploadComponent {
 
   // Mensaje de ayuda específico para duración
   getDurationHelpMessage(): string {
-    const minutos = this.audioForm.get('minutos')?.value || 0;
-    const segundos = this.audioForm.get('segundos')?.value || 0;
+    const minutosField = this.audioForm.get('minutos');
+    const segundosField = this.audioForm.get('segundos');
+    const minutos = minutosField?.value || 0;
+    const segundos = segundosField?.value || 0;
     
-    if (minutos === '' && segundos === '') {
-      return 'Especifica la duración de tu audio (máximo 10 minutos)';
-    }
-    
-    if (minutos === '' || segundos === '') {
-      return 'Completa tanto minutos como segundos';
+    // Si nunca se han tocado los campos, mostrar mensaje inicial
+    const hasTouched = !!(minutosField?.touched || segundosField?.touched || minutosField?.dirty || segundosField?.dirty);
+    if (!hasTouched) {
+      return 'Máximo 10 minutos';
     }
     
     const totalMinutos = Number(minutos);
     const totalSegundos = Number(segundos);
     
-    if (totalMinutos === 0 && totalSegundos === 0) {
-      return 'La duración debe ser mayor a 0';
+    // Si hay valores válidos, mostrar confirmación
+    if (totalMinutos >= 0 && totalSegundos >= 0 && (totalMinutos > 0 || totalSegundos > 0)) {
+      return `✓ Duración: ${totalMinutos}m ${totalSegundos}s`;
     }
     
-    if (totalMinutos > 10) {
-      return 'La duración máxima es 10 minutos';
-    }
-    
-    if (totalSegundos > 59) {
-      return 'Los segundos no pueden ser mayor a 59';
-    }
-    
-    return `✓ Duración: ${totalMinutos}m ${totalSegundos}s`;
+    return '';
   }
 
   // Solo permitiremos números en los campos de duración
@@ -491,6 +503,162 @@ export class AudioUploadComponent {
         return '+18 (Adultos)';
       default:
         return edad || 'No especificado';
+    }
+  }
+
+  // === SISTEMA DE FEEDBACK VISUAL ===
+  
+  // Determina el estado visual de un campo: 'success' | 'error' | 'neutral'
+  getFieldVisualState(fieldName: string): FieldVisualState {
+    // Casos especiales
+    if (fieldName === 'archivo') {
+      return this.getFileFieldVisualState();
+    }
+    
+    if (fieldName === 'minutos' || fieldName === 'segundos') {
+      return this.getDurationFieldVisualState(fieldName);
+    }
+    
+    if (fieldName === 'tags') {
+      return this.getTagsFieldVisualState();
+    }
+
+    // Campos estándar de formulario
+    return this.getStandardFieldVisualState(fieldName);
+  }
+
+  // Estado visual del campo archivo
+  private getFileFieldVisualState(): FieldVisualState {
+    if (this.fileError) return 'error';
+    if (this.selectedFile) return 'success';
+    return 'neutral';
+  }
+
+  // Estado visual del campo tags
+  private getTagsFieldVisualState(): FieldVisualState {
+    return this.selectedTags.length > 0 ? 'success' : 'error';
+  }
+
+  // Estado visual de campos estándar
+  private getStandardFieldVisualState(fieldName: string): FieldVisualState {
+    const field = this.audioForm.get(fieldName);
+    if (!field) return 'neutral';
+
+    // Si el campo no ha sido tocado ni modificado, estado neutral
+    if (!field.touched && !field.dirty) return 'neutral';
+
+    // Si tiene errores = error
+    if (field.errors) return 'error';
+
+    // Determinar si el campo es requerido
+    const isRequired = this.isFieldRequired(fieldName);
+    
+    if (field.value && field.value !== '') {
+      return 'success';
+    } else if (isRequired) {
+      return 'error';
+    }
+    
+    return 'neutral';
+  }
+
+  private isFieldRequired(fieldName: string): boolean {
+    const requiredFields = ['titulo', 'edadVisualizacion'];
+    return requiredFields.includes(fieldName);
+  }
+
+  // Lógica especial para campos de duración
+  private getDurationFieldVisualState(fieldName: 'minutos' | 'segundos'): FieldVisualState {
+    const minutosField = this.audioForm.get('minutos');
+    const segundosField = this.audioForm.get('segundos');
+    
+    if (!minutosField || !segundosField) return 'neutral';
+
+    // Si ningún campo ha sido tocado, estado neutral
+    if (!minutosField.touched && !segundosField.touched && !minutosField.dirty && !segundosField.dirty) {
+      return 'neutral';
+    }
+
+    const currentField = fieldName === 'minutos' ? minutosField : segundosField;
+    
+    // Si el campo específico tiene errores de validación, error
+    if (currentField.errors) {
+      return 'error';
+    }
+
+    // Si el campo tiene un valor válido, success
+    if (currentField.value !== null && currentField.value !== '' && Number(currentField.value) >= 0) {
+      return 'success';
+    }
+
+    // Si el campo ha sido tocado pero no tiene valor, error
+    if (currentField.touched || currentField.dirty) {
+      return 'error';
+    }
+
+    return 'neutral';
+  }
+
+  // Obtiene las clases CSS para el estado visual del campo
+  getFieldClasses(fieldName: string): string {
+    const baseClasses = 'w-full px-4 py-3 bg-white/5 rounded-lg text-white placeholder-white/50 focus:outline-none transition-colors';
+    const state = this.getFieldVisualState(fieldName);
+    
+    switch (state) {
+      case 'success':
+        return `${baseClasses} border-2 border-green-500 focus:border-green-400`;
+      case 'error':
+        return `${baseClasses} border-2 border-red-500 focus:border-red-400`;
+      default:
+        return `${baseClasses} border border-white/20 focus:border-purple-400`;
+    }
+  }
+
+  // Versión específica para selects que pueden tener clases diferentes
+  getSelectFieldClasses(fieldName: string): string {
+    const baseClasses = 'w-full px-4 py-3 bg-white/5 rounded-lg text-white focus:outline-none transition-colors';
+    const state = this.getFieldVisualState(fieldName);
+    
+    switch (state) {
+      case 'success':
+        return `${baseClasses} border-2 border-green-500 focus:border-green-400`;
+      case 'error':
+        return `${baseClasses} border-2 border-red-500 focus:border-red-400`;
+      default:
+        return `${baseClasses} border border-white/20 focus:border-purple-400`;
+    }
+  }
+
+  // Versión específica para el input de archivo
+  getFileFieldClasses(): string {
+    const baseClasses = 'w-full px-4 py-3 bg-white/5 rounded-lg text-white placeholder-white/50 focus:outline-none transition-colors file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700';
+    const state = this.getFieldVisualState('archivo');
+    
+    switch (state) {
+      case 'success':
+        return `${baseClasses} border-2 border-green-500 focus:border-green-400`;
+      case 'error':
+        return `${baseClasses} border-2 border-red-500 focus:border-red-400`;
+      default:
+        return `${baseClasses} border border-white/20 focus:border-purple-400`;
+    }
+  }
+
+  // Maneja eventos blur para validación inmediata
+  onFieldBlur(fieldName: string): void {
+    const field = this.audioForm.get(fieldName);
+    if (field) {
+      field.markAsTouched();
+      field.updateValueAndValidity();
+    }
+  }
+
+  // Maneja eventos change para selectores de fecha
+  onFieldChange(fieldName: string): void {
+    const field = this.audioForm.get(fieldName);
+    if (field) {
+      field.markAsDirty();
+      field.updateValueAndValidity();
     }
   }
 }

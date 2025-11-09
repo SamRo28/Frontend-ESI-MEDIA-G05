@@ -50,8 +50,9 @@ export class Login {
           this.router.navigate(['/2fa'], { state: { allowFa2: true } });
         }
         else{
-          this.router.navigate(['/dashboard']);
-          sessionStorage.setItem('token', response.sesionstoken.token);
+          const tokens = response.usuario.sesionstoken;
+          const ultimoToken = tokens[tokens.length - 1].token;
+          sessionStorage.setItem('token', ultimoToken);
           this.router.navigate(['/dashboard']);
         }
       },

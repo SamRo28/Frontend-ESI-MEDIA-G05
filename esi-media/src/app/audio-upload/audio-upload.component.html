@@ -62,8 +62,9 @@
               type="text" 
               id="titulo"
               formControlName="titulo"
-              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
+              [class]="getFieldClasses('titulo')"
               placeholder="Título de tu audio"
+              (blur)="onFieldBlur('titulo')"
             >
             <div class="text-blue-300 text-sm mt-1" *ngIf="shouldShowHelpMessage('titulo')">
               {{ getFieldHelpMessage('titulo') }}
@@ -80,8 +81,9 @@
               id="descripcion"
               formControlName="descripcion"
               rows="3"
-              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors resize-none"
+              [class]="getFieldClasses('descripcion')"
               placeholder="Descripción opcional del audio"
+              (blur)="onFieldBlur('descripcion')"
             ></textarea>
             <div class="text-white/60 text-sm mt-1">Opcional - Describe tu audio (máximo 500 caracteres)</div>
             <div class="text-red-400 text-sm mt-1" *ngIf="getFieldError('descripcion')">
@@ -143,7 +145,8 @@
                   min="0" 
                   max="10"
                   (keydown)="onlyNumbers($event)"
-                  class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
+                  [class]="getFieldClasses('minutos')"
+                  (blur)="onFieldBlur('minutos')"
                 >
               </div>
               <div>
@@ -155,7 +158,8 @@
                   min="0" 
                   max="59"
                   (keydown)="onlyNumbers($event)"
-                  class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-purple-400 focus:outline-none transition-colors"
+                  [class]="getFieldClasses('segundos')"
+                  (blur)="onFieldBlur('segundos')"
                 >
               </div>
             </div>
@@ -182,7 +186,9 @@
             <select 
               id="edadVisualizacion"
               formControlName="edadVisualizacion"
-              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:border-purple-400 focus:outline-none transition-colors"
+              [class]="getSelectFieldClasses('edadVisualizacion')"
+              (blur)="onFieldBlur('edadVisualizacion')"
+              (change)="onFieldChange('edadVisualizacion')"
             >
               <option value="" disabled>Selecciona clasificación de edad</option>
               <option value="TP">TP (Todo Público)</option>
@@ -267,7 +273,9 @@
               formControlName="fechaDisponibleHasta"
               (keydown)="preventKeyboardInput($event)"
               (paste)="$event.preventDefault()"
-              class="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white focus:border-purple-400 focus:outline-none transition-colors"
+              [class]="getFieldClasses('fechaDisponibleHasta')"
+              (blur)="onFieldBlur('fechaDisponibleHasta')"
+              (change)="onFieldChange('fechaDisponibleHasta')"
             >
             <div class="text-white/60 text-sm mt-1">Deja vacío para disponibilidad permanente</div>
             <div class="text-red-400 text-sm mt-1" *ngIf="audioForm.get('fechaDisponibleHasta')?.touched && audioForm.get('fechaDisponibleHasta')?.errors?.['notInFuture']">
