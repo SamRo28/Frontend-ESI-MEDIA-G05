@@ -81,6 +81,28 @@
   border-radius: 2px;
 }
 
+.nav-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.nav-button.active {
+  color: #ffffff;
+}
+
+.nav-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #a855f7, #d946ef);
+  border-radius: 2px;
+}
+
 .user-section {
   display: flex;
   align-items: center;
@@ -387,7 +409,7 @@
 .dashboard-main {
   flex: 1;
   display: block;
-  padding: 32px 20px 48px;
+  padding: 5px 20px 48px;
   position: relative;
   overflow: visible;
 }
@@ -944,6 +966,14 @@ body.no-scroll {
   overflow: auto;
   padding: 16px;
   max-height: 90vh;
+}
+
+/* Estilos para la sección de listas públicas */
+.listas-publicas-section {
+  padding: 10px;
+  background: rgba(50, 35, 75, 0.3);
+  border-radius: 16px;
+  margin-top: 20px;
 }
 
 /* Animaciones para toast */
