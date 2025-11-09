@@ -1,4 +1,10 @@
-import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, AfterViewInit, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { CommonModule } from '@angular/common';
+import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router } from '@angular/router';
+import { MultimediaService } from '../services/multimedia.service';
+import { GestionListasComponent } from '../gestion-listas/gestion-listas';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { ListasPrivadas } from '../listas-privadas/listas-privadas';
@@ -14,10 +20,13 @@ interface Star {
   selector: 'app-visu-dashboard',
   standalone: true,
   imports: [CommonModule, RouterModule, ListasPrivadas, CrearListaComponent],
+  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, GestionListasComponent],
   templateUrl: './visu-dashboard.html',
   styleUrl: './visu-dashboard.css'
 })
 export class VisuDashboard implements OnInit, OnDestroy {
+export class VisuDashboard implements OnInit, AfterViewInit {
   stars: Star[] = [];
   mostrarListasPrivadas = false;
   showUserMenu = false;
@@ -36,7 +45,12 @@ export class VisuDashboard implements OnInit, OnDestroy {
     this.isBrowser = isPlatformBrowser(this.platformId);
   }
 
+  private multimedia = inject(MultimediaService);
+  constructor(private router: Router) {}
+  private platformId = inject(PLATFORM_ID);
+
   ngOnInit(): void {
+    // Generación de estrellas si por cualquier motivo se queda en esta vista (fallback)
     this.generateStars();
 
     // Solo en navegador: cargar datos y registrar listeners
@@ -60,6 +74,20 @@ export class VisuDashboard implements OnInit, OnDestroy {
       } catch (e) {
         // ignorar
       }
+    }
+  }
+
+  ngAfterViewInit(): void {
+    // Redirección sólo en navegador para evitar SSR/hidratación problemática
+    if (isPlatformBrowser(this.platformId)) {
+      setTimeout(() => this.router.navigate(['/multimedia']), 0);
+    }
+  }
+
+  ngAfterViewInit(): void {
+    // Redirección sólo en navegador para evitar SSR/hidratación problemática
+    if (isPlatformBrowser(this.platformId)) {
+      setTimeout(() => this.router.navigate(['/multimedia']), 0);
     }
   }
 
@@ -289,23 +317,10 @@ export class VisuDashboard implements OnInit, OnDestroy {
    * Cierra la sesión del usuario, limpia sessionStorage y navega al login
    */
   logout(): void {
-    console.log('Cerrando sesión del usuario:', this.userName);
-    
-    // Cerrar el menú antes de proceder
-    this.closeUserMenu();
-    
-    // Limpiar todos los datos de sessionStorage
-    sessionStorage.clear();
-    
-    // Resetear los datos del usuario
-    this.currentUser = null;
-    this.setDefaultUserData();
-    
-    // Navegar al login
-    this.router.navigate(['/login']).then(() => {
-      console.log('Navegación al login completada');
-    }).catch(error => {
-      console.error('Error al navegar al login:', error);
-    });
+    console.log('Cerrando sesión...');
+    // Limpiar token sesión y cache multimedia
+    try { sessionStorage.removeItem('token'); } catch {}
+    this.multimedia.clearCache();
+    this.router.navigate(['/login']);
   }
 }

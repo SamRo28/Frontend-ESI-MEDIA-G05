@@ -14,6 +14,9 @@ import { Fa3CodeGuard } from './guards/fa3code.guard';
 import { RegistroVisualizadorComponent } from './registro-visualizador/registro-visualizador.component';
 import { VisuDashboard } from './visu-dashboard/visu-dashboard';
 import { GestorDashboardComponent } from './gestor-dashboard/gestor-dashboard';
+import { MultimediaListComponent } from './multimedia-list/multimedia-list';
+import { MultimediaDetailComponent } from './multimedia-detail/multimedia-detail';
+import { MultimediaGuard } from './guards/multimedia.guard';
 import { GestionListasComponent } from './gestion-listas/gestion-listas';
 import { CrearListaComponent } from './crear-lista/crear-lista';
 
@@ -83,6 +86,26 @@ export const routes: Routes = [
     component: GestorDashboardComponent
   },
   {
+    path: 'multimedia',
+    component: MultimediaListComponent,
+    canActivate: [MultimediaGuard]
+  },
+  {
+    path: 'multimedia/videos',
+    component: MultimediaListComponent,
+    canActivate: [MultimediaGuard]
+  },
+  {
+    path: 'multimedia/audios',
+    component: MultimediaListComponent,
+    canActivate: [MultimediaGuard]
+  },
+  {
+    path: 'multimedia/:id',
+    component: MultimediaDetailComponent,
+    canActivate: [MultimediaGuard]
+  },
+  
     path: 'gestion-listas',
     component: GestionListasComponent
   },

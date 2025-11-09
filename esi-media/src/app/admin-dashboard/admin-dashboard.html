@@ -1766,8 +1766,10 @@
         <div class="space-y-4">
           <!-- Nombre -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+            <label for="editingProfileNombre" class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
             <input 
+              id="editingProfileNombre"
+              name="editingProfileNombre"
               type="text" 
               [(ngModel)]="editingProfile.nombre"
               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1776,8 +1778,9 @@
 
           <!-- Apellidos -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Apellidos</label>
+            <label for="editingProfileApellidos" class="block text-sm font-medium text-gray-700 mb-1">Apellidos</label>
             <input 
+              id="editingProfileApellidos"
               type="text" 
               [(ngModel)]="editingProfile.apellidos"
               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1786,8 +1789,9 @@
 
           <!-- Email (deshabilitado) -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label for="editingProfileEmail" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input 
+              id="editingProfileEmail"
               type="email" 
               [value]="editingProfile.email"
               disabled
@@ -1977,10 +1981,11 @@
             <!-- Nombre y Apellidos -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="edit-admin-nombre" class="block text-sm font-medium text-gray-700 mb-2">
                   Nombre <span class="text-red-500">*</span>
                 </label>
                 <input 
+                  id="edit-admin-nombre"
                   type="text" 
                   [(ngModel)]="editUserForm.nombre" 
                   name="nombre"
@@ -1989,10 +1994,11 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="edit-admin-apellidos" class="block text-sm font-medium text-gray-700 mb-2">
                   Apellidos <span class="text-red-500">*</span>
                 </label>
                 <input 
+                  id="edit-admin-apellidos"
                   type="text" 
                   [(ngModel)]="editUserForm.apellidos" 
                   name="apellidos"
@@ -2003,10 +2009,11 @@
 
             <!-- Email (solo lectura) -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label for="edit-admin-email" class="block text-sm font-medium text-gray-700 mb-2">
                 Email (No editable)
               </label>
               <input 
+                id="edit-admin-email"
                 type="email" 
                 [value]="editUserForm.email"
                 readonly
@@ -2015,10 +2022,11 @@
 
             <!-- Departamento -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label for="edit-admin-departamento" class="block text-sm font-medium text-gray-700 mb-2">
                 Departamento <span class="text-red-500">*</span>
               </label>
               <input 
+                id="edit-admin-departamento"
                 type="text" 
                 [(ngModel)]="editUserForm.departamento" 
                 name="departamento"
@@ -2049,10 +2057,11 @@
             <!-- Nombre y Apellidos -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="edit-gestor-nombre" class="block text-sm font-medium text-gray-700 mb-2">
                   Nombre <span class="text-red-500">*</span>
                 </label>
                 <input 
+                  id="edit-gestor-nombre"
                   type="text" 
                   [(ngModel)]="editUserForm.nombre" 
                   name="nombre"
@@ -2061,10 +2070,11 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="edit-gestor-apellidos" class="block text-sm font-medium text-gray-700 mb-2">
                   Apellidos <span class="text-red-500">*</span>
                 </label>
                 <input 
+                  id="edit-gestor-apellidos"
                   type="text" 
                   [(ngModel)]="editUserForm.apellidos" 
                   name="apellidos"
@@ -2075,10 +2085,11 @@
 
             <!-- Email (solo lectura) -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label for="edit-gestor-email" class="block text-sm font-medium text-gray-700 mb-2">
                 Email (No editable)
               </label>
               <input 
+                id="edit-gestor-email"
                 type="email" 
                 [value]="editUserForm.email"
                 readonly
@@ -2088,10 +2099,11 @@
             <!-- Campos específicos para GESTORES -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="edit-gestor-alias" class="block text-sm font-medium text-gray-700 mb-2">
                   Alias <span class="text-red-500">*</span>
                 </label>
                 <input 
+                  id="edit-gestor-alias"
                   type="text" 
                   [(ngModel)]="editUserForm.alias" 
                   name="alias"
@@ -2100,10 +2112,11 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="edit-gestor-especialidad" class="block text-sm font-medium text-gray-700 mb-2">
                   Especialidad
                 </label>
                 <select 
+                  id="edit-gestor-especialidad"
                   [(ngModel)]="editUserForm.especialidad" 
                   name="especialidad"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
@@ -2123,10 +2136,11 @@
 
             <!-- Descripción -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label for="edit-gestor-descripcion" class="block text-sm font-medium text-gray-700 mb-2">
                 Descripción
               </label>
               <textarea 
+                id="edit-gestor-descripcion"
                 [(ngModel)]="editUserForm.descripcion" 
                 name="descripcion"
                 rows="3"
@@ -2136,10 +2150,11 @@
 
             <!-- Tipo de contenido (solo lectura) -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label for="edit-gestor-tipocontenido" class="block text-sm font-medium text-gray-700 mb-2">
                 Tipo de contenido (Solo lectura)
               </label>
               <input 
+                id="edit-gestor-tipocontenido"
                 type="text" 
                 [value]="editUserForm.tipocontenidovideooaudio || 'No especificado'"
                 readonly
@@ -2165,10 +2180,11 @@
 
             <!-- Estado de bloqueo (solo lectura) -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label for="edit-estado-gestor" class="block text-sm font-medium text-gray-700 mb-2">
                 Estado (Solo lectura)
               </label>
               <input 
+                id="edit-estado-gestor"
                 type="text" 
                 [value]="editUserForm.bloqueado ? 'Bloqueado' : 'Activo'"
                 readonly
@@ -2177,10 +2193,11 @@
 
             <!-- Fecha de registro (solo lectura) -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label for="edit-gestor-fecharegistro" class="block text-sm font-medium text-gray-700 mb-2">
                 Fecha de registro (Solo lectura)
               </label>
               <input 
+                id="edit-gestor-fecharegistro"
                 type="text" 
                 [value]="editUserForm.fecharegistro ? (editUserForm.fecharegistro | date:'dd/MM/yyyy') : 'No disponible'"
                 readonly
@@ -2193,10 +2210,11 @@
             <!-- Nombre y Apellidos -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="edit-visualizador-nombre" class="block text-sm font-medium text-gray-700 mb-2">
                   Nombre <span class="text-red-500">*</span>
                 </label>
                 <input 
+                  id="edit-visualizador-nombre"
                   type="text" 
                   [(ngModel)]="editUserForm.nombre" 
                   name="nombre"
@@ -2205,10 +2223,11 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="edit-visualizador-apellidos" class="block text-sm font-medium text-gray-700 mb-2">
                   Apellidos <span class="text-red-500">*</span>
                 </label>
                 <input 
+                  id="edit-visualizador-apellidos"
                   type="text" 
                   [(ngModel)]="editUserForm.apellidos" 
                   name="apellidos"
@@ -2219,10 +2238,11 @@
 
             <!-- Email (solo lectura) -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label for="edit-visualizador-email" class="block text-sm font-medium text-gray-700 mb-2">
                 Email (No editable)
               </label>
               <input 
+                id="edit-visualizador-email"
                 type="email" 
                 [value]="editUserForm.email"
                 readonly
@@ -2232,10 +2252,11 @@
             <!-- Campos específicos para VISUALIZADORES -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="edit-visualizador-alias" class="block text-sm font-medium text-gray-700 mb-2">
                   Alias
                 </label>
                 <input 
+                  id="edit-visualizador-alias"
                   type="text" 
                   [(ngModel)]="editUserForm.alias" 
                   name="alias"
@@ -2244,10 +2265,11 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="edit-visualizador-fechanac" class="block text-sm font-medium text-gray-700 mb-2">
                   Fecha de nacimiento
                 </label>
                 <input 
+                  id="edit-visualizador-fechanac"
                   type="date" 
                   [(ngModel)]="editUserForm.fechanac" 
                   name="fechanac"
@@ -2277,10 +2299,11 @@
             <!-- Campos de solo lectura para VISUALIZADORES -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="edit-estado" class="block text-sm font-medium text-gray-700 mb-2">
                   Estado (Solo lectura)
                 </label>
                 <input 
+                  id="edit-estado"
                   type="text" 
                   [value]="editUserForm.bloqueado ? 'Bloqueado' : 'Activo'"
                   readonly
@@ -2288,10 +2311,11 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="edit-estado-vip" class="block text-sm font-medium text-gray-700 mb-2">
                   Estado VIP (Solo lectura)
                 </label>
                 <input 
+                  id="edit-estado-vip"
                   type="text" 
                   [value]="editUserForm.vip ? 'VIP' : 'Estándar'"
                   readonly
@@ -2301,10 +2325,11 @@
 
             <!-- Fecha de registro (solo lectura) -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label for="edit-visualizador-fecharegistro" class="block text-sm font-medium text-gray-700 mb-2">
                 Fecha de registro (Solo lectura)
               </label>
               <input 
+                id="edit-visualizador-fecharegistro"
                 type="text" 
                 [value]="editUserForm.fecharegistro ? (editUserForm.fecharegistro | date:'dd/MM/yyyy') : 'No disponible'"
                 readonly

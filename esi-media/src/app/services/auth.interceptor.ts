@@ -19,8 +19,8 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
     return next(req);
   }
 
-  // Solo agregar el token a peticiones hacia nuestro backend
-  if (req.url.includes('localhost:8080/gestor') || req.url.includes('localhost:8080/users/listar') || req.url.includes('localhost:8080/listas') || req.url.includes('localhost:8080/contenidos/buscar') || req.url.includes('localhost:8080/listas/usuario') || req.url.includes('localhost:8080/listas/gestor')) {
+  // Solo agregar el token a peticiones hacia nuestro backend  que requieren auth
+  if (req.url.includes('localhost:8080/gestor') || req.url.includes('localhost:8080/users/listar') || req.url.includes('localhost:8080/listas') || req.url.includes('localhost:8080/contenidos/buscar') || req.url.includes('localhost:8080/listas/usuario') || req.url.includes('localhost:8080/listas/gestor') || req.url.includes('localhost:8080/multimedia')) {
 
 
     let token = '';

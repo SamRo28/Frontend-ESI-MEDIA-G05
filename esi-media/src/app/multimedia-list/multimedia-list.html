@@ -1,0 +1,62 @@
+<header class="dashboard-header">
+  <div class="header-content">
+    <div class="logo-section">
+      <div class="logo">
+        <span class="logo-icon">🎵</span>
+        <span class="logo-text">EsiMedia</span>
+      </div>
+    </div>
+    <nav class="nav-menu">
+      <a routerLink="/multimedia" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" class="nav-link">Inicio</a>
+      <a routerLink="/multimedia/videos" routerLinkActive="active" class="nav-link">Videos</a>
+      <a routerLink="/multimedia/audios" routerLinkActive="active" class="nav-link">Audios</a>
+    </nav>
+    <div class="user-section">
+      <div class="user-avatar">U</div>
+      <span class="user-name">Usuario</span>
+    </div>
+  </div>
+</header>
+
+<div class="mm-container">
+  <h1 class="mm-title gradient-heading">{{ titulo }}</h1>
+
+  <!-- Loader Skeleton -->
+  <div class="grid" *ngIf="cargando">
+    <div class="card skeleton" *ngFor="let s of [].constructor(tamano); let i = index">
+      <div class="thumb mm-skeleton"></div>
+      <div class="line mm-skeleton"></div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="!cargando && errores" class="error">{{ errores }}</div>
+
+  <!-- Estado vacío -->
+  <div *ngIf="!cargando && !errores && contenido.length === 0" class="empty">
+    <div class="empty-card">
+      <div class="empty-icon">🎧</div>
+      <div class="empty-title">No hay contenidos disponibles</div>
+      <div class="empty-desc">Vuelve más tarde o explora otras secciones</div>
+    </div>
+  </div>
+
+  <!-- Grid de contenido -->
+  <div class="grid" *ngIf="!cargando && !errores && contenido.length">
+    <a class="card" *ngFor="let item of contenido; trackBy: trackById" [routerLink]="['/multimedia', item.id]">
+      <div class="thumb" [class.vip]="item.vip">
+        <img *ngIf="caratulaUrl(item)" class="thumb-img" [src]="caratulaUrl(item)!" loading="lazy" alt="" />
+        <span class="badge" *ngIf="item.vip">VIP</span>
+        <span class="tipo">{{ item.tipo }}</span>
+      </div>
+      <div class="title">{{ item.titulo }}</div>
+    </a>
+  </div>
+
+  <!-- Paginación -->
+  <div class="paginacion" *ngIf="!cargando && contenido.length">
+    <button class="btn secondary" (click)="anterior()" [disabled]="pagina === 0">Anterior</button>
+    <span class="page-info">Página {{ pagina + 1 }}<ng-container *ngIf="totalPaginas != null"> de {{ totalPaginas }}</ng-container></span>
+    <button class="btn primary" (click)="siguiente()" [disabled]="esUltimaPagina()">Siguiente</button>
+  </div>
+  </div>
