@@ -71,6 +71,14 @@ export const routes: Routes = [
     component: VisuDashboard
   },
   {
+    path: 'dashboard/listas',
+    component: GestionListasComponent
+  },
+  {
+    path: 'dashboard/listas/crear',
+    component: CrearListaComponent
+  },
+  {
     path: 'gestor-dashboard',
     component: GestorDashboardComponent
   },

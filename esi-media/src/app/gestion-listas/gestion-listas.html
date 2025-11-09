@@ -1,5 +1,23 @@
 <div class="gestion-listas-container">
-  <h2>Gestión de Listas</h2>
+  <!-- Header bar similar al visu-dashboard -->
+  <div class="header-bar">
+    <h2>🎵 Gestión de Listas</h2>
+    <button class="btn btn-secondary" (click)="volverAlDashboard()">🏠 Volver al Dashboard</button>
+  </div>
+
+  <!-- Barra de acciones -->
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <h3>Mis listas</h3>
+    </div>
+    <a 
+      class="btn-create" 
+      routerLink="/dashboard/listas/crear"
+      title="Crear nueva lista">
+      <span class="icon">+</span>
+      Crear lista
+    </a>
+  </div>
 
   <!-- Mostrar mensajes de éxito o error -->
   <div *ngIf="mensajeExito" class="alert alert-success">
@@ -7,14 +25,6 @@
   </div>
   <div *ngIf="mensajeError" class="alert alert-error">
     {{ mensajeError }}
-  </div>
-
-  <!-- Botón para navegar a crear lista -->
-  <div class="crear-container">
-    <button class="btn btn-primary" (click)="navegarACrearLista()">
-      <span class="icon">+</span>
-      Nueva Lista
-    </button>
   </div>
 
   <!-- Formulario de edición (sólo aparece cuando se está editando) -->
@@ -91,6 +101,7 @@
                 class="btn btn-danger btn-small"
                 (click)="quitarContenido(contenidoId)"
                 title="Eliminar contenido"
+                [disabled]="contenidosIds.length === 1"
               >
                 <span class="icon">🗑️</span>
               </button>
@@ -126,32 +137,36 @@
 
   <!-- Listado de listas existentes -->
   <div class="listas-section">
-    <h3>Mis Listas ({{ listas.length }})</h3>
-    
+    <!-- Estado de carga -->
     <div *ngIf="cargando" class="loading">
       <div class="spinner"></div>
       <p>Cargando listas...</p>
     </div>
 
+    <!-- Estado vacío mejorado -->
     <div *ngIf="!cargando && listas.length === 0" class="empty-state">
-      No tienes listas creadas. ¡Crea tu primera lista!
+      <span class="empty-icon">📂</span>
+      <h3>No tienes listas todavía</h3>
+      <p>Crea tu primera lista para empezar.</p>
     </div>
 
+    <!-- Grid de tarjetas responsivo -->
     <div class="listas-grid" *ngIf="!cargando && listas.length > 0">
       <div *ngFor="let lista of listas" class="card lista-card">
+        <!-- Header de la tarjeta -->
         <div class="card-header">
           <h4 class="card-title">{{ lista.nombre }}</h4>
-          <div class="card-subtitle">
-            <span class="chip" [ngClass]="lista.visible ? 'chip-primary' : 'chip-secondary'">
-              <span class="icon">{{ lista.visible ? '🌐' : '🔒' }}</span>
-              {{ lista.visible ? 'Pública' : 'Privada' }}
-            </span>
-          </div>
+          <span class="chip" [ngClass]="lista.visible ? 'chip-primary' : 'chip-secondary'">
+            <span class="icon">{{ lista.visible ? '🌐' : '🔒' }}</span>
+            {{ lista.visible ? '🌐 Pública' : '🔒 Privada' }}
+          </span>
         </div>
         
+        <!-- Contenido de la tarjeta -->
         <div class="card-content">
           <p class="lista-descripcion">{{ lista.descripcion }}</p>
           
+          <!-- Metadatos -->
           <div class="lista-meta">
             <div class="meta-item">
               <span class="icon">📁</span>
@@ -161,17 +176,17 @@
               <span class="icon">🏷️</span>
               <span>{{ lista.tags.join(', ') }}</span>
             </div>
-          </div>
-
-          <div class="lista-dates" *ngIf="lista.fechaCreacion">
-            <span class="icon">⏰</span>
-            <small>Creada: {{ formatDate(lista.fechaCreacion) }}</small>
+            <div class="meta-item" *ngIf="lista.fechaCreacion">
+              <span class="icon">⏰</span>
+              <span>{{ formatDate(lista.fechaCreacion) }}</span>
+            </div>
           </div>
         </div>
 
+        <!-- Acciones de la tarjeta -->
         <div class="card-actions">
           <button 
-            class="btn btn-primary"
+            class="btn btn-primary btn-small"
             (click)="editarLista(lista)"
             title="Editar lista"
           >
@@ -179,15 +194,16 @@
             Editar
           </button>
           <button 
-            class="btn btn-danger"
+            class="btn btn-danger btn-small"
             (click)="eliminarLista(lista.id!)"
             title="Eliminar lista"
+            *ngIf="lista.creadorId === userId"
           >
             <span class="icon">🗑️</span>
             Eliminar
           </button>
           <button 
-            class="btn btn-success"
+            class="btn btn-success btn-small"
             (click)="mostrarAgregarContenido(lista)"
             title="Añadir contenido"
           >

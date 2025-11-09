@@ -14,6 +14,9 @@
         <a href="#" class="nav-link">Música</a>
         <a href="#" class="nav-link">Películas</a>
         <a href="#" class="nav-link">Podcasts</a>
+        <a routerLink="/dashboard/listas" 
+           [routerLinkActive]="['active']" 
+           class="nav-link">Listas</a>
       </nav>
 
       <div class="user-section">
@@ -21,9 +24,35 @@
           <span class="notification-icon">🔔</span>
           <span class="notification-badge">3</span>
         </button>
-        <div class="user-profile" (click)="toggleUserMenu()">
-          <div class="user-avatar">U</div>
-          <span class="user-name">Usuario</span>
+        <button class="user-profile" 
+                (click)="toggleUserMenu()" 
+                (keydown)="onUserProfileKeydown($event)" 
+                [attr.aria-expanded]="showUserMenu"
+                [attr.aria-label]="'Menú de usuario de ' + userName">
+          <div class="user-avatar-container">
+            <div [class]="getAvatarClasses()">{{ userInitial }}</div>
+            <div class="avatar-indicator" *ngIf="mostrarListasPrivadas"></div>
+          </div>
+          <span class="user-name">{{ userName }}</span>
+          <div class="dropdown-arrow" [class.rotated]="showUserMenu">▼</div>
+        </button>
+        
+        <!-- Menú desplegable del usuario -->
+        <div class="user-dropdown" *ngIf="showUserMenu" role="menu">
+          <button class="dropdown-item" (click)="toggleListasPrivadas()" role="menuitem">
+            <span class="dropdown-icon">👁️</span>
+            <span class="dropdown-text">Ver mis listas privadas</span>
+            <span class="dropdown-badge" *ngIf="mostrarListasPrivadas">●</span>
+          </button>
+          <button class="dropdown-item" (click)="navigateToGestionListas()" role="menuitem">
+            <span class="dropdown-icon">📋</span>
+            <span class="dropdown-text">Gestionar mis listas</span>
+          </button>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item logout-item" (click)="logout()" role="menuitem">
+            <span class="dropdown-icon">🚪</span>
+            <span class="dropdown-text">Cerrar sesión</span>
+          </button>
         </div>
       </div>
     </div>
@@ -35,9 +64,15 @@
     <section class="listas-privadas-panel" *ngIf="mostrarListasPrivadas">
       <div class="panel-header">
         <h2 class="panel-title">Mis Listas Privadas</h2>
-        <button class="btn-cerrar-panel" (click)="toggleListasPrivadas()">✕</button>
+        <div class="panel-actions">
+          <button class="btn-cerrar-panel" (click)="toggleListasPrivadas()">✕</button>
+        </div>
       </div>
-      <app-gestion-listas [modo]="'visualizador'"></app-gestion-listas>
+      <app-listas-privadas 
+        (cerrarPanel)="toggleListasPrivadas()" 
+        (abrirCrearModal)="openCrearListaModal()"
+        [forceReload]="forceReloadListas">
+      </app-listas-privadas>
     </section>
 
     <div class="coming-soon-section">
@@ -112,3 +147,14 @@
     </div>
   </footer>
 </div>
+
+<!-- Modal para crear lista -->
+<div class="modal-backdrop" *ngIf="showCrearModal" (click)="closeCrearListaModal()" (keydown)="$event.key === 'Escape' && closeCrearListaModal()"></div>
+<dialog class="modal-container" [attr.open]="showCrearModal ? true : null">
+  <crear-lista 
+    [modo]="'visualizador'"
+    [modal]="true"
+    (cerrar)="closeCrearListaModal()"
+    (creada)="closeCrearListaModal(true)">
+  </crear-lista>
+</dialog>

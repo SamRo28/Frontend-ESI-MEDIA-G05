@@ -1,0 +1,17 @@
+<section class="privadas-wrapper">
+  <div class="toolbar">
+    <button class="btn-simple" (click)="emitAbrirCrearModal()">➕ Nueva lista</button>
+  </div>
+
+  <div *ngIf="loading" class="state">Cargando tus listas...</div>
+  <div *ngIf="!loading && listas.length === 0" class="state">Aún no tienes listas privadas</div>
+
+  <div class="grid">
+    <button class="playlist-card" *ngFor="let l of listas" (click)="verListaCompleta(l)">
+      <div class="thumb"></div>
+      <h3 class="title">{{ l.nombre }}</h3>
+      <p class="meta">Lista de reproducción</p>
+      <p class="link">Ver lista de reproducción completa</p>
+    </button>
+  </div>
+</section>

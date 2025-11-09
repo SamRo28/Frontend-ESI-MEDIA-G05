@@ -1,39 +1,45 @@
-import { Component, Input, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 import { ListaService } from '../services/lista.service';
 import { Lista } from '../model/lista';
 
 @Component({
   selector: 'app-gestion-listas',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterModule],
   templateUrl: './gestion-listas.html',
   styleUrls: ['./gestion-listas.css']
 })
-export class GestionListasComponent implements OnInit {
+export class GestionListasComponent implements OnInit, OnDestroy, OnChanges {
   @Input() modo: 'gestor' | 'visualizador' = 'visualizador';
+  @Input() forceReload: number = 0;
 
   listaForm: FormGroup;
   listas: any[] = [];
   listaEditando: any = null;
   contenidosIds: string[] = [];
   contenidosCount: number = 0;
+  userId: string = '';
 
-  cargando: boolean = false;
-  guardando: boolean = false;
   mensajeError: string = '';
   mensajeExito: string = '';
 
-  // Control de estado
-  agregandoContenido: boolean = false;
   mostrandoCrear: boolean = false;
+  cargando: boolean = false;
+  guardando: boolean = false;
+
+  // Suscripción para detectar navegación
+  private routerSubscription: Subscription = new Subscription();
 
   constructor(
     private fb: FormBuilder,
     private listaService: ListaService,
-    private router: Router
+    private router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.listaForm = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(3)]],
@@ -44,39 +50,107 @@ export class GestionListasComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Si es visualizador, siempre forzar visible a false
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    const userJson = sessionStorage.getItem('user');
+    if (!userJson) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    try {
+      const user = JSON.parse(userJson);
+      this.userId = user.id;
+    } catch (error) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    this.modo = sessionStorage.getItem('currentUserClass') === 'Gestor' ? 'gestor' : 'visualizador';
+    this.userId = JSON.parse(sessionStorage.getItem('user') || '{}').id;
+
     if (this.modo === 'visualizador') {
       this.listaForm.patchValue({ visible: false });
       this.listaForm.get('visible')?.disable();
     }
 
+    this.configurarRecargaAutomatica();
     this.cargarListas();
   }
 
-  cargarListas(): void {
-    this.cargando = true;
-    this.limpiarMensajes();
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['forceReload'] && !changes['forceReload'].firstChange) {
+      this.cargarListas();
+    }
+  }
 
-    this.listaService.getMisListas().subscribe({
-      next: (response) => {
-        if (response.success && response.listas) {
-          this.listas = response.listas;
-        } else {
-          this.listas = [];
+  ngOnDestroy(): void {
+    // Limpiar suscripciones para evitar memory leaks
+    this.routerSubscription.unsubscribe();
+  }
+
+  /**
+   * Configura la recarga automática al volver a esta vista
+   */
+  private configurarRecargaAutomatica(): void {
+    let isInitialLoad = true;
+    
+    this.routerSubscription = this.router.events
+      .pipe(
+        filter(event => event instanceof NavigationEnd),
+        filter((event: NavigationEnd) => event.url === '/dashboard/listas')
+      )
+      .subscribe((event: NavigationEnd) => {
+        if (!isInitialLoad) {
+          this.cargarListas();
         }
-        this.cargando = false;
-      },
-      error: (err) => {
-        this.cargando = false;
-        this.manejarError(err);
-      }
-    });
+        isInitialLoad = false;
+      });
+  }
+
+  cargarListas(): void {
+    this.limpiarMensajes();
+    this.cargando = true;
+
+    if (this.modo === 'gestor') {
+      this.listaService.obtenerListasGestor().subscribe({
+        next: (response) => {
+          this.cargando = false;
+          if (response.success && response.listas) {
+            this.listas = response.listas;
+          } else {
+            this.listas = [];
+          }
+        },
+        error: (err) => {
+          this.cargando = false;
+          this.listas = [];
+          this.mostrarNotificacionError('Error al cargar listas');
+        }
+      });
+    } else {
+      this.listaService.obtenerListasUsuario(this.userId).subscribe({
+        next: (response) => {
+          this.cargando = false;
+          if (response.success && response.listas) {
+            this.listas = response.listas;
+          } else {
+            this.listas = [];
+          }
+        },
+        error: (err) => {
+          this.cargando = false;
+          this.listas = [];
+          this.mostrarNotificacionError('Error al cargar listas');
+        }
+      });
+    }
   }
 
   guardarLista(): void {
-    // Este método ahora solo gestiona la edición. La creación se delega al componente <crear-lista>.
     if (!this.listaEditando) {
-      // No hacemos nada si no hay lista a editar
       return;
     }
 
@@ -85,15 +159,17 @@ export class GestionListasComponent implements OnInit {
       return;
     }
 
-    this.guardando = true;
     this.limpiarMensajes();
+    this.guardando = true;
 
     const formValue = this.listaForm.getRawValue();
     const datos = {
       nombre: formValue.nombre.trim(),
       descripcion: formValue.descripcion.trim(),
       visible: this.modo === 'gestor' ? formValue.visible : false,
-      tags: this.parseTags(formValue.tagsInput)
+      tags: this.parseTags(formValue.tagsInput),
+      userId: this.userId,
+      modo: this.modo
     };
 
     this.listaService.editarLista(this.listaEditando.id, datos).subscribe({
@@ -169,17 +245,14 @@ export class GestionListasComponent implements OnInit {
   }
 
   private agregarContenido(lista: any, contenidoId: string): void {
-    this.agregandoContenido = true;
     this.limpiarMensajes();
 
     this.listaService.addContenido(lista.id, contenidoId).subscribe({
       next: (response) => {
-        this.agregandoContenido = false;
         if (response.success) {
           this.mostrarNotificacionExito('Contenido añadido correctamente');
           this.cargarListas();
           
-          // Si estamos editando esta lista, actualizar el contador
           if (this.listaEditando?.id === lista.id) {
             this.contenidosIds = response.lista?.contenidosIds || [];
             this.contenidosCount = this.contenidosIds.length;
@@ -187,7 +260,6 @@ export class GestionListasComponent implements OnInit {
         }
       },
       error: (err) => {
-        this.agregandoContenido = false;
         this.manejarError(err);
       }
     });
@@ -296,6 +368,10 @@ export class GestionListasComponent implements OnInit {
   }
 
   navegarACrearLista(): void {
-    this.router.navigate(['/crear-lista']);
+    this.router.navigate(['/dashboard/listas/crear']);
+  }
+
+  volverAlDashboard(): void {
+    this.router.navigate(['/dashboard']);
   }
 }

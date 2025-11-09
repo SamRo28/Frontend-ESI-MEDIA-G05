@@ -1,70 +1,218 @@
-<form [formGroup]="listaForm" (ngSubmit)="onSubmit()" class="crear-lista-form">
-  <h3>Crear Nueva Lista</h3>
+<div class="crear-lista-container">
+  <!-- Header bar similar al visu-dashboard -->
+  <div class="header-bar" *ngIf="!modal">
+    <h2>🎵 Crear Nueva Lista</h2>
+    <button class="btn btn-secondary" (click)="volver()">🏠 Volver al Dashboard</button>
+  </div>
 
-  <!-- Campo Nombre -->
-  <div class="form-field">
-    <label for="nombre">Nombre de la lista *</label>
-    <input 
-      id="nombre"
-      type="text" 
-      formControlName="nombre"
-      class="full-width"
-      placeholder="Ej: Mi lista de música favorita">
-    <div class="error" *ngIf="listaForm.get('nombre')?.invalid && listaForm.get('nombre')?.touched">
-      <span *ngIf="listaForm.get('nombre')?.errors?.['required']">El nombre es requerido</span>
-      <span *ngIf="listaForm.get('nombre')?.errors?.['minlength']">Mínimo 3 caracteres</span>
+  <!-- Título principal -->
+  <div class="page-header">
+    <h1>Crear nueva lista</h1>
+    <p>Complete los campos para crear su lista personalizada</p>
+  </div>
+
+  <!-- Mensaje de éxito -->
+  <div *ngIf="mensajeExito" class="alert alert-success">
+    {{ mensajeExito }}
+  </div>
+
+  <!-- Mensaje de error para nombres duplicados -->
+  <div *ngIf="mensajeErrorNombre" class="alert alert-error">
+    {{ mensajeErrorNombre }}
+  </div>
+
+  <form [formGroup]="listaForm" (ngSubmit)="onSubmit()" class="crear-lista-form">
+    <!-- Información básica -->
+    <div class="form-section">
+      <h2>Información básica</h2>
+      
+      <!-- Campo Nombre -->
+      <div class="form-field">
+        <label for="nombre">Nombre de la lista *</label>
+        <input 
+          id="nombre"
+          type="text" 
+          formControlName="nombre"
+          class="full-width"
+          placeholder="Ej: Mi lista de música favorita"
+          aria-label="Nombre de la lista">
+        <div class="error" *ngIf="listaForm.get('nombre')?.invalid && listaForm.get('nombre')?.touched">
+          <span *ngIf="listaForm.get('nombre')?.errors?.['required']">⚠️ El nombre es requerido</span>
+          <span *ngIf="listaForm.get('nombre')?.errors?.['minlength']">⚠️ Mínimo 3 caracteres</span>
+        </div>
+      </div>
+
+      <!-- Campo Descripción -->
+      <div class="form-field">
+        <label for="descripcion">Descripción *</label>
+        <textarea 
+          id="descripcion"
+          formControlName="descripcion"
+          rows="3"
+          class="full-width"
+          placeholder="Describe tu lista..."
+          aria-label="Descripción de la lista"></textarea>
+        <div class="error" *ngIf="listaForm.get('descripcion')?.invalid && listaForm.get('descripcion')?.touched">
+          <span *ngIf="listaForm.get('descripcion')?.errors?.['required']">⚠️ La descripción es requerida</span>
+          <span *ngIf="listaForm.get('descripcion')?.errors?.['minlength']">⚠️ Mínimo 10 caracteres</span>
+        </div>
+      </div>
+
+      <!-- Campo Especialización (solo para gestores) -->
+      <div class="form-field" *ngIf="modo === 'gestor'">
+        <label for="especializacion">Especialización del gestor *</label>
+        <input 
+          id="especializacion"
+          type="text" 
+          formControlName="especializacion"
+          class="full-width"
+          placeholder="Ej: Rock clásico, Jazz contemporáneo..."
+          aria-label="Especialización del gestor">
+        <div class="error" *ngIf="listaForm.get('especializacion')?.invalid && listaForm.get('especializacion')?.touched">
+          <span *ngIf="listaForm.get('especializacion')?.errors?.['required']">⚠️ La especialización es requerida</span>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <!-- Campo Descripción -->
-  <div class="form-field">
-    <label for="descripcion">Descripción *</label>
-    <textarea 
-      id="descripcion"
-      formControlName="descripcion"
-      rows="3"
-      class="full-width"
-      placeholder="Describe tu lista..."></textarea>
-    <div class="error" *ngIf="listaForm.get('descripcion')?.invalid && listaForm.get('descripcion')?.touched">
-      <span *ngIf="listaForm.get('descripcion')?.errors?.['required']">La descripción es requerida</span>
-      <span *ngIf="listaForm.get('descripcion')?.errors?.['minlength']">Mínimo 10 caracteres</span>
+    <!-- Configuración -->
+    <div class="form-section">
+      <h2>Configuración</h2>
+      
+      <!-- Campo Tags -->
+      <div class="form-field">
+        <label for="tagsInput">Etiquetas</label>
+        <input 
+          id="tagsInput"
+          type="text" 
+          formControlName="tagsInput"
+          class="full-width"
+          placeholder="rock, pop, jazz (separadas por comas)"
+          aria-label="Etiquetas de la lista">
+        <div class="hint">Separa las etiquetas con comas</div>
+      </div>
+
+      <!-- Campo Visible (solo para gestores) -->
+      <div class="form-field" *ngIf="modo === 'gestor'">
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="visible">
+          Lista pública
+        </label>
+        <div class="hint">Las listas públicas son visibles para todos los usuarios</div>
+      </div>
     </div>
-  </div>
 
-  <!-- Campo Tags -->
-  <div class="form-field">
-    <label for="tagsInput">Etiquetas</label>
-    <input 
-      id="tagsInput"
-      type="text" 
-      formControlName="tagsInput"
-      class="full-width"
-      placeholder="rock, pop, jazz (separadas por comas)">
-    <div class="hint">Separa las etiquetas con comas</div>
-  </div>
+    <!-- Gestión de contenidos -->
+    <div class="form-section">
+      <h2>Contenidos de la lista</h2>
+      
+      <!-- Input para añadir contenido -->
+      <div class="form-field">
+        <label for="contenidoInput">Añadir contenido</label>
+        <div class="search-content-container">
+          <div class="input-with-button">
+            <input 
+              id="contenidoInput"
+              type="text" 
+              [(ngModel)]="nuevoContenido"
+              [ngModelOptions]="{standalone: true}"
+              (input)="onBuscarContenido()"
+              (blur)="cerrarSugerencias()"
+              (keydown.enter)="agregarContenido()"
+              (keydown.escape)="cerrarSugerencias()"
+              placeholder="Escribe para buscar contenidos..."
+              class="content-input"
+              autocomplete="off"
+              aria-label="Buscar contenidos para añadir a la lista">
+            <button 
+              type="button" 
+              class="btn btn-add-content"
+              (click)="agregarContenido()"
+              [disabled]="!nuevoContenido.trim()">
+              <span class="icon" *ngIf="!buscandoContenidos">➕</span>
+              <span class="icon spinner" *ngIf="buscandoContenidos">🔄</span>
+            </button>
+          </div>
+          
+          <!-- Sugerencias de contenidos -->
+          <div class="content-suggestions" *ngIf="mostrarSugerencias && contenidosEncontrados.length > 0">
+            <div class="suggestions-header">
+              <span class="suggestions-title">Contenidos encontrados:</span>
+            </div>
+            <div 
+              *ngFor="let contenido of contenidosEncontrados" 
+              class="suggestion-item"
+              (mousedown)="seleccionarContenido(contenido)"
+              [title]="contenido.descripcion">
+              <div class="suggestion-main">
+                <span class="suggestion-title">{{ contenido.titulo }}</span>
+                <span class="suggestion-type" [class.type-audio]="contenido.tipo === 'Audio'" [class.type-video]="contenido.tipo === 'Video'">
+                  {{ contenido.tipo }}
+                </span>
+              </div>
+              <div class="suggestion-details" *ngIf="contenido.descripcion">
+                <span class="suggestion-description">{{ contenido.descripcion }}</span>
+                <span class="suggestion-duration" *ngIf="contenido.duracion">
+                  {{ formatDuration(contenido.duracion) }}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Estado de búsqueda -->
+          <div class="search-status" *ngIf="buscandoContenidos">
+            <span class="search-loading">🔍 Buscando contenidos...</span>
+          </div>
+          
+          <div class="search-hint" *ngIf="nuevoContenido && nuevoContenido.length > 0 && nuevoContenido.length < 2">
+            <span class="hint-text">Escribe al menos 2 caracteres para buscar</span>
+          </div>
+        </div>
+      </div>
 
-  <!-- Campo Visible (solo para gestores) -->
-  <div class="form-field" *ngIf="modo === 'gestor'">
-    <label class="checkbox-label">
-      <input type="checkbox" formControlName="visible">
-      Lista pública
-    </label>
-    <div class="hint">Las listas públicas son visibles para todos los usuarios</div>
-  </div>
+      <!-- Lista de contenidos -->
+      <div class="contenidos-section">
+        <div class="contenidos-header">
+          <span>Contenidos añadidos ({{ contenidosIds.length }})</span>
+          <div class="error" *ngIf="contenidosIds.length === 0 && mostrarErrorContenido">
+            ⚠️ Debe añadir al menos un contenido
+          </div>
+        </div>
+        
+        <div *ngIf="contenidosIds.length === 0" class="empty-contenidos">
+          <span class="icon">📭</span>
+          <p>No hay contenidos añadidos</p>
+        </div>
+        
+        <div class="contenidos-list" *ngIf="contenidosIds.length > 0">
+          <div *ngFor="let contenido of contenidosIds; let i = index" class="contenido-item">
+            <span class="contenido-text">{{ obtenerNombreContenido(contenido) }}</span>
+            <button 
+              type="button"
+              class="btn btn-remove-content"
+              (click)="quitarContenido(i)"
+              [disabled]="contenidosIds.length === 1"
+              title="Eliminar contenido">
+              <span class="icon">🗑️</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <!-- Botones de acción -->
-  <div class="form-actions">
-    <button type="button" class="btn btn-secondary" (click)="onCancelar()">
-      <span class="icon">❌</span>
-      Cancelar
-    </button>
-    <button 
-      type="submit" 
-      class="btn btn-primary" 
-      [disabled]="listaForm.invalid || guardando">
-      <span class="icon" *ngIf="guardando">⏳</span>
-      <span class="icon" *ngIf="!guardando">💾</span>
-      {{ guardando ? 'Guardando...' : 'Crear Lista' }}
-    </button>
-  </div>
-</form>
+    <!-- Botones de acción -->
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" (click)="modal ? onCancelar() : volver()">
+        <span class="icon">{{ modal ? '❌' : '🏠' }}</span>
+        {{ modal ? 'Cancelar' : 'Volver' }}
+      </button>
+      <button 
+        type="submit" 
+        class="btn btn-primary" 
+        [disabled]="!puedeCrearLista()">
+        <span class="icon" *ngIf="guardando">⏳</span>
+        <span class="icon" *ngIf="!guardando">💾</span>
+        {{ guardando ? 'Creando lista...' : 'Crear Lista' }}
+      </button>
+    </div>
+  </form>
+</div>
