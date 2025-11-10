@@ -19,6 +19,7 @@ import { MultimediaDetailComponent } from './multimedia-detail/multimedia-detail
 import { MultimediaGuard } from './guards/multimedia.guard';
 import { GestionListasComponent } from './gestion-listas/gestion-listas';
 import { CrearListaComponent } from './crear-lista/crear-lista';
+import { ListaDetailComponent } from './lista-detail/lista-detail';
 
 export const routes: Routes = [
   {
@@ -71,7 +72,27 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
-    component: VisuDashboard,
+    component: VisuDashboard
+  },
+  {
+    path: 'dashboard/listas',
+    component: GestionListasComponent
+  },
+  {
+    path: 'dashboard/listas/crear',
+    component: CrearListaComponent
+  },
+  {
+    path: 'dashboard/listas/:id',
+    component: ListaDetailComponent
+  },
+  {
+    path: 'gestor-dashboard',
+    component: GestorDashboardComponent
+  },
+  {
+    path: 'multimedia',
+    component: MultimediaListComponent,
     canActivate: [MultimediaGuard]
   },
   {
@@ -99,11 +120,16 @@ export const routes: Routes = [
   { path: 'multimedia/audios', redirectTo: 'dashboard/audios', pathMatch: 'full' },
   { path: 'multimedia/:id', redirectTo: 'dashboard/:id', pathMatch: 'full' },
   {
-    path: 'gestion-listas',
+
+    path: 'gestor-dashboard/gestion-listas',
     component: GestionListasComponent
   },
   {
-    path: 'gestion-listas/crear',
+    path: 'gestor-dashboard/gestion-listas/:id',
+    component: ListaDetailComponent
+  },
+  {
+    path: 'gestor-dashboard/gestion-listas/crear',
     component: CrearListaComponent
   }
 ];

@@ -1,19 +1,19 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { Router } from '@angular/router';
 import { ListaService, ListasResponse } from '../services/lista.service';
 import { CrearListaComponent } from '../crear-lista/crear-lista';
+import { Router } from '@angular/router';
 
 @Component({
-  selector: 'app-gestion-listas',
-  standalone: true,
+  selector: 'app-listas-privadas',
   imports: [CommonModule, CrearListaComponent],
-  templateUrl: './gestion-listas.html',
-  styleUrls: ['./gestion-listas.css']
+  templateUrl: './listas-privadas.html',
+  styleUrl: './listas-privadas.css'
 })
-export class GestionListasComponent implements OnInit, OnChanges {
-  @Input() modo: 'gestor' | 'visualizador' = 'visualizador';
+export class ListasPrivadas implements OnInit, OnChanges {
   @Input() forceReload?: any;
+  @Output() cerrarPanel = new EventEmitter<void>();
+  @Output() abrirCrearModal = new EventEmitter<void>();
 
   listas: any[] = [];
   loading: boolean = false;
@@ -33,7 +33,6 @@ export class GestionListasComponent implements OnInit, OnChanges {
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
       this.cargarUserId();
-      this.determinarModo();
       this.cargarListas();
     }
   }
@@ -56,66 +55,42 @@ export class GestionListasComponent implements OnInit, OnChanges {
     }
   }
 
-  private determinarModo(): void {
-    try {
-      const currentUserClass = sessionStorage.getItem('currentUserClass');
-      this.modo = currentUserClass === 'GestordeContenido' ? 'gestor' : 'visualizador';
-    } catch (error) {
-      this.modo = 'visualizador';
+  private cargarListas(): void {
+    if (!this.userId) {
+      return;
     }
+
+    this.loading = true;
+    
+    this.listaService.obtenerListasUsuario(this.userId).subscribe({
+      next: (response: ListasResponse) => {
+        this.loading = false;
+        
+        if (response && response.success) {
+          this.listas = response.listas || [];
+        } else {
+          this.listas = [];
+        }
+        
+        // Forzar detección de cambios para actualizar la vista
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error al cargar listas:', error);
+        this.loading = false;
+        this.listas = [];
+        this.cdr.detectChanges();
+      }
+    });
   }
 
-  private cargarListas(): void {
-    this.loading = true;
-
-    if (this.modo === 'gestor') {
-      // Gestor: usar el método existente para obtener listas de gestor
-      this.listaService.getMisListas().subscribe({
-        next: (response: ListasResponse) => {
-          this.loading = false;
-          if (response && response.success) {
-            this.listas = response.listas || [];
-          } else {
-            this.listas = [];
-          }
-          this.cdr.detectChanges();
-        },
-        error: (error: any) => {
-          console.error('Error al cargar listas:', error);
-          this.loading = false;
-          this.listas = [];
-          this.cdr.detectChanges();
-        }
-      });
-    } else {
-      // Visualizador: obtener todas las listas públicas de gestores
-      this.listaService.obtenerListasPublicas().subscribe({
-        next: (response: ListasResponse) => {
-          this.loading = false;
-          if (response && response.success) {
-            this.listas = response.listas || [];
-          } else {
-            this.listas = [];
-          }
-          this.cdr.detectChanges();
-        },
-        error: (error: any) => {
-          console.error('Error al cargar listas públicas:', error);
-          this.loading = false;
-          this.listas = [];
-          this.cdr.detectChanges();
-        }
-      });
-    }
+  emitAbrirCrearModal(): void {
+    this.abrirCrearModal.emit();
   }
 
   verListaCompleta(lista: any): void {
-    // Navegar a la vista detalle de la lista según el rol del usuario
-    if (this.modo === 'gestor') {
-      this.router.navigate(['gestor-dashboard/gestion-listas', lista.id]);
-    } else {
-      this.router.navigate(['dashboard/listas', lista.id]);
-    }
+    // Navegar a la vista detalle de la lista
+    this.router.navigate(['dashboard/listas', lista.id]);
   }
 
   editarLista(lista: any, event?: Event): void {

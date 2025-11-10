@@ -1,9 +1,10 @@
-<section class="gestion-listas-wrapper">
-  <div *ngIf="loading" class="state">Cargando listas...</div>
-  
-  <div *ngIf="!loading && listas.length === 0" class="state">
-    {{ modo === 'gestor' ? 'No hay listas disponibles' : 'No hay listas públicas disponibles' }}
+<section class="privadas-wrapper">
+  <div class="toolbar">
+    <button class="btn-simple" (click)="emitAbrirCrearModal()"> Nueva lista</button>
   </div>
+
+  <div *ngIf="loading" class="state">Cargando tus listas...</div>
+  <div *ngIf="!loading && listas.length === 0" class="state">Aún no tienes listas privadas</div>
 
   <div class="grid" *ngIf="!loading && listas.length > 0">
     <div class="playlist-card" *ngFor="let l of listas">
@@ -25,25 +26,6 @@
         </span>
         <span class="visibility-badge" *ngIf="l.visible === true" title="Lista pública">🌐</span>
         <span class="visibility-badge" *ngIf="l.visible === false" title="Lista privada">🔒</span>
-        
-        <!-- Botones de acción para gestores -->
-        <div class="card-actions" *ngIf="modo === 'gestor' && puedeEditar(l)">
-          <button 
-            class="btn-action btn-edit"
-            (click)="editarLista(l, $event)"
-            title="Editar lista"
-            aria-label="Editar lista">
-            ✏️
-          </button>
-          <button 
-            class="btn-action btn-delete"
-            (click)="eliminarLista(l, $event)"
-            *ngIf="puedeEliminar(l)"
-            title="Eliminar lista"
-            aria-label="Eliminar lista">
-            🗑️
-          </button>
-        </div>
       </div>
     </div>
   </div>
@@ -58,7 +40,6 @@
        (keydown)="$event.stopPropagation()">
     <crear-lista
       [modal]="true"
-      [modo]="modo"
       [listaParaEditar]="listaParaEditar"
       (editada)="onListaEditada($event)"
       (cerrar)="onCancelarEdicion()">

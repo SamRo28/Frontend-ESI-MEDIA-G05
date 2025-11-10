@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 
 export interface AudioUploadData {
@@ -37,6 +39,23 @@ export interface UploadResponse {
   videoId?: string;
   titulo?: string;
   url?: string;
+}
+
+export interface ContenidoSearchResult {
+  id: string;
+  titulo: string;
+  tipo: 'Video' | 'Audio';
+  descripcion?: string;
+  duracion?: number;
+  resolucion?: string;
+}
+
+export interface SearchContentResponse {
+  success: boolean;
+  mensaje: string;
+  contenidos: ContenidoSearchResult[];
+  total: number;
+  query: string;
 }
 
 // Interface para manejo de errores del backend
@@ -134,10 +153,56 @@ export class ContentService {
 
 
   /**
-   * Busca contenidos por nombre
-   * El token de autenticación es añadido automáticamente por el interceptor
+   * Busca contenidos por nombre usando el backend real
+   * Utiliza el endpoint /contenidos/buscar
+   */
+  buscarContenidos(query: string, limit: number = 10): Observable<SearchContentResponse> {
+    if (!query || query.trim().length < 2) {
+      return of({
+        success: false,
+        mensaje: 'El query debe tener al menos 2 caracteres',
+        contenidos: [],
+        total: 0,
+        query: query
+      });
+    }
+
+    const params = new URLSearchParams({
+      query: query.trim(),
+      limit: limit.toString()
+    });
+
+    console.log('Realizando búsqueda en backend:', query.trim());
+
+    // El interceptor se encarga del Authorization header automáticamente
+    return this.http.get<SearchContentResponse>(`http://localhost:8080/contenidos/buscar?${params}`).pipe(
+      catchError(error => {
+        console.error('Error en búsqueda de contenidos:', error);
+        
+        let mensajeError = 'Error al buscar contenidos';
+        if (error.status === 401) {
+          mensajeError = 'No tienes permisos para buscar contenidos';
+        } else if (error.status === 0) {
+          mensajeError = 'No se puede conectar al servidor';
+        } else if (error.status >= 500) {
+          mensajeError = 'Error interno del servidor';
+        }
+
+        return of({
+          success: false,
+          mensaje: mensajeError,
+          contenidos: [],
+          total: 0,
+          query: query.trim()
+        });
+      })
+    );
+  }
+
+  /**
+   * Método legacy mantenido para compatibilidad
    */
   buscarPorNombre(nombre: string): Observable<any> {
-    return this.http.get(`http://localhost:8080/api/contenidos/buscar?nombre=${encodeURIComponent(nombre)}`);
+    return this.buscarContenidos(nombre, 10);
   }
 }

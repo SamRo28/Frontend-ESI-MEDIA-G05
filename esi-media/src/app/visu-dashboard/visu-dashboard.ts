@@ -1,11 +1,12 @@
 import { Component, OnInit, AfterViewInit, inject, PLATFORM_ID } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
-import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { Router, NavigationEnd } from '@angular/router';
+import { Router, NavigationEnd, RouterModule } from '@angular/router';
 import { MultimediaService } from '../services/multimedia.service';
 import { GestionListasComponent } from '../gestion-listas/gestion-listas';
 import { MultimediaListComponent } from '../multimedia-list/multimedia-list';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { ListasPrivadas } from '../listas-privadas/listas-privadas';
+import { CrearListaComponent } from '../crear-lista/crear-lista';
 
 interface Star {
   left: number;
@@ -16,17 +17,33 @@ interface Star {
 @Component({
   selector: 'app-visu-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, GestionListasComponent, MultimediaListComponent],
+  imports: [CommonModule, RouterLink, RouterLinkActive, RouterModule, ListasPrivadas, CrearListaComponent, GestionListasComponent, MultimediaListComponent],
   templateUrl: './visu-dashboard.html',
   styleUrl: './visu-dashboard.css'
 })
 export class VisuDashboard implements OnInit, AfterViewInit {
   stars: Star[] = [];
   mostrarListasPrivadas = false;
+  mostrarListasPublicas = false;
   filtroTipo: 'AUDIO' | 'VIDEO' | null = null;
+  showUserMenu = false;
+  currentUser: any = null;
+  userName: string = 'Usuario';
+  userInitial: string = 'U';
+  isGestor: boolean = false;
+  forceReloadListas: number = 0;
+  forceReloadListasPublicas: number = 0;
+  showCrearModal: boolean = false;
+
+  private isBrowser: boolean;
+  private documentClickHandler = (event: Event) => this.onDocumentClick(event);
+  private escapeKeyHandler = (event: KeyboardEvent) => { if ((event as KeyboardEvent).key === 'Escape') this.onEscapeKey(); };
+
 
   private multimedia = inject(MultimediaService);
-  constructor(private router: Router) {}
+  constructor(private router: Router) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
+  }
   private platformId = inject(PLATFORM_ID);
 
   ngOnInit(): void {
@@ -51,7 +68,36 @@ export class VisuDashboard implements OnInit, AfterViewInit {
     else if (initUrl.includes('/dashboard/audios')) this.filtroTipo = 'AUDIO';
   }
 
-  ngAfterViewInit(): void {}
+  ngAfterViewInit(): void {
+    if (isPlatformBrowser(this.platformId)) {
+    }
+    // Solo en navegador: cargar datos y registrar listeners
+    if (this.isBrowser) {
+      this.loadUserData();
+      try {
+        document.addEventListener('click', this.documentClickHandler);
+        document.addEventListener('keydown', this.escapeKeyHandler as any);
+      } catch (e) {
+        // defensivo: si document no existe, no hacer nada
+      }
+    }
+    if (isPlatformBrowser(this.platformId)) {
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.isBrowser) {
+      try {
+        document.removeEventListener('click', this.documentClickHandler);
+        document.removeEventListener('keydown', this.escapeKeyHandler as any);
+        document.body.classList.remove('no-scroll');
+      } catch (e) {
+        // ignorar
+      }
+    }
+  }
+
+
 
   generateStars(): void {
     // Generar 50 estrellas con posiciones aleatorias
@@ -64,28 +110,248 @@ export class VisuDashboard implements OnInit, AfterViewInit {
     }
   }
 
+  /**
+   * Muestra u oculta el panel de listas privadas del visualizador
+   * También controla el bloqueo del scroll del body
+   */
   toggleListasPrivadas(): void {
     this.mostrarListasPrivadas = !this.mostrarListasPrivadas;
-  }
-
-  navigateToGestionListas(): void {
-    this.router.navigate(['/gestion-listas']);
-  }
-
-  toggleUserMenu(): void {
-    console.log('Abrir menú de usuario');
+    this.closeUserMenu();
     
-    // Aquí podrías abrir un dropdown con opciones como:
-    // - Mi perfil
-    // - Configuración
-    // - Cerrar sesión
-    // etc.
+    if (this.mostrarListasPrivadas) {
+      this.forceReloadListas = Math.random();
+    }
+    
+    if (this.isBrowser) {
+      if (this.mostrarListasPrivadas) {
+        document.body.classList.add('no-scroll');
+      } else {
+        document.body.classList.remove('no-scroll');
+      }
+    }
   }
 
+  /**
+   * Muestra u oculta las listas públicas como tab principal
+   */
+  toggleListasPublicas(): void {
+    this.mostrarListasPublicas = !this.mostrarListasPublicas;
+    this.closeUserMenu();
+    
+    // Si se abren las listas públicas, cerrar las privadas
+    if (this.mostrarListasPublicas && this.mostrarListasPrivadas) {
+      this.mostrarListasPrivadas = false;
+      if (this.isBrowser) {
+        document.body.classList.remove('no-scroll');
+      }
+    }
+    
+    if (this.mostrarListasPublicas) {
+      this.forceReloadListasPublicas = Math.random();
+    }
+  }
+
+  /**
+   * Navega a la página de gestión de listas usando el router
+   */
+  navigateToGestionListas(): void {
+    this.closeUserMenu();
+    this.router.navigate(['/dashboard/listas']);
+  }
+
+  /**
+   * Abre el modal para crear una nueva lista
+   */
+  openCrearListaModal(): void {
+    this.showCrearModal = true;
+    if (this.isBrowser) {
+      document.body.classList.add('no-scroll');
+    }
+  }
+
+  /**
+   * Cierra el modal de crear lista
+   * @param success - Si la lista se creó exitosamente
+   */
+  closeCrearListaModal(success?: boolean): void {
+    this.showCrearModal = false;
+    if (this.isBrowser) {
+      document.body.classList.remove('no-scroll');
+    }
+    
+    if (success) {
+      // Refrescar la lista de listas privadas
+      this.forceReloadListas = Math.random();
+      
+      // Mostrar toast de éxito
+      this.showToast('Lista creada correctamente');
+    }
+  }
+
+  /**
+   * Muestra un toast de notificación
+   * @param message - Mensaje a mostrar
+   */
+  private showToast(message: string): void {
+    // Implementación simple de toast - se puede mejorar más tarde
+    if (this.isBrowser) {
+      const toast = document.createElement('div');
+      toast.className = 'toast-message';
+      toast.textContent = message;
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(34, 197, 94, 0.9);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        z-index: 1000;
+        animation: slideIn 0.3s ease;
+      `;
+      
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => document.body.removeChild(toast), 300);
+      }, 3000);
+    }
+  }
+
+  loadUserData(): void {
+    if (!this.isBrowser) {
+      this.setDefaultUserData();
+      return;
+    }
+
+    const userStr = sessionStorage.getItem('user');
+    if (userStr) {
+      try {
+        this.currentUser = JSON.parse(userStr);
+        this.updateUserDisplayData();
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        this.currentUser = null;
+        this.setDefaultUserData();
+      }
+    } else {
+      this.setDefaultUserData();
+    }
+  }
+
+  private updateUserDisplayData(): void {
+    if (this.currentUser) {
+      // Actualizar userName según la especificación: nombre o username
+      this.userName = this.currentUser.nombre || this.currentUser.username || 'Usuario';
+      
+      // Actualizar userInitial: primera letra del userName
+      this.userInitial = this.userName.charAt(0).toUpperCase();
+      
+      // Determinar si es gestor desde sessionStorage (solo en navegador)
+      if (this.isBrowser) {
+        const currentUserClass = sessionStorage.getItem('currentUserClass');
+        this.isGestor = currentUserClass === 'Gestor';
+      } else {
+        this.isGestor = false;
+      }
+    }
+  }
+
+  private setDefaultUserData(): void {
+    this.userName = 'Usuario';
+    this.userInitial = 'U';
+    this.isGestor = false;
+  }
+
+  getUserName(): string {
+    return this.userName;
+  }
+
+  getUserInitial(): string {
+    return this.userInitial;
+  }
+
+  /**
+   * Obtiene las clases CSS para el avatar del usuario basadas en el tipo de usuario
+   */
+  getAvatarClasses(): string {
+    return this.isGestor ? 'user-avatar gestor' : 'user-avatar visualizador';
+  }
+
+  /**
+   * Abre o cierra el menú desplegable del usuario
+   */
+  toggleUserMenu(): void {
+    this.showUserMenu = !this.showUserMenu;
+  }
+
+  /**
+   * Maneja eventos de teclado para el perfil de usuario
+   */
+  onUserProfileKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.toggleUserMenu();
+    }
+    if (event.key === 'Escape' && this.showUserMenu) {
+      event.preventDefault();
+      this.closeUserMenu();
+    }
+  }
+
+  /**
+   * Cierra el menú desplegable del usuario
+   */
+  closeUserMenu(): void {
+    this.showUserMenu = false;
+  }
+
+  /**
+   * Escucha clics en el documento para cerrar el menú cuando se hace clic fuera
+   * Excluye clics en botones de notificaciones y elementos del menú
+   */
+  onDocumentClick(event: Event): void {
+    if (!this.isBrowser) return;
+    const target = event.target as HTMLElement;
+    
+    // Verificar si el clic fue en el área del perfil de usuario o el dropdown
+    const userProfile = target.closest('.user-profile');
+    const userDropdown = target.closest('.user-dropdown');
+    
+    // Verificar si el clic fue en el botón de notificaciones (para no interferir)
+    const notificationBtn = target.closest('.notification-btn');
+    
+    // Si el clic no fue en el perfil, dropdown o botón de notificaciones, cerrar el menú
+    if (!userProfile && !userDropdown && !notificationBtn && this.showUserMenu) {
+      this.closeUserMenu();
+    }
+  }
+
+  /**
+   * Escucha la tecla Escape para cerrar el menú, el panel o el modal
+   */
+  onEscapeKey(): void {
+    if (this.showCrearModal) {
+      this.closeCrearListaModal();
+    } else if (this.mostrarListasPrivadas) {
+      this.toggleListasPrivadas();
+    } else if (this.showUserMenu) {
+      this.closeUserMenu();
+    }
+  }
+
+  /**
+   * Cierra la sesión del usuario, limpia sessionStorage y navega al login
+   */
   logout(): void {
     console.log('Cerrando sesión...');
     // Limpiar token sesión y cache multimedia
-    try { sessionStorage.removeItem('token'); } catch {}
+    try { sessionStorage.removeItem('token'); 
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('currentUserClass');
+      sessionStorage.removeItem('email');
+    } catch {}
     this.multimedia.clearCache();
     this.router.navigate(['/login']);
   }
