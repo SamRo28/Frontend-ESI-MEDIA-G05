@@ -7,55 +7,50 @@ import { Observable, tap } from 'rxjs';
 })
 export class UserService {
 
-    constructor(private client: HttpClient) {}
+  constructor(private client: HttpClient) {}
 
-    login(email: string, password: string): Observable<any> {
-        return this.client.post<any>(`http://localhost:8080/users/login`, { email, password })
-        
-    }
+  login(email: string, password: string): Observable<any> {
+    return this.client.post<any>(`http://localhost:8080/users/login`, { email, password });
+  }
 
-    loadQRCode(): Observable<any> {
-        let email = sessionStorage.getItem('email') ;
-        return this.client.post<any>(`http://localhost:8080/api/visualizador/activate2FA`, { email } ).pipe(
-            tap(data => {
-                console.log('QR Code Data:', data);
-            })
-        );
-    }
+  loadQRCode(): Observable<any> {
+    const email = sessionStorage.getItem('email');
+    return this.client.post<any>(`http://localhost:8080/api/visualizador/activate2FA`, { email }).pipe(
+      tap(data => {
+        console.log('QR Code Data:', data);
+      })
+    );
+  }
 
-    send3AVerificationCode(email: string): Observable<any> {
-        return this.client.post<any>(`http://localhost:8080/users/login3Auth`, { email });
-    }
+  send3AVerificationCode(email: string): Observable<any> {
+    return this.client.post<any>(`http://localhost:8080/users/login3Auth`, { email });
+  }
 
-    verify3ACode(id: string, code: string): Observable<any> {
-        return this.client.post<any>(`http://localhost:8080/users/verify3AuthCode`, { id, code });
-    }
-    /*verify2FACode(email: string, code: string): Observable<any> {
-        return this.client.post<any>(`http://localhost:8080/users/verify2FACode`, { email, code },
-    { responseType: 'text' });
-    }*/
+  verify3ACode(id: string, code: string): Observable<any> {
+    return this.client.post<any>(`http://localhost:8080/users/verify3AuthCode`, { id, code });
+  }
 
-    verify2FACode(email: string, code: string): Observable<string> {
-        return this.client.post<string>(
-            `http://localhost:8080/users/verify2FACode`,
-            { email, code },
-            { responseType: 'text' as 'json' }
-        );
-    }
 
-    // ========== Password Recovery ==========
-    requestPasswordReset(email: string): Observable<any> {
-        return this.client.post<any>(`http://localhost:8080/users/password-reset/request`, { email });
-    }
+  verify2FACode(email: string, code: string) {
+    return this.client.post(
+      `http://localhost:8080/users/verify2FACode`,
+      { email, code },
+      { responseType: 'text' }
+    );
+  }
 
-    validateResetToken(token: string): Observable<any> {
-        const params = new HttpParams().set('token', token);
-        return this.client.get<any>(`http://localhost:8080/users/password-reset/validate`, { params });
-    }
+  // Password Recovery 
+  requestPasswordReset(email: string): Observable<any> {
+    return this.client.post<any>(`http://localhost:8080/users/password-reset/request`, { email });
+  }
 
-    resetPassword(token: string, newPassword: string): Observable<any> {
-        return this.client.post<any>(`http://localhost:8080/users/password-reset/confirm`, { token, newPassword });
-    }
-    // =======================================
+  validateResetToken(token: string): Observable<any> {
+    const params = new HttpParams().set('token', token);
+    return this.client.get<any>(`http://localhost:8080/users/password-reset/validate`, { params });
+  }
+
+  resetPassword(token: string, newPassword: string): Observable<any> {
+    return this.client.post<any>(`http://localhost:8080/users/password-reset/confirm`, { token, newPassword });
+  }
 
 }
