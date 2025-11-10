@@ -19,7 +19,9 @@ import { Subject, of } from 'rxjs';
 export class CrearListaComponent implements OnInit {
   @Input() modo: 'gestor' | 'visualizador' = 'visualizador';
   @Input() modal: boolean = false;
+  @Input() listaParaEditar?: any = null; // Nueva propiedad para modo edición
   @Output() creada = new EventEmitter<any>();
+  @Output() editada = new EventEmitter<any>(); // Nuevo evento para edición
   @Output() cancelada = new EventEmitter<void>();
   @Output() cerrar = new EventEmitter<void>();
 
@@ -52,7 +54,7 @@ export class CrearListaComponent implements OnInit {
       nombre: ['', [Validators.required, Validators.minLength(3)]],
       descripcion: ['', [Validators.required, Validators.minLength(10)]],
       especializacion: [''],
-      visible: [false],
+      visible: [false], // Se actualizará en configurarFormularioSegunRol()
       tagsInput: ['']
     });
   }
@@ -83,7 +85,7 @@ export class CrearListaComponent implements OnInit {
 
     // Determinar el rol del usuario desde sessionStorage
     const currentUserClass = sessionStorage.getItem('currentUserClass');
-    if (currentUserClass === 'Gestor') {
+    if (currentUserClass === 'GestordeContenido') {
       this.modo = 'gestor';
     } else {
       this.modo = 'visualizador';
@@ -94,6 +96,11 @@ export class CrearListaComponent implements OnInit {
     
     // Configurar búsqueda en tiempo real
     this.configurarBusquedaContenidos();
+
+    // Si hay lista para editar, cargar sus datos
+    if (this.listaParaEditar) {
+      this.cargarDatosLista();
+    }
   }
 
   private parseTags(tagsInput: string): string[] {
@@ -122,7 +129,7 @@ export class CrearListaComponent implements OnInit {
 
     const fv = this.listaForm.getRawValue();
     
-    const nuevaLista = {
+    const datosLista = {
       nombre: fv.nombre.trim(),
       descripcion: fv.descripcion.trim(),
       tags: this.parseTags(fv.tagsInput),
@@ -132,16 +139,34 @@ export class CrearListaComponent implements OnInit {
       contenidosIds: contenidosUnicos
     };
 
-    this.listaService.crearLista(nuevaLista).subscribe({
+    // Validar datos antes de enviar
+    const validacion = this.listaService.validarDatosLista(datosLista);
+    if (!validacion.esValida) {
+      this.guardando = false;
+      this.mensajeErrorNombre = validacion.mensaje || 'Datos de la lista no válidos';
+      return;
+    }
+
+    // Determinar si es creación o edición
+    const observable = this.listaParaEditar ? 
+      this.listaService.editarLista(this.listaParaEditar.id, datosLista) :
+      this.listaService.crearLista(datosLista);
+
+    observable.subscribe({
       next: (res: any) => {
         this.guardando = false;
         if (res && res.success) {
           // Mostrar mensaje de éxito
-          this.mensajeExito = '✅ Lista creada correctamente';
+          const accion = this.listaParaEditar ? 'actualizada' : 'creada';
+          this.mensajeExito = `✅ Lista ${accion} correctamente`;
           
           if (this.modal) {
-            // En modo modal, emitir evento creada y cerrar
-            this.creada.emit(res.lista);
+            // En modo modal, emitir evento correspondiente y cerrar
+            if (this.listaParaEditar) {
+              this.editada.emit(res.lista);
+            } else {
+              this.creada.emit(res.lista);
+            }
             setTimeout(() => {
               this.resetearFormulario();
             }, 500);
@@ -151,17 +176,17 @@ export class CrearListaComponent implements OnInit {
             this.resetearFormulario();
           }
         } else {
-          console.error('Respuesta inesperada al crear lista', res);
+          console.error('Respuesta inesperada:', res);
           if (res?.mensaje && (res.mensaje.includes('nombre') && res.mensaje.includes('existe'))) {
             this.mensajeErrorNombre = res.mensaje;
           } else {
-            alert(res?.mensaje || 'No se pudo crear la lista');
+            this.mensajeErrorNombre = res?.mensaje || 'No se pudo procesar la lista';
           }
         }
       },
       error: (err: any) => {
         this.guardando = false;
-        console.error('Error creando lista:', err);
+        console.error('Error procesando lista:', err);
         if (err.status === 400 && err.error?.mensaje) {
           if (err.error.mensaje.includes('nombre') && err.error.mensaje.includes('existe')) {
             this.mensajeErrorNombre = err.error.mensaje;
@@ -169,7 +194,7 @@ export class CrearListaComponent implements OnInit {
             this.mensajeErrorNombre = err.error.mensaje;
           }
         } else {
-          alert('Error al crear la lista. Revisa la consola.');
+          this.mensajeErrorNombre = 'Error al procesar la lista. Inténtalo de nuevo.';
         }
       }
     });
@@ -254,7 +279,8 @@ export class CrearListaComponent implements OnInit {
       this.listaForm.get('visible')?.disable();
       this.listaForm.get('especializacion')?.clearValidators();
     } else {
-      // Para gestores: habilitar campo visible y añadir validación a especialización
+      // Para gestores: habilitar campo visible, establecer como público por defecto y añadir validación a especialización
+      this.listaForm.patchValue({ visible: true });
       this.listaForm.get('visible')?.enable();
       this.listaForm.get('especializacion')?.setValidators([Validators.required]);
     }
@@ -269,7 +295,7 @@ export class CrearListaComponent implements OnInit {
       nombre: '',
       descripcion: '',
       especializacion: '',
-      visible: false,
+      visible: this.modo === 'gestor' ? true : false, // Gestor: público por defecto, Visualizador: privado
       tagsInput: ''
     };
 
@@ -396,7 +422,17 @@ export class CrearListaComponent implements OnInit {
       this.contenidosIds.splice(index, 1);
       // Limpiar del caché también
       this.contenidosSeleccionados.delete(contenidoEliminado);
+    } else {
+      // Mostrar mensaje de advertencia
+      alert('⚠️ Una lista debe tener al menos un contenido. No puedes eliminar el último elemento.');
     }
+  }
+
+  /**
+   * Verifica si se puede eliminar un contenido
+   */
+  puedeEliminarContenido(): boolean {
+    return this.contenidosIds.length > 1;
   }
 
   /**
@@ -423,5 +459,55 @@ export class CrearListaComponent implements OnInit {
     return this.listaForm.valid && 
            this.contenidosIds.length > 0 && 
            !this.guardando;
+  }
+
+  /**
+   * Carga los datos de una lista existente para edición
+   */
+  private cargarDatosLista(): void {
+    if (!this.listaParaEditar) return;
+
+    // Cargar datos básicos en el formulario
+    this.listaForm.patchValue({
+      nombre: this.listaParaEditar.nombre || '',
+      descripcion: this.listaParaEditar.descripcion || '',
+      especializacion: this.listaParaEditar.especializacionGestor || '',
+      visible: this.listaParaEditar.visible || false,
+      tagsInput: this.listaParaEditar.tags ? this.listaParaEditar.tags.join(', ') : ''
+    });
+
+    // Cargar contenidos si existen
+    if (this.listaParaEditar.contenidosIds && this.listaParaEditar.contenidosIds.length > 0) {
+      this.contenidosIds = [...this.listaParaEditar.contenidosIds];
+    }
+
+    // Si hay contenidos y queremos mostrar sus nombres, podemos buscarlos
+    if (this.listaParaEditar.contenidos && this.listaParaEditar.contenidos.length > 0) {
+      this.listaParaEditar.contenidos.forEach((contenido: any) => {
+        this.contenidosSeleccionados.set(contenido.id, {
+          id: contenido.id,
+          titulo: contenido.titulo || contenido.nombre,
+          tipo: contenido.tipo,
+          duracion: contenido.duracion
+        });
+      });
+    }
+  }
+
+  /**
+   * Obtiene el título del modal/componente según el modo
+   */
+  get tituloModal(): string {
+    return this.listaParaEditar ? 'Editar lista' : 'Crear nueva lista';
+  }
+
+  /**
+   * Obtiene el texto del botón de submit según el modo
+   */
+  get textoBotonSubmit(): string {
+    if (this.guardando) {
+      return this.listaParaEditar ? 'Actualizando...' : 'Creando...';
+    }
+    return this.listaParaEditar ? 'Actualizar lista' : 'Crear lista';
   }
 }

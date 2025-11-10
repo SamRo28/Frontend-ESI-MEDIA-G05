@@ -1,14 +1,14 @@
-<div class="crear-lista-container">
+<div class="crear-lista-container" [class.modal-mode]="modal">
   <!-- Header bar similar al visu-dashboard -->
   <div class="header-bar" *ngIf="!modal">
-    <h2>🎵 Crear Nueva Lista</h2>
+    <h2>🎵 {{ tituloModal }}</h2>
     <button class="btn btn-secondary" (click)="volver()">🏠 Volver al Dashboard</button>
   </div>
 
   <!-- Título principal -->
   <div class="page-header">
-    <h1>Crear nueva lista</h1>
-    <p>Complete los campos para crear su lista personalizada</p>
+    <h1>{{ tituloModal }}</h1>
+    <p>Complete los campos para {{ listaParaEditar ? 'actualizar' : 'crear' }} su lista personalizada</p>
   </div>
 
   <!-- Mensaje de éxito -->
@@ -190,8 +190,8 @@
               type="button"
               class="btn btn-remove-content"
               (click)="quitarContenido(i)"
-              [disabled]="contenidosIds.length === 1"
-              title="Eliminar contenido">
+              [disabled]="!puedeEliminarContenido()"
+              [title]="puedeEliminarContenido() ? 'Eliminar contenido' : 'No se puede eliminar el último contenido'">
               <span class="icon">🗑️</span>
             </button>
           </div>
@@ -211,7 +211,7 @@
         [disabled]="!puedeCrearLista()">
         <span class="icon" *ngIf="guardando">⏳</span>
         <span class="icon" *ngIf="!guardando">💾</span>
-        {{ guardando ? 'Creando lista...' : 'Crear Lista' }}
+        {{ textoBotonSubmit }}
       </button>
     </div>
   </form>

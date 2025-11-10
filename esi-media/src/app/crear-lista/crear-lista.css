@@ -13,6 +13,19 @@ body, .crear-lista-container {
   min-height: 100vh;
 }
 
+/* Estilos para modo modal */
+.crear-lista-container.modal-mode {
+  background: transparent;
+  min-height: auto;
+  max-height: 90vh;
+  padding: 20px;
+  margin: 0;
+  max-width: none;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Header bar mejorado */
 .header-bar {
   display: flex;
@@ -82,6 +95,14 @@ h1, h2, h3 {
 
 .crear-lista-form {
   padding: 32px;
+  flex: 1;
+  overflow-y: visible;
+}
+
+/* Ajustes específicos para modo modal */
+.crear-lista-container.modal-mode .crear-lista-form {
+  max-height: none;
+  overflow-y: visible;
 }
 
 /* Títulos mejorados */
@@ -98,7 +119,7 @@ h3 {
 .crear-lista-form h3 {
   -webkit-text-fill-color: initial;
   color: #ffffff;
-  border-color: rgba(233, 213, 255, 0.25);
+  border-color: rgb(247, 246, 249);
 }
 
 .header-bar h2 {
@@ -112,7 +133,7 @@ h3 {
 }
 
 .form-section h2 {
-  color: #333;
+  color: #ffffff;
   font-size: 20px;
   margin: 0 0 20px 0;
   padding-bottom: 8px;
@@ -312,7 +333,7 @@ h3 {
   align-items: center;
   margin-bottom: 12px;
   font-weight: 600;
-  color: #333;
+  color: #fefdfd;
 }
 
 .empty-contenidos {
@@ -398,11 +419,25 @@ h3 {
   }
 }
 
+/* Scroll suave para todos los contenedores con scroll */
+.crear-lista-container,
+.crear-lista-form,
+.content-suggestions {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .crear-lista-container {
     padding: 12px;
     max-width: 100%;
+  }
+  
+  /* Ajustes específicos para modal en móvil */
+  .crear-lista-container.modal-mode {
+    max-height: 95vh;
+    padding: 10px;
   }
   
   .header-bar {
@@ -426,6 +461,10 @@ h3 {
   .crear-lista-form {
     padding: 20px;
     margin: 0;
+  }
+  
+  .crear-lista-container.modal-mode .crear-lista-form {
+    padding: 16px;
   }
   
   h3 {
@@ -485,9 +524,15 @@ h3 {
   border: 1px solid #ddd;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  z-index: 1001;
   max-height: 300px;
   overflow-y: auto;
+}
+
+/* Ajustes para sugerencias en modo modal */
+.crear-lista-container.modal-mode .content-suggestions {
+  z-index: 2002;
+  max-height: 200px;
 }
 
 .suggestions-header {
