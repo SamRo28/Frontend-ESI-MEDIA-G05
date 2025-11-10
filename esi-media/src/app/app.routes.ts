@@ -19,6 +19,8 @@ import { MultimediaDetailComponent } from './multimedia-detail/multimedia-detail
 import { MultimediaGuard } from './guards/multimedia.guard';
 import { GestionListasComponent } from './gestion-listas/gestion-listas';
 import { CrearListaComponent } from './crear-lista/crear-lista';
+import { ForgotPasswordComponent } from './forgot-password/forgot-password';
+import { ResetPasswordComponent } from './reset-password/reset-password';
 
 export const routes: Routes = [
   {
@@ -62,6 +64,14 @@ export const routes: Routes = [
     component: Login
   },
   {
+    path: 'forgot-password',
+    component: ForgotPasswordComponent
+  },
+  {
+    path: 'reset-password',
+    component: ResetPasswordComponent
+  },
+  {
     path: 'audio/subir',
     component: AudioUploadComponent
   },
@@ -71,7 +81,6 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
-    component: VisuDashboard,
     component: VisuDashboard
   },
   {

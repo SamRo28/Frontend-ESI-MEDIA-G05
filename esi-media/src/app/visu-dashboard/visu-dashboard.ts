@@ -1,13 +1,10 @@
 import { Component, OnInit, AfterViewInit, inject, PLATFORM_ID } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { Router, NavigationEnd } from '@angular/router';
+import { Router, NavigationEnd, RouterModule } from '@angular/router';
 import { MultimediaService } from '../services/multimedia.service';
 import { GestionListasComponent } from '../gestion-listas/gestion-listas';
 import { MultimediaListComponent } from '../multimedia-list/multimedia-list';
-import { MultimediaService } from '../services/multimedia.service';
-import { GestionListasComponent } from '../gestion-listas/gestion-listas';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
 import { ListasPrivadas } from '../listas-privadas/listas-privadas';
 import { CrearListaComponent } from '../crear-lista/crear-lista';
 
@@ -20,14 +17,14 @@ interface Star {
 @Component({
   selector: 'app-visu-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, GestionListasComponent, MultimediaListComponent],
-  imports: [CommonModule, RouterLink, RouterLinkActive, RouterModule, ListasPrivadas, CrearListaComponent],
+  imports: [CommonModule, RouterLink, RouterLinkActive, RouterModule, ListasPrivadas, CrearListaComponent, GestionListasComponent, MultimediaListComponent],
   templateUrl: './visu-dashboard.html',
   styleUrl: './visu-dashboard.css'
 })
 export class VisuDashboard implements OnInit, AfterViewInit {
   stars: Star[] = [];
   mostrarListasPrivadas = false;
+  mostrarListasPublicas = false;
   filtroTipo: 'AUDIO' | 'VIDEO' | null = null;
   showUserMenu = false;
   currentUser: any = null;
@@ -35,6 +32,7 @@ export class VisuDashboard implements OnInit, AfterViewInit {
   userInitial: string = 'U';
   isGestor: boolean = false;
   forceReloadListas: number = 0;
+  forceReloadListasPublicas: number = 0;
   showCrearModal: boolean = false;
 
   private isBrowser: boolean;
@@ -70,8 +68,9 @@ export class VisuDashboard implements OnInit, AfterViewInit {
     else if (initUrl.includes('/dashboard/audios')) this.filtroTipo = 'AUDIO';
   }
 
-  ngAfterViewInit(): void {}
-
+  ngAfterViewInit(): void {
+    if (isPlatformBrowser(this.platformId)) {
+    }
     // Solo en navegador: cargar datos y registrar listeners
     if (this.isBrowser) {
       this.loadUserData();
@@ -81,6 +80,8 @@ export class VisuDashboard implements OnInit, AfterViewInit {
       } catch (e) {
         // defensivo: si document no existe, no hacer nada
       }
+    }
+    if (isPlatformBrowser(this.platformId)) {
     }
   }
 
@@ -96,12 +97,6 @@ export class VisuDashboard implements OnInit, AfterViewInit {
     }
   }
 
-  ngAfterViewInit(): void {
-    // Redirección sólo en navegador para evitar SSR/hidratación problemática
-    if (isPlatformBrowser(this.platformId)) {
-      //setTimeout(() => this.router.navigate(['/multimedia']), 0);
-    }
-  }
 
 
   generateStars(): void {
@@ -133,6 +128,26 @@ export class VisuDashboard implements OnInit, AfterViewInit {
       } else {
         document.body.classList.remove('no-scroll');
       }
+    }
+  }
+
+  /**
+   * Muestra u oculta las listas públicas como tab principal
+   */
+  toggleListasPublicas(): void {
+    this.mostrarListasPublicas = !this.mostrarListasPublicas;
+    this.closeUserMenu();
+    
+    // Si se abren las listas públicas, cerrar las privadas
+    if (this.mostrarListasPublicas && this.mostrarListasPrivadas) {
+      this.mostrarListasPrivadas = false;
+      if (this.isBrowser) {
+        document.body.classList.remove('no-scroll');
+      }
+    }
+    
+    if (this.mostrarListasPublicas) {
+      this.forceReloadListasPublicas = Math.random();
     }
   }
 
@@ -332,7 +347,11 @@ export class VisuDashboard implements OnInit, AfterViewInit {
   logout(): void {
     console.log('Cerrando sesión...');
     // Limpiar token sesión y cache multimedia
-    try { sessionStorage.removeItem('token'); } catch {}
+    try { sessionStorage.removeItem('token'); 
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('currentUserClass');
+      sessionStorage.removeItem('email');
+    } catch {}
     this.multimedia.clearCache();
     this.router.navigate(['/login']);
   }

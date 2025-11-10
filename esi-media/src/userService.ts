@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 
 @Injectable({
@@ -35,12 +35,27 @@ export class UserService {
     { responseType: 'text' });
     }*/
 
-    verify2FACode(email: string, code: string) {
-  return this.client.post(
-    `http://localhost:8080/users/verify2FACode`,
-    { email, code },
-    { responseType: 'text' } // <--- ESTA ES LA CLAVE
-  );
-}
+    verify2FACode(email: string, code: string): Observable<string> {
+        return this.client.post<string>(
+            `http://localhost:8080/users/verify2FACode`,
+            { email, code },
+            { responseType: 'text' as 'json' }
+        );
+    }
+
+    // ========== Password Recovery ==========
+    requestPasswordReset(email: string): Observable<any> {
+        return this.client.post<any>(`http://localhost:8080/users/password-reset/request`, { email });
+    }
+
+    validateResetToken(token: string): Observable<any> {
+        const params = new HttpParams().set('token', token);
+        return this.client.get<any>(`http://localhost:8080/users/password-reset/validate`, { params });
+    }
+
+    resetPassword(token: string, newPassword: string): Observable<any> {
+        return this.client.post<any>(`http://localhost:8080/users/password-reset/confirm`, { token, newPassword });
+    }
+    // =======================================
 
 }
