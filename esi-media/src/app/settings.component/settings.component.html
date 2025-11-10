@@ -1,0 +1,311 @@
+<div class="space-y-6">
+  <!-- Encabezado -->
+  <div>
+    <h2 class="text-3xl font-bold text-gray-900 mb-2">Configuración del Sistema</h2>
+    <p class="text-gray-600">
+      Ajusta las preferencias y configuraciones de ESIMedia
+    </p>
+  </div>
+
+  <!-- Mensajes de éxito/error -->
+  <div *ngIf="successMessage" class="p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-lg flex items-start gap-3">
+    <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+    </svg>
+    <span>{{ successMessage }}</span>
+  </div>
+  
+  <div *ngIf="errorMessage" class="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg flex items-start gap-3">
+    <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+    </svg>
+    <span>{{ errorMessage }}</span>
+  </div>
+
+  <!-- Configuraciones del Sistema -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <div class="flex items-center gap-3 mb-6">
+      <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+      </svg>
+      <h3 class="text-xl font-bold text-gray-900">Configuración General</h3>
+    </div>
+
+    <div class="space-y-4">
+      <!-- Nombre del sitio -->
+      <div>
+        <label for="siteName" class="block text-sm font-medium text-gray-700 mb-2">
+          Nombre del Sitio
+        </label>
+        <input
+          type="text"
+          id="siteName"
+          [(ngModel)]="systemSettings.siteName"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="Nombre del sitio"
+        />
+      </div>
+
+      <!-- Tamaño máximo de subida -->
+      <div>
+        <label for="maxUploadSize" class="block text-sm font-medium text-gray-700 mb-2">
+          Tamaño Máximo de Subida (MB)
+        </label>
+        <input
+          type="number"
+          id="maxUploadSize"
+          [(ngModel)]="systemSettings.maxUploadSize"
+          min="1"
+          max="1000"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+
+      <!-- Tiempo de sesión -->
+      <div>
+        <label for="sessionTimeout" class="block text-sm font-medium text-gray-700 mb-2">
+          Tiempo de Sesión (minutos)
+        </label>
+        <input
+          type="number"
+          id="sessionTimeout"
+          [(ngModel)]="systemSettings.sessionTimeout"
+          min="5"
+          max="1440"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+
+      <!-- Switches de configuración -->
+      <div class="space-y-3 pt-4 border-t">
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="text-sm font-medium text-gray-700">Modo Mantenimiento</label>
+            <p class="text-xs text-gray-500">Desactiva el acceso al sitio para usuarios</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" [(ngModel)]="systemSettings.maintenanceMode" class="sr-only peer">
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="text-sm font-medium text-gray-700">Permitir Registros</label>
+            <p class="text-xs text-gray-500">Permite que nuevos usuarios se registren</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" [(ngModel)]="systemSettings.allowRegistrations" class="sr-only peer">
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="text-sm font-medium text-gray-700">Notificaciones por Email</label>
+            <p class="text-xs text-gray-500">Envía notificaciones a los administradores</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" [(ngModel)]="systemSettings.emailNotifications" class="sr-only peer">
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="text-sm font-medium text-gray-700">Autenticación de Dos Factores</label>
+            <p class="text-xs text-gray-500">Requiere 2FA para administradores</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" [(ngModel)]="systemSettings.twoFactorAuth" class="sr-only peer">
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Configuraciones de Contenido -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <div class="flex items-center gap-3 mb-6">
+      <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <rect x="2" y="2" width="20" height="20" rx="2" ry="2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></rect>
+        <line x1="7" y1="2" x2="7" y2="22" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></line>
+        <line x1="17" y1="2" x2="17" y2="22" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></line>
+        <line x1="2" y1="12" x2="22" y2="12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></line>
+      </svg>
+      <h3 class="text-xl font-bold text-gray-900">Configuración de Contenido</h3>
+    </div>
+
+    <div class="space-y-4">
+      <!-- Duración máxima de video -->
+      <div>
+        <label for="maxVideoDuration" class="block text-sm font-medium text-gray-700 mb-2">
+          Duración Máxima de Video (minutos)
+        </label>
+        <input
+          type="number"
+          id="maxVideoDuration"
+          [(ngModel)]="contentSettings.maxVideoDuration"
+          min="1"
+          max="300"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+
+      <!-- Duración máxima de audio -->
+      <div>
+        <label for="maxAudioDuration" class="block text-sm font-medium text-gray-700 mb-2">
+          Duración Máxima de Audio (minutos)
+        </label>
+        <input
+          type="number"
+          id="maxAudioDuration"
+          [(ngModel)]="contentSettings.maxAudioDuration"
+          min="1"
+          max="500"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+
+      <!-- Switches de contenido -->
+      <div class="space-y-3 pt-4 border-t">
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="text-sm font-medium text-gray-700">Auto-aprobar Contenido</label>
+            <p class="text-xs text-gray-500">El contenido se publica automáticamente</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" [(ngModel)]="contentSettings.autoApproveContent" class="sr-only peer">
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="text-sm font-medium text-gray-700">Visibilidad por Defecto</label>
+            <p class="text-xs text-gray-500">Los nuevos contenidos son visibles por defecto</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" [(ngModel)]="contentSettings.defaultContentVisibility" class="sr-only peer">
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Configuraciones de Usuario -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <div class="flex items-center gap-3 mb-6">
+      <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+      </svg>
+      <h3 class="text-xl font-bold text-gray-900">Configuración de Usuarios</h3>
+    </div>
+
+    <div class="space-y-4">
+      <!-- Rol por defecto -->
+      <div>
+        <label for="defaultUserRole" class="block text-sm font-medium text-gray-700 mb-2">
+          Rol por Defecto para Nuevos Usuarios
+        </label>
+        <select
+          id="defaultUserRole"
+          [(ngModel)]="userSettings.defaultUserRole"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <option value="Visualizador">Visualizador</option>
+          <option value="Gestor">Gestor</option>
+          <option value="Administrador">Administrador</option>
+        </select>
+      </div>
+
+      <!-- Longitud mínima de contraseña -->
+      <div>
+        <label for="passwordMinLength" class="block text-sm font-medium text-gray-700 mb-2">
+          Longitud Mínima de Contraseña
+        </label>
+        <input
+          type="number"
+          id="passwordMinLength"
+          [(ngModel)]="userSettings.passwordMinLength"
+          min="4"
+          max="32"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+
+      <!-- Intentos de bloqueo -->
+      <div>
+        <label for="accountLockoutAttempts" class="block text-sm font-medium text-gray-700 mb-2">
+          Intentos de Login Fallidos Antes de Bloqueo
+        </label>
+        <input
+          type="number"
+          id="accountLockoutAttempts"
+          [(ngModel)]="userSettings.accountLockoutAttempts"
+          min="3"
+          max="10"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+
+      <!-- Switches de seguridad -->
+      <div class="space-y-3 pt-4 border-t">
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="text-sm font-medium text-gray-700">Requerir Carácter Especial</label>
+            <p class="text-xs text-gray-500">Las contraseñas deben tener caracteres especiales</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" [(ngModel)]="userSettings.passwordRequireSpecialChar" class="sr-only peer">
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="text-sm font-medium text-gray-700">Requerir Número</label>
+            <p class="text-xs text-gray-500">Las contraseñas deben tener números</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" [(ngModel)]="userSettings.passwordRequireNumber" class="sr-only peer">
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="text-sm font-medium text-gray-700">Requerir Mayúscula</label>
+            <p class="text-xs text-gray-500">Las contraseñas deben tener letras mayúsculas</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" [(ngModel)]="userSettings.passwordRequireUppercase" class="sr-only peer">
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botones de acción -->
+  <div class="flex justify-end gap-3 pt-4">
+    <button
+      (click)="resetToDefaults()"
+      class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium flex items-center gap-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+      </svg>
+      Restaurar Valores Predeterminados
+    </button>
+    <button
+      (click)="saveSettings()"
+      class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium flex items-center gap-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+      Guardar Configuraciones
+    </button>
+  </div>
+</div>

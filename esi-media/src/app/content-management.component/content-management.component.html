@@ -1,0 +1,172 @@
+<div class="space-y-3">
+  <!-- Encabezado principal -->
+  <div class="flex justify-between items-center pb-2">
+    <div>
+      <h2 class="text-3xl font-bold text-gray-900">Contenidos</h2>
+      <p class="text-gray-600 mt-1">Listado de contenidos de la plataforma</p>
+    </div>
+  </div>
+
+  <!-- Mensajes de éxito/error -->
+  <div *ngIf="successMessage" class="mb-3 p-3 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-lg flex items-start gap-3">
+    <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+    </svg>
+    <span>{{ successMessage }}</span>
+  </div>
+  
+  <div *ngIf="errorMessage" class="mb-3 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg flex items-start gap-3">
+    <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+    </svg>
+    <span>{{ errorMessage }}</span>
+  </div>
+
+  <!-- Filtros y Búsqueda -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-2 mb-1">
+    <div class="flex flex-col md:flex-row gap-2 items-start md:items-center justify-between">
+      <!-- Buscador por TÍTULO/TIPO/GESTOR -->
+      <div class="flex-1 min-w-0">
+        <label for="busquedaContenido" class="block text-xs font-medium text-gray-700 mb-0.5">
+          Buscar por título, tipo o gestor
+        </label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+          <input
+            type="text"
+            id="busquedaContenido"
+            [(ngModel)]="busquedaContenido"
+            (input)="onBusquedaContenidoChange()"
+            class="w-full pl-9 pr-4 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm"
+            placeholder="Escribe para buscar contenidos..."
+          />
+        </div>
+      </div>
+
+      <!-- Filtro por TIPO -->
+      <div class="min-w-0">
+        <label for="filtroTipoContenido" class="block text-xs font-medium text-gray-700 mb-0.5">
+          Filtrar por tipo
+        </label>
+        <select
+          id="filtroTipoContenido"
+          [(ngModel)]="filtroTipoContenido"
+          (change)="onFiltroTipoContenidoChange()"
+          class="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-white text-sm">
+          <option value="Todos">Todos los tipos</option>
+          <option value="Audio">Audio</option>
+          <option value="Video">Video</option>
+        </select>
+      </div>
+
+      <!-- Botón limpiar filtros -->
+      <div class="flex items-end">
+        <button
+          (click)="limpiarFiltrosContenidos()"
+          class="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all flex items-center gap-1">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+          Limpiar
+        </button>
+      </div>
+    </div>
+
+    <!-- Contador de resultados -->
+    <div class="mt-0.5 text-xs text-gray-600 flex items-center gap-1">
+      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4"></path>
+      </svg>
+      Mostrando {{ contenidosFiltrados.length || 0 }} de {{ contenidos.length || 0 }} contenidos
+      <span *ngIf="filtroTipoContenido !== 'Todos' || busquedaContenido" class="text-blue-600 font-medium text-xs">
+        (filtrado)
+      </span>
+    </div>
+  </div>
+
+  <!-- Tabla de contenidos -->
+  <div class="table-container">
+    <div class="overflow-x-auto">
+      <table class="min-w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">TÍTULO</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">TIPO</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">GESTOR</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-100">
+          <tr *ngFor="let c of contenidosFiltrados" class="hover:bg-gray-50">
+            <td class="px-4 py-3">
+              <div class="text-sm font-medium text-gray-900">{{ c.titulo }}</div>
+            </td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded"
+                [ngClass]="c.tipo === 'Video' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700'">
+                {{ c.tipo }}
+              </span>
+            </td>
+            <td class="px-4 py-3">
+              <div class="text-sm text-gray-700">{{ c.gestorNombre || '-' }}</div>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex gap-1">
+                <button type="button" (click)="verDetalleContenido(c)" class="p-1 hover:bg-gray-100 rounded" title="Ver detalles">
+                  <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Si no hay contenidos filtrados -->
+  <div *ngIf="contenidosFiltrados.length === 0 && contenidos.length > 0" class="text-center py-16 bg-white rounded-lg border border-gray-200">
+    <svg class="w-20 h-20 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+    </svg>
+    <h3 class="text-lg font-semibold text-gray-900 mb-2">No se encontraron contenidos</h3>
+    <p class="text-gray-500 mb-4">No hay contenidos que coincidan con los filtros aplicados</p>
+    <button (click)="limpiarFiltrosContenidos()"
+      class="px-6 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all font-medium">
+      Limpiar Filtros
+    </button>
+  </div>
+
+  <!-- Si no hay contenidos en total -->
+  <div *ngIf="contenidos.length === 0 && !loadingContenido" class="text-center py-16 bg-white rounded-lg border border-gray-200">
+    <svg class="w-20 h-20 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <rect x="2" y="2" width="20" height="20" rx="2" ry="2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></rect>
+      <line x1="7" y1="2" x2="7" y2="22" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></line>
+      <line x1="17" y1="2" x2="17" y2="22" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></line>
+      <line x1="2" y1="12" x2="22" y2="12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></line>
+    </svg>
+    <h3 class="text-lg font-semibold text-gray-900 mb-2">No hay contenidos registrados</h3>
+    <p class="text-gray-500 mb-4">Los contenidos aparecerán aquí cuando los gestores los suban</p>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loadingContenido && contenidos.length === 0" class="text-center py-16 bg-white rounded-lg border border-gray-200">
+    <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
+    <p class="text-gray-600">Cargando contenidos...</p>
+  </div>
+
+  <!-- Modal de detalle de contenido -->
+  <app-content-detail-modal
+    *ngIf="showContenidoModal"
+    [contenido]="detalleContenido"
+    [loading]="loadingContenido"
+    [error]="errorContenido"
+    (close)="cerrarContenidoModal()">
+  </app-content-detail-modal>
+</div>
