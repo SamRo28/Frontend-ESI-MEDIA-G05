@@ -26,62 +26,80 @@
 
   <div class="detalle" *ngIf="!cargando && detalle">
     <div class="cabecera">
-      <div class="caratula" *ngIf="caratulaUrl()" [style.background-image]="'url(' + caratulaUrl() + ')'">
-        <div class="vip-badge" *ngIf="detalle!.vip">VIP</div>
-      </div>
+      <div class="caratula" *ngIf="caratulaUrl()" [style.background-image]="'url(' + caratulaUrl() + ')'"></div>
       <div class="cabecera-info">
         <h1 class="titulo">{{ detalle!.titulo }}</h1>
-        <p class="descripcion" *ngIf="detalle!.descripcion">{{ detalle!.descripcion }}</p>
-        <div class="meta" *ngIf="duracion() || tags().length">
-          <span class="chip" *ngIf="duracion()">⏱ {{ duracion() }}s</span>
+        <!-- Se eliminan descripción y metadatos en cabecera para evitar duplicidad -->
+      </div>
+    </div>
+
+    <div class="detalle-body">
+      <!-- Columna principal: reproductor -->
+      <div class="col-principal">
+        <!-- VIDEO -->
+        <div *ngIf="detalle!.tipo === 'VIDEO'" class="player-card">
+          <div class="player-wrapper">
+            <!-- Player: siempre renderizado; skeleton superpuesto hasta ready -->
+            <ng-container *ngIf="esYoutube(); else videoDirecto">
+              <iframe
+                class="video-player"
+                [src]="youtubeSafeUrl"
+                width="100%" height="420"
+                frameborder="0"
+                (load)="onIframeLoaded()"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen>
+              </iframe>
+            </ng-container>
+            <ng-template #videoDirecto>
+              <video controls [src]="detalle!.referenciaReproduccion" class="video-player" preload="metadata"
+                (loadedmetadata)="onVideoLoaded()"
+                (canplay)="onVideoCanPlay()"
+                (waiting)="onVideoWaiting()"
+                (playing)="onVideoPlaying()"></video>
+            </ng-template>
+            <!-- Skeleton overlay -->
+            <div class="player-skeleton" *ngIf="!playerReady">
+              <div class="shimmer"></div>
+              <span>Preparando reproductor...</span>
+            </div>
+          </div>
+          <p class="fallback">
+            ¿Problemas? <a [href]="detalle!.referenciaReproduccion" target="_blank" rel="noopener">Abrir en pestaña nueva</a>.
+          </p>
+          <div class="buffering" *ngIf="buffering">Bufferizando...</div>
+        </div>
+
+        <!-- AUDIO: reproducción directa con <audio> y token en query (?auth=) -->
+        <div *ngIf="detalle!.tipo === 'AUDIO'" class="player-card">
+          <ng-container *ngIf="!audioError">
+            <audio controls [src]="audioSrc()" (error)="onAudioError($event)" (loadedmetadata)="onAudioLoaded($event)"></audio>
+          </ng-container>
+          <div class="audio-error" *ngIf="audioError">
+            {{ audioError }}
+            <button class="retry-btn" (click)="reintentarAudio()">Reintentar</button>
+          </div>
+        </div>
+
+        <!-- Tags debajo del reproductor, sin título -->
+        <div class="tags-under" *ngIf="tags().length > 0">
           <span class="chip" *ngFor="let tag of tags()">#{{ tag }}</span>
         </div>
       </div>
-    </div>
 
-    <!-- VIDEO -->
-    <div *ngIf="detalle!.tipo === 'VIDEO'" class="player-card">
-      <div class="player-wrapper">
-        <!-- Player: siempre renderizado; skeleton superpuesto hasta ready -->
-        <ng-container *ngIf="esYoutube(); else videoDirecto">
-          <iframe
-            class="video-player"
-            [src]="youtubeSafeUrl"
-            width="100%" height="360"
-            frameborder="0"
-            (load)="onIframeLoaded()"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowfullscreen>
-          </iframe>
-        </ng-container>
-        <ng-template #videoDirecto>
-          <video controls [src]="detalle!.referenciaReproduccion" class="video-player" preload="metadata"
-            (loadedmetadata)="onVideoLoaded()"
-            (canplay)="onVideoCanPlay()"
-            (waiting)="onVideoWaiting()"
-            (playing)="onVideoPlaying()"></video>
-        </ng-template>
-        <!-- Skeleton overlay -->
-        <div class="player-skeleton" *ngIf="!playerReady">
-          <div class="shimmer"></div>
-          <span>Preparando reproductor...</span>
+      <!-- Columna lateral: información y etiquetas -->
+      <aside class="col-lateral">
+        <div class="info-card">
+          <h3>Información</h3>
+          <ul class="info-list">
+            <li><label>Duración:</label><b>{{ duracionTexto() }}</b></li>
+            <li><label>Edad mínima:</label><b>{{ edadTexto() }}</b></li>
+            <li><label>Visualizaciones:</label><b>{{ visualizacionesTexto() }}</b></li>
+            <li><label>Disponible hasta:</label><b>{{ fechaDisponibleTexto() }}</b></li>
+            <li class="desc"><label>Descripción:</label><div class="desc-text">{{ detalle!.descripcion || 'Sin descripción' }}</div></li>
+          </ul>
         </div>
-      </div>
-      <p class="fallback">
-        ¿Problemas? <a [href]="detalle!.referenciaReproduccion" target="_blank" rel="noopener">Abrir en pestaña nueva</a>.
-      </p>
-      <div class="buffering" *ngIf="buffering">Bufferizando...</div>
-    </div>
-
-    <!-- AUDIO: reproducción directa con <audio> y token en query (?auth=) -->
-    <div *ngIf="detalle!.tipo === 'AUDIO'" class="player-card">
-      <ng-container *ngIf="!audioError">
-        <audio controls [src]="audioSrc()" (error)="onAudioError($event)" (loadedmetadata)="onAudioLoaded($event)"></audio>
-      </ng-container>
-      <div class="audio-error" *ngIf="audioError">
-        {{ audioError }}
-        <button class="retry-btn" (click)="reintentarAudio()">Reintentar</button>
-      </div>
+      </aside>
     </div>
   </div>
 </div>
