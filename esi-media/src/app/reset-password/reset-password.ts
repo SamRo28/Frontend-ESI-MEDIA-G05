@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
@@ -38,7 +38,13 @@ export class ResetPasswordComponent implements OnInit {
   allValid = false;
   showPolicy = false;
 
-  constructor(private route: ActivatedRoute, private userService: UserService, private router: Router) {}
+  constructor(
+    private route: ActivatedRoute,
+    private userService: UserService,
+    private router: Router,
+    private cdr: ChangeDetectorRef,
+    private zone: NgZone
+  ) {}
 
   ngOnInit(): void {
     this.token = this.route.snapshot.queryParamMap.get('token') || '';
@@ -77,29 +83,46 @@ export class ResetPasswordComponent implements OnInit {
     if (!this.valid || this.loading) return;
     this.updateValidation();
     if (!this.rules.match) {
-      this.showPolicy = true;
-      this.error = 'No se pudo guardar la contrasena. Intentalo de nuevo y verifica la politica de seguridad.';
+      this.zone.run(() => {
+        this.showPolicy = true;
+        this.isSaving = false;
+        this.error = 'No se pudo guardar la contrasena. Intentalo de nuevo y verifica la politica de seguridad.';
+        this.cdr.detectChanges();
+      });
       return;
     }
     if (!this.allValid) {
-      this.showPolicy = true;
-      this.error = 'No se pudo guardar la contrasena. Intentalo de nuevo y verifica la politica de seguridad.';
+      this.zone.run(() => {
+        this.showPolicy = true;
+        this.isSaving = false;
+        this.error = 'No se pudo guardar la contrasena. Intentalo de nuevo y verifica la politica de seguridad.';
+        this.cdr.detectChanges();
+      });
       return;
     }
-    this.error = '';
-    this.isSaving = true;
+    this.zone.run(() => {
+      this.error = '';
+      this.isSaving = true;
+      this.cdr.detectChanges();
+    });
     let toSend = (this.password || '').trim();
     try {
       toSend = (toSend as any).normalize ? (toSend as any).normalize('NFC') : toSend;
     } catch {}
     this.userService.resetPassword(this.token, toSend).subscribe({
       next: () => {
-        this.isSaving = false;
-        this.router.navigate(['/login']);
+        this.zone.run(() => {
+          this.isSaving = false;
+          this.router.navigate(['/login']);
+        });
       },
       error: () => {
-        this.isSaving = false;
-        this.error = 'No se pudo guardar la contrasena. Intentalo de nuevo y verifica la politica de seguridad.';
+        this.zone.run(() => {
+          this.isSaving = false;
+          this.showPolicy = true;
+          this.error = 'No se pudo guardar la contrasena. Intentalo de nuevo y verifica la politica de seguridad.';
+          this.cdr.detectChanges();
+        });
       }
     });
   }
