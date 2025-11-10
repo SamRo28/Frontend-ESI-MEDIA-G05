@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 
 @Injectable({
@@ -42,5 +42,19 @@ export class UserService {
     { responseType: 'text' } // <--- ESTA ES LA CLAVE
   );
 }
+
+// Password Recovery 
+  requestPasswordReset(email: string): Observable<any> {
+    return this.client.post<any>(`http://localhost:8080/users/password-reset/request`, { email });
+  }
+
+  validateResetToken(token: string): Observable<any> {
+    const params = new HttpParams().set('token', token);
+    return this.client.get<any>(`http://localhost:8080/users/password-reset/validate`, { params });
+  }
+
+  resetPassword(token: string, newPassword: string): Observable<any> {
+    return this.client.post<any>(`http://localhost:8080/users/password-reset/confirm`, { token, newPassword });
+  }
 
 }
