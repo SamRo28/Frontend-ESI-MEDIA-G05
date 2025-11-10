@@ -24,44 +24,53 @@ import { ForgotPasswordComponent } from './forgot-password/forgot-password';
 import { ResetPasswordComponent } from './reset-password/reset-password';
 
 export const routes: Routes = [
-  { 
-    path: 'home', 
-    component: Home 
+  {
+    path: 'home',
+    component: Home
   },
-  { 
-    path: 'user-detail/:id', 
-    component: UserDetailComponent 
+  {
+    path: 'user-detail/:id',
+    component: UserDetailComponent
   },
-  { 
-    path: 'admin-dashboard', component: AdminDashboardComponent 
+  {
+    path: 'admin-dashboard',
+    component: AdminDashboardComponent
   },
-  { 
-    path: '2fa', 
-    component: Fa2Qr, 
-    canActivate: [Fa2Guard] 
+  {
+    path: '2fa',
+    component: Fa2Qr,
+    canActivate: [Fa2Guard]
   },
-  { 
-    path: '2verification', 
-    component: Fa2Code, 
-    canActivate: [Fa2CodeGuard] 
+  {
+    path: '2verification',
+    component: Fa2Code,
+    canActivate: [Fa2CodeGuard]
   },
-  { 
-    path: '3verification', 
-    component: Fa3Code, 
-    canActivate: [Fa3CodeGuard] 
+  {
+    path: '3verification',
+    component: Fa3Code,
+    canActivate: [Fa3CodeGuard]
   },
   {
     path: '',
     redirectTo: 'home',
     pathMatch: 'full'
   },
-  { 
-    path: 'register', 
-    component: RegistroVisualizadorComponent 
+  {
+    path: 'register',
+    component: RegistroVisualizadorComponent
   },
-  { 
-    path: 'login', 
-    component: Login 
+  {
+    path: 'login',
+    component: Login
+  },
+  {
+    path: 'audio/subir',
+    component: AudioUploadComponent
+  },
+  {
+    path: 'video/subir',
+    component: VideoUploadComponent
   },
   { 
     path: 'forgot-password', 
@@ -71,73 +80,66 @@ export const routes: Routes = [
     path: 'reset-password', 
     component: ResetPasswordComponent 
   },
-  { 
-    path: 'audio/subir', 
-    component: AudioUploadComponent 
+  {
+    path: 'dashboard',
+    component: VisuDashboard
   },
-  { 
-    path: 'video/subir', 
-    component: VideoUploadComponent 
+  {
+    path: 'dashboard/listas',
+    component: GestionListasComponent
   },
-  { 
-    path: 'dashboard', 
-    component: VisuDashboard 
+  {
+    path: 'dashboard/listas/crear',
+    component: CrearListaComponent
   },
-  { 
-    path: 'dashboard/listas', 
-    component: GestionListasComponent 
+  {
+    path: 'dashboard/listas/:id',
+    component: ListaDetailComponent
   },
-  { 
-    path: 'dashboard/listas/crear', 
-    component: CrearListaComponent 
+  {
+    path: 'gestor-dashboard',
+    component: GestorDashboardComponent
   },
-  { 
-    path: 'dashboard/listas/:id', 
-    component: ListaDetailComponent 
+  {
+    path: 'multimedia',
+    component: MultimediaListComponent,
+    canActivate: [MultimediaGuard]
   },
-  { 
-    path: 'gestor-dashboard', 
-    component: GestorDashboardComponent 
+  {
+    path: 'dashboard/videos',
+    component: VisuDashboard,
+    canActivate: [MultimediaGuard]
   },
-  { 
-    path: 'multimedia', 
-    component: MultimediaListComponent, 
-    canActivate: [MultimediaGuard] 
+  {
+    path: 'dashboard/audios',
+    component: VisuDashboard,
+    canActivate: [MultimediaGuard]
   },
-  { 
-    path: 'dashboard/videos', 
-    component: VisuDashboard, 
-    canActivate: [MultimediaGuard] 
+  {
+    path: 'dashboard/:id',
+    component: MultimediaDetailComponent,
+    canActivate: [MultimediaGuard]
   },
-  { 
-    path: 'dashboard/audios', 
-    component: VisuDashboard, 
-    canActivate: [MultimediaGuard] 
-  },
-  { 
-    path: 'dashboard/:id', 
-    component: MultimediaDetailComponent, 
-    canActivate: [MultimediaGuard] 
-  },
-  { 
-    path: 'gestor-dashboard', 
-    component: GestorDashboardComponent 
+  {
+    path: 'gestor-dashboard',
+    component: GestorDashboardComponent
   },
   // Redirecciones legacy desde /multimedia* a /dashboard*
   { path: 'multimedia', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'multimedia/videos', redirectTo: 'dashboard/videos', pathMatch: 'full' },
   { path: 'multimedia/audios', redirectTo: 'dashboard/audios', pathMatch: 'full' },
   { path: 'multimedia/:id', redirectTo: 'dashboard/:id', pathMatch: 'full' },
-  { 
-    
-    path: 'gestor-dashboard/gestion-listas', 
-    component: GestionListasComponent 
+  {
+
+    path: 'gestor-dashboard/gestion-listas',
+    component: GestionListasComponent
   },
-  { 
-    path: 'gestor-dashboard/gestion-listas/:id', 
-    component: ListaDetailComponent 
+  {
+    path: 'gestor-dashboard/gestion-listas/:id',
+    component: ListaDetailComponent
   },
-  { 
-    path: 'gestor-dashboard/gestion-listas/crear', 
-    component: CrearListaComponent }
+  {
+    path: 'gestor-dashboard/gestion-listas/crear',
+    component: CrearListaComponent
+  }
 ];
