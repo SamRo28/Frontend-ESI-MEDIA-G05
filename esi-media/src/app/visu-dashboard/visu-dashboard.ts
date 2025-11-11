@@ -7,6 +7,7 @@ import { MultimediaListComponent } from '../multimedia-list/multimedia-list';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ListasPrivadas } from '../listas-privadas/listas-privadas';
 import { CrearListaComponent } from '../crear-lista/crear-lista';
+import { ConfigUserComponent, ConfigUserDTO } from '../config-user/config-user';
 import { ContentFilterComponent } from '../shared/content-filter/content-filter.component';
 
 interface Star {
@@ -18,7 +19,9 @@ interface Star {
 @Component({
   selector: 'app-visu-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, RouterModule, ListasPrivadas, CrearListaComponent, GestionListasComponent, MultimediaListComponent, ContentFilterComponent],
+
+  imports: [CommonModule, RouterLink, RouterLinkActive, RouterModule, ListasPrivadas, CrearListaComponent, GestionListasComponent, MultimediaListComponent, ConfigUserComponent, ContentFilterComponent],
+
   templateUrl: './visu-dashboard.html',
   styleUrl: './visu-dashboard.css'
 })
@@ -35,6 +38,7 @@ export class VisuDashboard implements OnInit, AfterViewInit {
   forceReloadListas: number = 0;
   forceReloadListasPublicas: number = 0;
   showCrearModal: boolean = false;
+  showConfigModal: boolean = false;
   
   // Variables para el sistema de filtrado
   currentTagFilters: string[] = [];
@@ -59,17 +63,33 @@ export class VisuDashboard implements OnInit, AfterViewInit {
         const url = evt.urlAfterRedirects || evt.url;
         if (url.includes('/dashboard/videos')) {
           this.filtroTipo = 'VIDEO';
+          this.mostrarListasPublicas = false;
         } else if (url.includes('/dashboard/audios')) {
           this.filtroTipo = 'AUDIO';
+          this.mostrarListasPublicas = false;
+        } else if (url.includes('/dashboard/listas-publicas')) {
+          this.mostrarListasPublicas = true;
+          this.filtroTipo = null;
+          this.forceReloadListasPublicas = Math.random();
         } else {
           this.filtroTipo = null; // mostrar ambos
+          this.mostrarListasPublicas = false;
         }
       }
     });
     // Inicial rápido
     const initUrl = this.router.url || '';
-    if (initUrl.includes('/dashboard/videos')) this.filtroTipo = 'VIDEO';
-    else if (initUrl.includes('/dashboard/audios')) this.filtroTipo = 'AUDIO';
+    if (initUrl.includes('/dashboard/videos')) {
+      this.filtroTipo = 'VIDEO';
+      this.mostrarListasPublicas = false;
+    } else if (initUrl.includes('/dashboard/audios')) {
+      this.filtroTipo = 'AUDIO';
+      this.mostrarListasPublicas = false;
+    } else if (initUrl.includes('/dashboard/listas-publicas')) {
+      this.mostrarListasPublicas = true;
+      this.filtroTipo = null;
+      this.forceReloadListasPublicas = Math.random();
+    }
   }
 
   ngAfterViewInit(): void {
@@ -135,25 +155,7 @@ export class VisuDashboard implements OnInit, AfterViewInit {
     }
   }
 
-  /**
-   * Muestra u oculta las listas públicas como tab principal
-   */
-  toggleListasPublicas(): void {
-    this.mostrarListasPublicas = !this.mostrarListasPublicas;
-    this.closeUserMenu();
-    
-    // Si se abren las listas públicas, cerrar las privadas
-    if (this.mostrarListasPublicas && this.mostrarListasPrivadas) {
-      this.mostrarListasPrivadas = false;
-      if (this.isBrowser) {
-        document.body.classList.remove('no-scroll');
-      }
-    }
-    
-    if (this.mostrarListasPublicas) {
-      this.forceReloadListasPublicas = Math.random();
-    }
-  }
+
 
   /**
    * Navega a la página de gestión de listas usando el router
@@ -338,11 +340,58 @@ export class VisuDashboard implements OnInit, AfterViewInit {
   onEscapeKey(): void {
     if (this.showCrearModal) {
       this.closeCrearListaModal();
+    } else if (this.showConfigModal) {
+      this.closeConfigUserModal();
     } else if (this.mostrarListasPrivadas) {
       this.toggleListasPrivadas();
     } else if (this.showUserMenu) {
       this.closeUserMenu();
     }
+  }
+
+  /**
+   * Abre/cierra el modal de configuración de usuario
+   */
+  toggleConfigUser(): void {
+    this.showConfigModal = !this.showConfigModal;
+    this.closeUserMenu();
+    
+    if (this.isBrowser) {
+      if (this.showConfigModal) {
+        document.body.classList.add('no-scroll');
+      } else {
+        document.body.classList.remove('no-scroll');
+      }
+    }
+  }
+
+  /**
+   * Cierra el modal de configuración de usuario
+   */
+  closeConfigUserModal(): void {
+    this.showConfigModal = false;
+    
+    if (this.isBrowser) {
+      document.body.classList.remove('no-scroll');
+    }
+  }
+
+  /**
+   * Maneja la actualización de datos del usuario
+   */
+  onUserUpdated(updatedUser: ConfigUserDTO): void {
+    console.log('Usuario actualizado:', updatedUser);
+    
+    // Actualizar los datos locales del usuario
+    if (this.currentUser) {
+      Object.assign(this.currentUser, updatedUser);
+    }
+    
+    // Actualizar los datos de visualización
+    this.updateUserDisplayData();
+    
+    // Mostrar notificación de éxito (opcional)
+    this.showToast('Perfil actualizado correctamente');
   }
 
   /**

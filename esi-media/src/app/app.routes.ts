@@ -86,24 +86,29 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard/listas',
-    component: GestionListasComponent
+    component: GestionListasComponent,
+    canActivate: [MultimediaGuard]
   },
   {
     path: 'dashboard/listas/crear',
-    component: CrearListaComponent
+    component: CrearListaComponent,
+    canActivate: [MultimediaGuard]
   },
   {
     path: 'dashboard/listas/:id',
-    component: ListaDetailComponent
+    component: ListaDetailComponent,
+    canActivate: [MultimediaGuard]
   },
   {
     path: 'gestor-dashboard',
     component: GestorDashboardComponent
   },
   {
+    // Ruta legacy eliminada: la vista principal vive en /dashboard.
+    // Se mantienen redirecciones más abajo para preservar enlaces antiguos.
     path: 'multimedia',
-    component: MultimediaListComponent,
-    canActivate: [MultimediaGuard]
+    redirectTo: 'dashboard',
+    pathMatch: 'full'
   },
   {
     path: 'dashboard/videos',
@@ -116,13 +121,14 @@ export const routes: Routes = [
     canActivate: [MultimediaGuard]
   },
   {
-    path: 'dashboard/:id',
-    component: MultimediaDetailComponent,
+    path: 'dashboard/listas-publicas',
+    component: VisuDashboard,
     canActivate: [MultimediaGuard]
   },
   {
-    path: 'gestor-dashboard',
-    component: GestorDashboardComponent
+    path: 'dashboard/:id',
+    component: MultimediaDetailComponent,
+    canActivate: [MultimediaGuard]
   },
   // Redirecciones legacy desde /multimedia* a /dashboard*
   { path: 'multimedia', redirectTo: 'dashboard', pathMatch: 'full' },
@@ -132,14 +138,17 @@ export const routes: Routes = [
   {
 
     path: 'gestor-dashboard/gestion-listas',
-    component: GestionListasComponent
-  },
-  {
-    path: 'gestor-dashboard/gestion-listas/:id',
-    component: ListaDetailComponent
+    component: GestionListasComponent,
+    canActivate: [MultimediaGuard]
   },
   {
     path: 'gestor-dashboard/gestion-listas/crear',
-    component: CrearListaComponent
+    component: CrearListaComponent,
+    canActivate: [MultimediaGuard]
+  },
+  {
+    path: 'gestor-dashboard/gestion-listas/:id',
+    component: ListaDetailComponent,
+    canActivate: [MultimediaGuard]
   }
 ];

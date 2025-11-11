@@ -212,6 +212,28 @@ export class ListaService {
   }
 
   /**
+   * Obtiene una lista pública específica por su ID (para visualizadores)
+   * GET /api/listas/usuario/publica/{id}
+   * 
+   * @param id ID de la lista
+   * @returns Observable con la respuesta que contiene la lista
+   */
+  obtenerListaPublicaPorId(id: string): Observable<ListaResponse> {
+    return this.http.get<ListaResponse>(`${this.baseUrl}/usuario/publica/${id}`);
+  }
+
+  /**
+   * Obtiene los contenidos de una lista pública de gestor
+   * GET /api/listas/usuario/publica/{id}/contenidos
+   * 
+   * @param id ID de la lista
+   * @returns Observable con la respuesta que contiene los contenidos de la lista pública
+   */
+  obtenerContenidosListaPublica(id: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/usuario/publica/${id}/contenidos`);
+  }
+
+  /**
    * Obtiene los contenidos de una lista específica
    * GET /api/listas/gestor/{id}/contenidos o /api/listas/usuario/{id}/contenidos
    * 

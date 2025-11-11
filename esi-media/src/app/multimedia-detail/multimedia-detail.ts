@@ -1,10 +1,16 @@
 import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, NgIf, NgFor } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
+import { ActivatedRoute, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { MultimediaService, ContenidoDetalleDTO } from '../services/multimedia.service';
+import { ListaService, ListasResponse } from '../services/lista.service';
 import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+
+interface Notificacion {
+  mensaje: string;
+  tipo: 'success' | 'error' | 'info';
+}
 
 @Component({
   selector: 'app-multimedia-detail',
@@ -32,12 +38,25 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   youtubeSafeUrl: SafeResourceUrl | null = null;
   // Token para uso en query (evitar sessionStorage directo en plantilla)
   token: string = '';
+  // Datos para el header unificado
+  showUserMenu = false;
+  userName: string = 'Usuario';
+  userInitial: string = 'U';
+  isGestor: boolean = false;
+
+  // Propiedades para las listas privadas
+  listasPrivadas: any[] = [];
+  mostrarDropdownListas = false;
+  cargandoListas = false;
+  notificacion: Notificacion | null = null;
 
   constructor(
     private route: ActivatedRoute,
     private multimedia: MultimediaService,
     private sanitizer: DomSanitizer,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private listaService: ListaService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -51,6 +70,9 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     } catch (e) {
       this.token = '';
     }
+    // Cargar listas privadas del usuario
+    this.cargarListasPrivadas();
+
     // Suscribirse a cambios de parámetro para soportar navegación a otros ids reutilizando el componente
     this.route.paramMap.subscribe(pm => {
       const nuevoId = pm.get('id');
@@ -63,6 +85,9 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
         this.cargar();
       }
     });
+
+    // Cargar datos de usuario para el header
+    this.loadUserData();
   }
 
   ngOnDestroy(): void {
@@ -247,6 +272,161 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
+  // --- Métodos para manejo de listas privadas ---
+  
+  /**
+   * Carga las listas privadas del usuario autenticado
+   */
+  cargarListasPrivadas(): void {
+    // Verificar que el usuario esté autenticado
+    const userClass = sessionStorage.getItem('currentUserClass');
+    if (!userClass) {
+      console.log('[MultimediaDetail] Usuario no autenticado, no se cargan listas');
+      return;
+    }
+
+    this.cargandoListas = true;
+    console.log('[MultimediaDetail] Cargando listas privadas del usuario');
+    
+    this.listaService.getListasPropiasUsuario().subscribe({
+      next: (response: ListasResponse) => {
+        if (response.success && response.listas) {
+          // Filtrar solo listas privadas (no visibles)
+          this.listasPrivadas = response.listas.filter(lista => !lista.visible);
+          console.log('[MultimediaDetail] Listas privadas cargadas:', this.listasPrivadas.length);
+        } else {
+          console.warn('[MultimediaDetail] Respuesta sin listas:', response.mensaje);
+          this.listasPrivadas = [];
+        }
+        this.cargandoListas = false;
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        console.error('[MultimediaDetail] Error cargando listas privadas:', error);
+        this.listasPrivadas = [];
+        this.cargandoListas = false;
+        this.mostrarNotificacion('Error al cargar las listas privadas', 'error');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  /**
+   * Alterna la visibilidad del desplegable de listas
+   */
+  toggleDropdownListas(): void {
+    this.mostrarDropdownListas = !this.mostrarDropdownListas;
+    // Cerrar dropdown al hacer clic fuera
+    if (this.mostrarDropdownListas) {
+      setTimeout(() => {
+        document.addEventListener('click', this.cerrarDropdownAlClickFuera.bind(this), { once: true });
+      }, 0);
+    }
+  }
+
+  /**
+   * Cierra el dropdown cuando se hace clic fuera
+   */
+  private cerrarDropdownAlClickFuera(event: Event): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.dropdown-listas')) {
+      this.mostrarDropdownListas = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  /**
+   * Añade el contenido actual a una lista específica
+   */
+  incluirALista(lista: any): void {
+    if (!this.detalle?.id) {
+      this.mostrarNotificacion('Error: No se pudo identificar el contenido', 'error');
+      return;
+    }
+
+    console.log(`[MultimediaDetail] Añadiendo contenido ${this.detalle.id} a lista ${lista.id}`);
+
+    this.listaService.addContenido(lista.id, this.detalle.id).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.mostrarNotificacion(`Contenido añadido a "${lista.nombre}"`, 'success');
+          // Actualizar contador de elementos en la lista localmente
+          if (lista.contenidosIds) {
+            lista.contenidosIds.push(this.detalle!.id);
+          } else {
+            lista.contenidosIds = [this.detalle!.id];
+          }
+        } else {
+          this.mostrarNotificacion(response.mensaje || 'Error al añadir a la lista', 'error');
+        }
+        this.mostrarDropdownListas = false;
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        console.error('[MultimediaDetail] Error añadiendo a lista:', error);
+        const mensaje = error?.error?.mensaje || 'Error al añadir el contenido a la lista';
+        this.mostrarNotificacion(mensaje, 'error');
+        this.mostrarDropdownListas = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  /**
+   * Navega a la página de crear nueva lista
+   */
+  crearNuevaLista(): void {
+    // Redirigir a la página de crear lista con el ID del contenido actual como parámetro
+    if (this.detalle?.id) {
+      this.router.navigate(['/dashboard/listas/crear'], { 
+        queryParams: { contenidoId: this.detalle.id } 
+      });
+    } else {
+      this.router.navigate(['/dashboard/listas/crear']);
+    }
+    this.mostrarDropdownListas = false;
+  }
+
+  /**
+   * Muestra una notificación al usuario
+   */
+  mostrarNotificacion(mensaje: string, tipo: 'success' | 'error' | 'info'): void {
+    this.notificacion = { mensaje, tipo };
+    // Auto-cerrar notificación después de 4 segundos
+    setTimeout(() => {
+      if (this.notificacion?.mensaje === mensaje) {
+        this.notificacion = null;
+        this.cdr.markForCheck();
+      }
+    }, 4000);
+  }
+
+  /**
+   * Cierra la notificación manualmente
+   */
+  cerrarNotificacion(): void {
+    this.notificacion = null;
+  }
+
+  /**
+   * Maneja eventos de teclado para los items de lista
+   */
+  onListaKeyDown(event: KeyboardEvent, lista: any): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.incluirALista(lista);
+    }
+  }
+
+  /**
+   * Maneja eventos de teclado para el botón de nueva lista
+   */
+  onNuevaListaKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.crearNuevaLista();
+    }
+  }
   // ---- Textos de apoyo para mostrar siempre los campos ----
   edadTexto(): string {
     const e: any = (this.detalle as any)?.edadvisualizacion;
@@ -275,5 +455,52 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     const d: any = (this.detalle as any)?.fechadisponiblehasta;
     if (!d) return 'Sin fecha de caducidad';
     return this.formatFecha(d);
+  }
+
+  // === Header (usuario y navegación) ===
+  loadUserData(): void {
+    try {
+      const userStr = sessionStorage.getItem('user');
+      if (userStr) {
+        const u = JSON.parse(userStr);
+        this.userName = u?.nombre || u?.username || 'Usuario';
+        this.userInitial = String(this.userName || 'U').charAt(0).toUpperCase();
+      }
+      const cls = sessionStorage.getItem('currentUserClass');
+      this.isGestor = cls === 'Gestor';
+    } catch {
+      this.userName = 'Usuario';
+      this.userInitial = 'U';
+      this.isGestor = false;
+    }
+  }
+
+  getAvatarClasses(): string {
+    return this.isGestor ? 'user-avatar gestor' : 'user-avatar visualizador';
+  }
+
+  toggleUserMenu(): void { this.showUserMenu = !this.showUserMenu; }
+  onUserProfileKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.toggleUserMenu(); }
+    if (event.key === 'Escape' && this.showUserMenu) { event.preventDefault(); this.showUserMenu = false; }
+  }
+
+  irAListasPublicas(): void {
+    this.router.navigate(['/dashboard'], { queryParams: { listas: 'publicas' } });
+  }
+  irAMisListasPrivadas(): void {
+    this.router.navigate(['/dashboard'], { queryParams: { listas: 'privadas' } });
+  }
+  mostrarNotificacionDummy(): void { console.log('Notificaciones: pendiente'); }
+
+  logout(): void {
+    try {
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('currentUserClass');
+      sessionStorage.removeItem('email');
+    } catch {}
+    this.multimedia.clearCache();
+    this.router.navigate(['/login']);
   }
 }
