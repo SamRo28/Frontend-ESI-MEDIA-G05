@@ -8,6 +8,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ListasPrivadas } from '../listas-privadas/listas-privadas';
 import { CrearListaComponent } from '../crear-lista/crear-lista';
 import { ConfigUserComponent, ConfigUserDTO } from '../config-user/config-user';
+import { ContentFilterComponent } from '../shared/content-filter/content-filter.component';
 
 interface Star {
   left: number;
@@ -18,7 +19,9 @@ interface Star {
 @Component({
   selector: 'app-visu-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, RouterModule, ListasPrivadas, CrearListaComponent, GestionListasComponent, MultimediaListComponent, ConfigUserComponent],
+
+  imports: [CommonModule, RouterLink, RouterLinkActive, RouterModule, ListasPrivadas, CrearListaComponent, GestionListasComponent, MultimediaListComponent, ConfigUserComponent, ContentFilterComponent],
+
   templateUrl: './visu-dashboard.html',
   styleUrl: './visu-dashboard.css'
 })
@@ -36,6 +39,9 @@ export class VisuDashboard implements OnInit, AfterViewInit {
   forceReloadListasPublicas: number = 0;
   showCrearModal: boolean = false;
   showConfigModal: boolean = false;
+  
+  // Variables para el sistema de filtrado
+  currentTagFilters: string[] = [];
 
   private isBrowser: boolean;
   private documentClickHandler = (event: Event) => this.onDocumentClick(event);
@@ -401,5 +407,21 @@ export class VisuDashboard implements OnInit, AfterViewInit {
     } catch {}
     this.multimedia.clearCache();
     this.router.navigate(['/login']);
+  }
+
+  /**
+   * Maneja la aplicación de filtros de tags desde el componente de filtro
+   */
+  onFiltersApplied(selectedTags: string[]): void {
+    this.currentTagFilters = [...selectedTags];
+  }
+
+  /**
+   * Obtiene el tipo de contenido para el componente de filtro según la ruta actual
+   */
+  get contentFilterType(): 'all' | 'video' | 'audio' {
+    if (this.filtroTipo === 'VIDEO') return 'video';
+    if (this.filtroTipo === 'AUDIO') return 'audio';
+    return 'all';
   }
 }
