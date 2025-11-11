@@ -19,6 +19,12 @@
       </nav>
 
       <div class="user-section">
+        <!-- Botón de filtro -->
+        <app-content-filter 
+          [contentType]="contentFilterType"
+          (filtersApplied)="onFiltersApplied($event)">
+        </app-content-filter>
+        
         <button class="notification-btn">
           <span class="notification-icon">🔔</span>
           <span class="notification-badge">3</span>
@@ -70,7 +76,12 @@
       
       <!-- Lista multimedia (cuando no se muestran listas públicas) -->
       <div *ngIf="!mostrarListasPublicas">
-        <app-multimedia-list [showHeader]="false" [showTitle]="false" [tipoForzado]="filtroTipo"></app-multimedia-list>
+        <app-multimedia-list 
+          [showHeader]="false" 
+          [showTitle]="false" 
+          [tipoForzado]="filtroTipo"
+          [tagFilters]="currentTagFilters">
+        </app-multimedia-list>
       </div>
     <!-- Panel lateral de listas privadas -->
     <aside class="listas-privadas-panel" *ngIf="mostrarListasPrivadas">
