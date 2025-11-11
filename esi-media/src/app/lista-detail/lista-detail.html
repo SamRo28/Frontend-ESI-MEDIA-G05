@@ -13,9 +13,9 @@
     <button class="btn btn-primary" (click)="volver()">Volver</button>
   </div>
 
-  <!-- Content - Condición simplificada para debug -->
+  <!-- Content - Solo si tiene permisos para ver -->
   <div *ngIf="!loading" class="content">
-    <div *ngIf="!error && lista">
+    <div *ngIf="!error && lista && puedeVerLista()">
       <!-- Contenido normal aquí -->
     <!-- Header -->
     <header class="lista-header">
@@ -79,6 +79,14 @@
               Eliminar
             </button>
           </div>
+
+          <!-- Información para visualizadores (sin opciones de edición) -->
+          <div class="header-info" *ngIf="!esPropietario() && esVisualizador()">
+            <div class="info-badge">
+              <span class="icon">👁️</span>
+              <span>Solo lectura</span>
+            </div>
+          </div>
         </div>
       </div>
     </header>
@@ -121,8 +129,8 @@
             placeholder="rock, pop, jazz (separadas por comas)">
         </div>
 
-        <!-- Visible (solo para gestores) -->
-        <div class="form-field" *ngIf="esGestor()">
+        <!-- Visible (solo para gestores de contenido) -->
+        <div class="form-field" *ngIf="esGestorDeContenido()">
           <label class="checkbox-label">
             <input type="checkbox" [(ngModel)]="datosEdicion.visible">
             Lista pública

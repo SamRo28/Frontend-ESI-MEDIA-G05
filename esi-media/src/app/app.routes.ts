@@ -76,15 +76,18 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard/listas',
-    component: GestionListasComponent
+    component: GestionListasComponent,
+    canActivate: [MultimediaGuard]
   },
   {
     path: 'dashboard/listas/crear',
-    component: CrearListaComponent
+    component: CrearListaComponent,
+    canActivate: [MultimediaGuard]
   },
   {
     path: 'dashboard/listas/:id',
-    component: ListaDetailComponent
+    component: ListaDetailComponent,
+    canActivate: [MultimediaGuard]
   },
   {
     path: 'gestor-dashboard',
@@ -106,6 +109,11 @@ export const routes: Routes = [
     canActivate: [MultimediaGuard]
   },
   {
+    path: 'dashboard/listas-publicas',
+    component: VisuDashboard,
+    canActivate: [MultimediaGuard]
+  },
+  {
     path: 'dashboard/:id',
     component: MultimediaDetailComponent,
     canActivate: [MultimediaGuard]
@@ -122,14 +130,17 @@ export const routes: Routes = [
   {
 
     path: 'gestor-dashboard/gestion-listas',
-    component: GestionListasComponent
-  },
-  {
-    path: 'gestor-dashboard/gestion-listas/:id',
-    component: ListaDetailComponent
+    component: GestionListasComponent,
+    canActivate: [MultimediaGuard]
   },
   {
     path: 'gestor-dashboard/gestion-listas/crear',
-    component: CrearListaComponent
+    component: CrearListaComponent,
+    canActivate: [MultimediaGuard]
+  },
+  {
+    path: 'gestor-dashboard/gestion-listas/:id',
+    component: ListaDetailComponent,
+    canActivate: [MultimediaGuard]
   }
 ];

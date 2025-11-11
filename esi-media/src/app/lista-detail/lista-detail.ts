@@ -100,21 +100,71 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
+    // Debug: Mostrar información del usuario
+    const tipoUsuario = this.obtenerTipoUsuario();
+    console.log('🔍 DEBUG - Tipo de usuario:', tipoUsuario);
+    console.log('🔍 DEBUG - Es visualizador?:', this.esVisualizador());
+    console.log('🔍 DEBUG - currentUserClass:', sessionStorage.getItem('currentUserClass'));
+    
+    // Determinar qué método usar según el tipo de usuario
+    let listaObservable, contenidosObservable;
+    
+    if (this.esVisualizador()) {
+      console.log('🔍 Cargando como visualizador - intentando lista pública primero');
+      // Los visualizadores intentan acceder como lista pública primero
+      listaObservable = this.listaService.obtenerListaPublicaPorId(listaId).pipe(
+        catchError(error => {
+          console.log('❌ Error con lista pública:', error.status, '- intentando lista privada');
+          // Si falla, intentar como lista propia
+          if (error.status === 404 || error.status === 403) {
+            return this.listaService.obtenerListaPorId(listaId);
+          }
+          throw error;
+        })
+      );
+      
+      // Para contenidos, también intentar primero el endpoint público
+      contenidosObservable = this.listaService.obtenerContenidosListaPublica(listaId).pipe(
+        catchError(error => {
+          console.log('❌ Error con contenidos públicos:', error.status, '- intentando contenidos privados');
+          if (error.status === 404 || error.status === 403) {
+            return this.listaService.obtenerContenidosLista(listaId);
+          }
+          throw error;
+        })
+      );
+    } else {
+      console.log('🔍 Cargando como gestor - usando endpoints estándar');
+      // Gestores usan los métodos estándar
+      listaObservable = this.listaService.obtenerListaPorId(listaId);
+      contenidosObservable = this.listaService.obtenerContenidosLista(listaId);
+    }
+
     // Cargar datos de la lista y sus contenidos en paralelo
     forkJoin({
-      lista: this.listaService.obtenerListaPorId(listaId),
-      contenidos: this.listaService.obtenerContenidosLista(listaId)
+      lista: listaObservable,
+      contenidos: contenidosObservable
     }).subscribe({
       next: (responses) => {
         // Procesar respuesta de la lista
         if (responses.lista?.success) {
           this.lista = responses.lista.lista;
+          
+          // Verificar permisos de acceso después de cargar
+          if (!this.puedeVerLista()) {
+            this.error = 'No tienes permisos para acceder a esta lista';
+            this.ngZone.run(() => {
+              this.loading = false;
+              this.cdr.detectChanges();
+            });
+            return;
+          }
         } else {
           this.error = responses.lista?.mensaje || 'No se pudo cargar la lista';
         }
 
-        // Procesar respuesta de los contenidos
-        if (responses.contenidos?.success) {
+        // Procesar respuesta de los contenidos solo si tiene acceso
+        if (responses.contenidos?.success && this.puedeVerLista()) {
           this.contenidos = responses.contenidos.contenidos || [];
           console.log('Contenidos cargados:', this.contenidos.length, this.contenidos);
         } else {
@@ -136,9 +186,11 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
         if (error.status === 404) {
           this.error = 'Lista no encontrada';
         } else if (error.status === 403) {
-          this.error = 'No tienes permisos para acceder a esta lista';
+          this.error = 'No tienes permisos para acceder a esta lista privada';
+        } else if (error.status === 401) {
+          this.error = 'Debes iniciar sesión para acceder a las listas';
         } else {
-          this.error = 'Error al cargar la lista';
+          this.error = 'Error al cargar la lista. Intenta de nuevo más tarde.';
         }
         
         // Actualizar estado dentro de NgZone
@@ -155,7 +207,8 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
    * Navega a la vista detalle de un contenido específico
    */
   verContenido(contenido: ContenidoResumenDTO): void {
-    this.router.navigate(['/multimedia', contenido.id]);
+    // Usar la ruta correcta según el tipo de usuario
+    this.router.navigate(['/dashboard', contenido.id]);
   }
 
   /**
@@ -164,12 +217,13 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
   volver(): void {
     const tipoUsuario = this.obtenerTipoUsuario();
     
-    // Redirigir según el tipo de usuario
+    // Redirigir según el tipo de usuario y contexto
     if (tipoUsuario === 'Gestor' || tipoUsuario === 'GestordeContenido') {
-      this.router.navigate(['/gestor-dashboard']);
+      // Los gestores van a su dashboard con gestión de listas
+      this.router.navigate(['/gestor-dashboard/gestion-listas']);
     } else {
-      // Para Visualizadores y otros tipos de usuario
-      this.router.navigate(['/dashboard']);
+      // Los visualizadores van al dashboard con listas públicas
+      this.router.navigate(['/dashboard/listas-publicas']);
     }
   }
 
@@ -177,7 +231,40 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
    * Verifica si el usuario es el propietario de la lista
    */
   esPropietario(): boolean {
-    return this.lista && this.lista.creadorId === this.userId;
+    // Verificar si tenemos los datos necesarios
+    if (!this.lista || !this.userId) {
+      return false;
+    }
+    
+    // Solo el creador de la lista puede editarla/eliminarla
+    return this.lista.creadorId === this.userId;
+  }
+
+  /**
+   * Verifica si el usuario puede ver la lista (acceso de lectura)
+   */
+  puedeVerLista(): boolean {
+    // Si no hay lista cargada, no puede ver nada
+    if (!this.lista) {
+      return false;
+    }
+
+    // El propietario siempre puede ver su lista
+    if (this.esPropietario()) {
+      return true;
+    }
+
+    // Los visualizadores pueden ver listas públicas
+    if (this.esVisualizador() && this.lista.visible === true) {
+      return true;
+    }
+
+    // Los gestores pueden ver cualquier lista
+    if (this.esGestorDeContenido()) {
+      return true;
+    }
+
+    return false;
   }
 
 
@@ -260,13 +347,6 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Verifica si el usuario es gestor
-   */
-  esGestor(): boolean {
-    return sessionStorage.getItem('currentUserClass') === 'Gestor';
-  }
-
-  /**
    * Verifica si el usuario es gestor de contenido
    */
   esGestorDeContenido(): boolean {
@@ -340,7 +420,7 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
       nombre: this.datosEdicion.nombre.trim(),
       descripcion: this.datosEdicion.descripcion.trim(),
       tags: this.parseTags(this.datosEdicion.tagsInput),
-      visible: this.esGestor() ? this.datosEdicion.visible : false,
+      visible: this.esGestorDeContenido() ? this.datosEdicion.visible : false,
       creadorId: this.userId,
       especializacionGestor: this.lista.especializacionGestor,
       contenidosIds: [...new Set(this.contenidosEditables)] // Eliminar duplicados
@@ -439,7 +519,23 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
    */
   private cargarContenidosLista(): void {
     console.log('Recargando contenidos para lista:', this.lista.id);
-    this.listaService.obtenerContenidosLista(this.lista.id).subscribe({
+    
+    // Usar el endpoint correcto según el tipo de usuario
+    let contenidosObservable;
+    if (this.esVisualizador()) {
+      contenidosObservable = this.listaService.obtenerContenidosListaPublica(this.lista.id).pipe(
+        catchError(error => {
+          if (error.status === 404 || error.status === 403) {
+            return this.listaService.obtenerContenidosLista(this.lista.id);
+          }
+          throw error;
+        })
+      );
+    } else {
+      contenidosObservable = this.listaService.obtenerContenidosLista(this.lista.id);
+    }
+    
+    contenidosObservable.subscribe({
       next: (response) => {
         console.log('Respuesta de recarga de contenidos:', response);
         if (response?.success) {

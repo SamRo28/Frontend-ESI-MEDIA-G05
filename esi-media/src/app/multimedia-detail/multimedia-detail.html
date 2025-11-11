@@ -2,18 +2,17 @@
   <div class="header-content">
     <div class="logo-section">
       <div class="logo">
-        <span class="logo-icon">🎵</span>
-        <span class="logo-text">EsiMedia</span>
+          <img src="/EsiMedia icono sin fondo.png" alt="ESIMedia Logo" class="w-8 h-8">
+          <span class="logo-text">EsiMedia</span>
       </div>
     </div>
     <nav class="nav-menu">
       <a routerLink="/multimedia" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" class="nav-link">Inicio</a>
       <a routerLink="/multimedia/videos" routerLinkActive="active" class="nav-link">Videos</a>
       <a routerLink="/multimedia/audios" routerLinkActive="active" class="nav-link">Audios</a>
+      <a routerLink="/dashboard/listas-publicas" routerLinkActive="active" class="nav-link">Listas Públicas</a>
     </nav>
     <div class="user-section">
-      <div class="user-avatar">U</div>
-      <span class="user-name">Usuario</span>
     </div>
   </div>
 </header>
@@ -36,6 +35,38 @@
           <span class="chip" *ngIf="duracion()">⏱ {{ duracion() }}s</span>
           <span class="chip" *ngFor="let tag of tags()">#{{ tag }}</span>
         </div>
+      </div>
+      <!-- Desplegable de listas privadas -->
+      <div class="cabecera-actions">
+        <div class="dropdown-listas" *ngIf="listasPrivadas.length > 0">
+          <button class="btn-dropdown-listas" (click)="toggleDropdownListas()">
+            <span>Añadir a lista</span>
+            <span class="dropdown-arrow" [class.rotated]="mostrarDropdownListas">▼</span>
+          </button>
+          <div class="dropdown-menu-listas" *ngIf="mostrarDropdownListas" role="menu">
+            <div class="dropdown-item-lista" 
+                 *ngFor="let lista of listasPrivadas" 
+                 (click)="incluirALista(lista)"
+                 (keydown)="onListaKeyDown($event, lista)"
+                 tabindex="0"
+                 role="menuitem">
+              <span class="lista-nombre">{{ lista.nombre }}</span>
+              <span class="lista-info">{{ lista.contenidosIds?.length || 0 }} elementos</span>
+            </div>
+            <div class="dropdown-divider" *ngIf="listasPrivadas.length > 0"></div>
+            <div class="dropdown-item-lista nueva-lista" 
+                 (click)="crearNuevaLista()"
+                 (keydown)="onNuevaListaKeyDown($event)"
+                 tabindex="0"
+                 role="menuitem">
+              <span class="lista-nombre">+ Crear nueva lista</span>
+            </div>
+          </div>
+        </div>
+        <!-- Mensaje si no hay listas -->
+        <button class="btn-primera-lista" *ngIf="listasPrivadas.length === 0" (click)="crearNuevaLista()">
+          <span>Crear primera lista</span>
+        </button>
       </div>
     </div>
 
@@ -85,3 +116,13 @@
     </div>
   </div>
 </div>
+
+<!-- Notificaciones -->
+<div class="notification-container" *ngIf="notificacion">
+  <div class="notification" [class]="notificacion.tipo">
+    <span>{{ notificacion.mensaje }}</span>
+    <button class="close-notification" (click)="cerrarNotificacion()" type="button">×</button>
+  </div>
+</div>
+
+```
