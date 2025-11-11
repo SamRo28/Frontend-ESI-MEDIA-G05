@@ -20,6 +20,8 @@ import { MultimediaGuard } from './guards/multimedia.guard';
 import { GestionListasComponent } from './gestion-listas/gestion-listas';
 import { CrearListaComponent } from './crear-lista/crear-lista';
 import { ListaDetailComponent } from './lista-detail/lista-detail';
+import { ForgotPasswordComponent } from './forgot-password/forgot-password';
+import { ResetPasswordComponent } from './reset-password/reset-password';
 
 export const routes: Routes = [
   {
@@ -70,21 +72,32 @@ export const routes: Routes = [
     path: 'video/subir',
     component: VideoUploadComponent
   },
+  { 
+    path: 'forgot-password', 
+    component: ForgotPasswordComponent 
+  },
+  { 
+    path: 'reset-password', 
+    component: ResetPasswordComponent 
+  },
   {
     path: 'dashboard',
     component: VisuDashboard
   },
   {
     path: 'dashboard/listas',
-    component: GestionListasComponent
+    component: GestionListasComponent,
+    canActivate: [MultimediaGuard]
   },
   {
     path: 'dashboard/listas/crear',
-    component: CrearListaComponent
+    component: CrearListaComponent,
+    canActivate: [MultimediaGuard]
   },
   {
     path: 'dashboard/listas/:id',
-    component: ListaDetailComponent
+    component: ListaDetailComponent,
+    canActivate: [MultimediaGuard]
   },
   {
     path: 'gestor-dashboard',
@@ -108,6 +121,11 @@ export const routes: Routes = [
     canActivate: [MultimediaGuard]
   },
   {
+    path: 'dashboard/listas-publicas',
+    component: VisuDashboard,
+    canActivate: [MultimediaGuard]
+  },
+  {
     path: 'dashboard/:id',
     component: MultimediaDetailComponent,
     canActivate: [MultimediaGuard]
@@ -120,14 +138,17 @@ export const routes: Routes = [
   {
 
     path: 'gestor-dashboard/gestion-listas',
-    component: GestionListasComponent
-  },
-  {
-    path: 'gestor-dashboard/gestion-listas/:id',
-    component: ListaDetailComponent
+    component: GestionListasComponent,
+    canActivate: [MultimediaGuard]
   },
   {
     path: 'gestor-dashboard/gestion-listas/crear',
-    component: CrearListaComponent
+    component: CrearListaComponent,
+    canActivate: [MultimediaGuard]
+  },
+  {
+    path: 'gestor-dashboard/gestion-listas/:id',
+    component: ListaDetailComponent,
+    canActivate: [MultimediaGuard]
   }
 ];

@@ -13,9 +13,7 @@
         <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" class="nav-link">Inicio</a>
         <a routerLink="/dashboard/videos" routerLinkActive="active" class="nav-link">Videos</a>
         <a routerLink="/dashboard/audios" routerLinkActive="active" class="nav-link">Audios</a>
-        <button (click)="toggleListasPublicas()" 
-                [class.active]="mostrarListasPublicas" 
-                class="nav-link nav-button">Listas Públicas</button>
+        <a routerLink="/dashboard/listas-publicas" routerLinkActive="active" class="nav-link">Listas Públicas</a>
       </nav>
 
       <div class="user-section">
