@@ -426,6 +426,7 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
       event.preventDefault();
       this.crearNuevaLista();
     }
+  }
   // ---- Textos de apoyo para mostrar siempre los campos ----
   edadTexto(): string {
     const e: any = (this.detalle as any)?.edadvisualizacion;
