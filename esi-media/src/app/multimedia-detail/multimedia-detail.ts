@@ -220,6 +220,17 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
       this.cdr.markForCheck();
     }, 0);
   }
+
+  // Formatea Date|string ISO a fecha corta local
+  formatFecha(d?: string | Date | null): string {
+    if (!d) return '';
+    try {
+      const date = (d instanceof Date) ? d : new Date(d);
+      return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: '2-digit' }).format(date);
+    } catch {
+      return '' + d;
+    }
+  }
   onVideoLoaded(): void {
     // loadedmetadata: ya tenemos duración, podemos mostrar el player
     console.log('[MultimediaDetail] video loadedmetadata');
@@ -407,5 +418,33 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
       event.preventDefault();
       this.crearNuevaLista();
     }
+  // ---- Textos de apoyo para mostrar siempre los campos ----
+  edadTexto(): string {
+    const e: any = (this.detalle as any)?.edadvisualizacion;
+    if (typeof e === 'number' && e > 0) return `${e}+`;
+    return 'Para todos los públicos';
+  }
+
+  visualizacionesTexto(): string {
+    const n: any = (this.detalle as any)?.nvisualizaciones;
+    const num = (typeof n === 'number' && n >= 0) ? n : 0;
+    try { return num.toLocaleString(); } catch { return String(num); }
+  }
+
+  duracionTexto(): string {
+    const s = this.duracion();
+    if (s === null) return 'No indicada';
+    const total = Math.round(s);
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const sec = total % 60;
+    if (h > 0) return `${h}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+    return `${m}:${sec.toString().padStart(2,'0')}`;
+  }
+
+  fechaDisponibleTexto(): string {
+    const d: any = (this.detalle as any)?.fechadisponiblehasta;
+    if (!d) return 'Sin fecha de caducidad';
+    return this.formatFecha(d);
   }
 }

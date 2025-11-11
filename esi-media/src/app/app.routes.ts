@@ -20,6 +20,8 @@ import { MultimediaGuard } from './guards/multimedia.guard';
 import { GestionListasComponent } from './gestion-listas/gestion-listas';
 import { CrearListaComponent } from './crear-lista/crear-lista';
 import { ListaDetailComponent } from './lista-detail/lista-detail';
+import { ForgotPasswordComponent } from './forgot-password/forgot-password';
+import { ResetPasswordComponent } from './reset-password/reset-password';
 
 export const routes: Routes = [
   {
@@ -69,6 +71,14 @@ export const routes: Routes = [
   {
     path: 'video/subir',
     component: VideoUploadComponent
+  },
+  { 
+    path: 'forgot-password', 
+    component: ForgotPasswordComponent 
+  },
+  { 
+    path: 'reset-password', 
+    component: ResetPasswordComponent 
   },
   {
     path: 'dashboard',
