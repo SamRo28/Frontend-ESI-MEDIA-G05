@@ -38,6 +38,11 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   youtubeSafeUrl: SafeResourceUrl | null = null;
   // Token para uso en query (evitar sessionStorage directo en plantilla)
   token: string = '';
+  // Datos para el header unificado
+  showUserMenu = false;
+  userName: string = 'Usuario';
+  userInitial: string = 'U';
+  isGestor: boolean = false;
 
   // Propiedades para las listas privadas
   listasPrivadas: any[] = [];
@@ -80,6 +85,9 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
         this.cargar();
       }
     });
+
+    // Cargar datos de usuario para el header
+    this.loadUserData();
   }
 
   ngOnDestroy(): void {
@@ -446,5 +454,52 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     const d: any = (this.detalle as any)?.fechadisponiblehasta;
     if (!d) return 'Sin fecha de caducidad';
     return this.formatFecha(d);
+  }
+
+  // === Header (usuario y navegación) ===
+  loadUserData(): void {
+    try {
+      const userStr = sessionStorage.getItem('user');
+      if (userStr) {
+        const u = JSON.parse(userStr);
+        this.userName = u?.nombre || u?.username || 'Usuario';
+        this.userInitial = String(this.userName || 'U').charAt(0).toUpperCase();
+      }
+      const cls = sessionStorage.getItem('currentUserClass');
+      this.isGestor = cls === 'Gestor';
+    } catch {
+      this.userName = 'Usuario';
+      this.userInitial = 'U';
+      this.isGestor = false;
+    }
+  }
+
+  getAvatarClasses(): string {
+    return this.isGestor ? 'user-avatar gestor' : 'user-avatar visualizador';
+  }
+
+  toggleUserMenu(): void { this.showUserMenu = !this.showUserMenu; }
+  onUserProfileKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.toggleUserMenu(); }
+    if (event.key === 'Escape' && this.showUserMenu) { event.preventDefault(); this.showUserMenu = false; }
+  }
+
+  irAListasPublicas(): void {
+    this.router.navigate(['/dashboard'], { queryParams: { listas: 'publicas' } });
+  }
+  irAMisListasPrivadas(): void {
+    this.router.navigate(['/dashboard'], { queryParams: { listas: 'privadas' } });
+  }
+  mostrarNotificacionDummy(): void { console.log('Notificaciones: pendiente'); }
+
+  logout(): void {
+    try {
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('currentUserClass');
+      sessionStorage.removeItem('email');
+    } catch {}
+    this.multimedia.clearCache();
+    this.router.navigate(['/login']);
   }
 }
