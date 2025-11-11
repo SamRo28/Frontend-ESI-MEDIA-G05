@@ -1,19 +1,47 @@
+<!-- Header idéntico al del dashboard -->
 <header class="dashboard-header">
   <div class="header-content">
     <div class="logo-section">
       <div class="logo">
-        <span class="logo-icon">🎵</span>
+        <img src="/EsiMedia icono sin fondo.png" alt="ESIMedia Logo" class="w-8 h-8">
         <span class="logo-text">EsiMedia</span>
       </div>
     </div>
+
     <nav class="nav-menu">
       <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" class="nav-link">Inicio</a>
       <a routerLink="/dashboard/videos" routerLinkActive="active" class="nav-link">Videos</a>
       <a routerLink="/dashboard/audios" routerLinkActive="active" class="nav-link">Audios</a>
+      <button (click)="irAListasPublicas()" class="nav-link nav-button">Listas Públicas</button>
     </nav>
+
     <div class="user-section">
-      <div class="user-avatar">U</div>
-      <span class="user-name">Usuario</span>
+      <button class="notification-btn" (click)="mostrarNotificacionDummy()">
+        <span class="notification-icon">🔔</span>
+        <span class="notification-badge">3</span>
+      </button>
+      <button class="user-profile" 
+              (click)="toggleUserMenu()" 
+              (keydown)="onUserProfileKeydown($event)" 
+              [attr.aria-expanded]="showUserMenu"
+              [attr.aria-label]="'Menú de usuario de ' + userName">
+        <div class="user-avatar-container">
+          <div [class]="getAvatarClasses()">{{ userInitial }}</div>
+        </div>
+        <span class="user-name">{{ userName }}</span>
+        <div class="dropdown-arrow" [class.rotated]="showUserMenu">▼</div>
+      </button>
+
+      <!-- Menú desplegable del usuario -->
+      <div class="user-dropdown" *ngIf="showUserMenu" role="menu">
+        <button class="dropdown-item" (click)="irAMisListasPrivadas()" role="menuitem">
+          <span class="dropdown-text">Ver mis listas privadas</span>
+        </button>
+        <div class="dropdown-divider"></div>
+        <button class="dropdown-item logout-item" (click)="logout()" role="menuitem">
+          <span class="dropdown-text">Cerrar sesión</span>
+        </button>
+      </div>
     </div>
   </div>
 </header>
