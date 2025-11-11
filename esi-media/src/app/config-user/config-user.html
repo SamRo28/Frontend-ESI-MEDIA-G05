@@ -1,0 +1,234 @@
+<div class="config-user-container" [class.modal-mode]="modal">
+  <!-- Botón circular de cerrar para modo modal -->
+  <button 
+    *ngIf="modal"
+    type="button"
+    class="modal-close-btn"
+    (click)="onCancelar()"
+    aria-label="Cerrar configuración de usuario">
+    ✕
+  </button>
+  
+  <!-- Header bar -->
+  <div class="header-bar" *ngIf="!modal">
+    <h2>⚙️ {{ tituloComponente }}</h2>
+  </div>
+
+  <!-- Título principal -->
+  <div class="page-header">
+    <h1>{{ tituloComponente }}</h1>
+    <p>Modifica los datos básicos de tu perfil de {{ userType }}</p>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="cargando" class="loading-container">
+    <div class="loading-spinner"></div>
+    <p>Cargando datos del usuario...</p>
+  </div>
+
+  <!-- Mensaje de éxito -->
+  <div *ngIf="mensajeExito" class="alert alert-success">
+    {{ mensajeExito }}
+  </div>
+
+  <!-- Mensaje de error -->
+  <div *ngIf="mensajeError" class="alert alert-error">
+    {{ mensajeError }}
+  </div>
+
+  <!-- Formulario principal -->
+  <form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="config-user-form" *ngIf="!cargando && currentUser">
+    
+    <!-- Información básica -->
+    <div class="form-section">
+      <h2>Información básica</h2>
+      
+      <!-- Campo Nombre -->
+      <div class="form-field">
+        <label for="nombre">{{ getFieldLabel('nombre') }} *</label>
+        <input 
+          id="nombre"
+          type="text" 
+          formControlName="nombre"
+          class="full-width"
+          placeholder="Introduce tu nombre"
+          aria-label="Nombre del usuario">
+        <div class="error" *ngIf="userForm.get('nombre')?.invalid && userForm.get('nombre')?.touched">
+          <span *ngIf="userForm.get('nombre')?.errors?.['required']">⚠️ El nombre es requerido</span>
+          <span *ngIf="userForm.get('nombre')?.errors?.['minlength']">⚠️ Mínimo 2 caracteres</span>
+          <span *ngIf="userForm.get('nombre')?.errors?.['maxlength']">⚠️ Máximo 50 caracteres</span>
+        </div>
+      </div>
+
+      <!-- Campo Apellidos -->
+      <div class="form-field">
+        <label for="apellidos">{{ getFieldLabel('apellidos') }} *</label>
+        <input 
+          id="apellidos"
+          type="text" 
+          formControlName="apellidos"
+          class="full-width"
+          placeholder="Introduce tus apellidos"
+          aria-label="Apellidos del usuario">
+        <div class="error" *ngIf="userForm.get('apellidos')?.invalid && userForm.get('apellidos')?.touched">
+          <span *ngIf="userForm.get('apellidos')?.errors?.['required']">⚠️ Los apellidos son requeridos</span>
+          <span *ngIf="userForm.get('apellidos')?.errors?.['minlength']">⚠️ Mínimo 2 caracteres</span>
+          <span *ngIf="userForm.get('apellidos')?.errors?.['maxlength']">⚠️ Máximo 100 caracteres</span>
+        </div>
+      </div>
+
+      <!-- Campo Email (solo lectura) -->
+      <div class="form-field">
+        <label for="email">{{ getFieldLabel('email') }}</label>
+        <input 
+          id="email"
+          type="email" 
+          formControlName="email"
+          class="full-width readonly-field"
+          readonly
+          aria-label="Correo electrónico (no modificable)">
+        <div class="hint">El correo electrónico no puede modificarse</div>
+      </div>
+    </div>
+
+    <!-- Información específica según tipo de usuario -->
+    <div class="form-section" *ngIf="mostrarCampo('alias') || mostrarCampo('fechaNacimiento') || mostrarCampo('descripcion') || mostrarCampo('departamento')">
+      <h2>Información específica</h2>
+      
+      <!-- Campo Alias (Visualizador y Gestor) -->
+      <div class="form-field" *ngIf="mostrarCampo('alias')">
+        <label for="alias">
+          {{ getFieldLabel('alias') }}
+          <span *ngIf="isCampoRequerido('alias')"> *</span>
+        </label>
+        <input 
+          id="alias"
+          type="text" 
+          formControlName="alias"
+          class="full-width"
+          [placeholder]="userType === 'Gestor' ? 'Ej: CreadorContenidoMusical' : 'Ej: MusicLover123'"
+          aria-label="Alias del usuario">
+        <div class="error" *ngIf="userForm.get('alias')?.invalid && userForm.get('alias')?.touched">
+          <span *ngIf="userForm.get('alias')?.errors?.['required']">⚠️ El alias es requerido para gestores</span>
+          <span *ngIf="userForm.get('alias')?.errors?.['minlength']">⚠️ Mínimo 3 caracteres</span>
+          <span *ngIf="userForm.get('alias')?.errors?.['maxlength']">⚠️ Máximo 30 caracteres</span>
+        </div>
+        <div class="hint" *ngIf="userType === 'Gestor'">
+          Tu alias aparecerá en el contenido que publiques
+        </div>
+        <div class="hint" *ngIf="userType === 'Visualizador'">
+          Tu alias es opcional y aparecerá en tus listas públicas
+        </div>
+      </div>
+
+      <!-- Campo Fecha de Nacimiento (solo Visualizador) -->
+      <div class="form-field" *ngIf="mostrarCampo('fechaNacimiento')">
+        <label for="fechaNacimiento">{{ getFieldLabel('fechaNacimiento') }}</label>
+        <input 
+          id="fechaNacimiento"
+          type="date" 
+          formControlName="fechaNacimiento"
+          class="full-width"
+          aria-label="Fecha de nacimiento">
+        <div class="hint">Tu fecha de nacimiento se usa para recomendaciones de contenido apropiadas</div>
+      </div>
+
+      <!-- Campo Descripción (solo Gestor) -->
+      <div class="form-field" *ngIf="mostrarCampo('descripcion')">
+        <label for="descripcion">{{ getFieldLabel('descripcion') }}</label>
+        <textarea 
+          id="descripcion"
+          formControlName="descripcion"
+          rows="3"
+          class="full-width"
+          placeholder="Describe tu experiencia y especialidades como gestor de contenido..."
+          aria-label="Descripción profesional"></textarea>
+        <div class="error" *ngIf="userForm.get('descripcion')?.invalid && userForm.get('descripcion')?.touched">
+          <span *ngIf="userForm.get('descripcion')?.errors?.['maxlength']">⚠️ Máximo 500 caracteres</span>
+        </div>
+        <div class="hint">Esta descripción aparecerá en tu perfil público como gestor</div>
+      </div>
+
+      <!-- Campo Especialización (solo Gestor) -->
+      <div class="form-field" *ngIf="mostrarCampo('campoespecializacion')">
+        <label for="campoespecializacion">{{ getFieldLabel('campoespecializacion') }}</label>
+        <select 
+          id="campoespecializacion"
+          formControlName="campoespecializacion"
+          class="full-width"
+          aria-label="Campo de especialización">
+          <option value="">Selecciona tu especialización</option>
+          <option *ngFor="let especialidad of especializacionesDisponibles" [value]="especialidad">
+            {{ especialidad }}
+          </option>
+        </select>
+        <div class="hint">Selecciona el área de contenido en la que tienes más experiencia</div>
+      </div>
+
+      <!-- Campo Departamento (solo Administrador) -->
+      <div class="form-field" *ngIf="mostrarCampo('departamento')">
+        <label for="departamento">
+          {{ getFieldLabel('departamento') }}
+          <span *ngIf="isCampoRequerido('departamento')"> *</span>
+        </label>
+        <select 
+          id="departamento"
+          formControlName="departamento"
+          class="full-width"
+          aria-label="Departamento">
+          <option value="">Selecciona tu departamento</option>
+          <option *ngFor="let dept of departamentosDisponibles" [value]="dept">
+            {{ dept }}
+          </option>
+        </select>
+        <div class="error" *ngIf="userForm.get('departamento')?.invalid && userForm.get('departamento')?.touched">
+          <span *ngIf="userForm.get('departamento')?.errors?.['required']">⚠️ El departamento es requerido</span>
+        </div>
+        <div class="hint">Tu departamento determina tus permisos y responsabilidades</div>
+      </div>
+    </div>
+
+    <!-- Información adicional -->
+    <div class="info-section">
+      <h3>🔒 Información no modificable</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Tipo de usuario:</span>
+          <span class="info-value">{{ userType }}</span>
+        </div>
+        <div class="info-item" *ngIf="userType === 'Visualizador'">
+          <span class="info-label">Estado VIP:</span>
+          <span class="info-value">Contacta con soporte para modificar</span>
+        </div>
+        <div class="info-item" *ngIf="userType === 'Gestor'">
+          <span class="info-label">Tipo de contenido:</span>
+          <span class="info-value">Contacta con administración para modificar</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Autenticación 2FA/3FA:</span>
+          <span class="info-value">Próximamente disponible</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Cambio de contraseña:</span>
+          <span class="info-value">Próximamente disponible</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botones de acción -->
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" (click)="onCancelar()">
+        <span class="icon">❌</span>
+        Cancelar
+      </button>
+      <button 
+        type="submit" 
+        class="btn btn-primary" 
+        [disabled]="!puedeGuardar()">
+        <span class="icon" *ngIf="guardando">⏳</span>
+        <span class="icon" *ngIf="!guardando">💾</span>
+        {{ guardando ? 'Guardando...' : 'Guardar cambios' }}
+      </button>
+    </div>
+  </form>
+</div>

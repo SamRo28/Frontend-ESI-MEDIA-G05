@@ -43,6 +43,56 @@ export class CrearListaComponent implements OnInit {
   private searchSubject = new Subject<string>();
   private contenidosSeleccionados: Map<string, ContenidoSearchResult> = new Map();
 
+  // Tags predefinidos para listas
+  availableListTags = [
+    { value: 'pop', label: 'Pop' },
+    { value: 'rock', label: 'Rock' },
+    { value: 'rap', label: 'Rap/Hip-Hop' },
+    { value: 'jazz', label: 'Jazz' },
+    { value: 'clasica', label: 'Clásica' },
+    { value: 'electronica', label: 'Electrónica' },
+    { value: 'reggaeton', label: 'Reggaeton' },
+    { value: 'indie', label: 'Indie' },
+    { value: 'folk', label: 'Folk' },
+    { value: 'blues', label: 'Blues' },
+    { value: 'metal', label: 'Metal' },
+    { value: 'comedia', label: 'Comedia' },
+    { value: 'drama', label: 'Drama' },
+    { value: 'documental', label: 'Documental' },
+    { value: 'accion', label: 'Acción' },
+    { value: 'ciencia-ficcion', label: 'Ciencia Ficción' },
+    { value: 'terror', label: 'Terror' },
+    { value: 'romance', label: 'Romance' },
+    { value: 'aventura', label: 'Aventura' },
+    { value: 'fantasia', label: 'Fantasía' },
+    { value: 'thriller', label: 'Thriller' },
+    { value: 'instrumental', label: 'Instrumental' },
+    { value: 'acustico', label: 'Acústico' },
+    { value: 'en-vivo', label: 'En vivo' },
+    { value: 'colaboracion', label: 'Colaboración' },
+    { value: 'remix', label: 'Remix' },
+    { value: 'experimental', label: 'Experimental' },
+    { value: 'alternativo', label: 'Alternativo' },
+    { value: 'nostalgico', label: 'Nostálgico' },
+    { value: 'relajante', label: 'Relajante' },
+    { value: 'energico', label: 'Enérgico' },
+    { value: 'motivacional', label: 'Motivacional' }
+  ];
+  
+  selectedTags: string[] = [];
+
+  // Opciones de especialización para gestores (mismo que en admin-dashboard)
+  especializacionesDisponibles = [
+    'Música',
+    'Películas y Cinema',
+    'Documentales',
+    'Podcasts',
+    'Series de TV',
+    'Entretenimiento General',
+    'Contenido Educativo',
+    'Deportes'
+  ];
+
   constructor(
     private fb: FormBuilder, 
     private listaService: ListaService, 
@@ -104,6 +154,12 @@ export class CrearListaComponent implements OnInit {
   }
 
   private parseTags(tagsInput: string): string[] {
+    // Si tenemos tags seleccionados, usar esos directamente
+    if (this.selectedTags.length > 0) {
+      return this.selectedTags;
+    }
+    
+    // Fallback para compatibilidad con tags introducidos manualmente
     if (!tagsInput || tagsInput.trim() === '') return [];
     return tagsInput.split(',').map(t => t.trim()).filter(t => t.length > 0);
   }
@@ -305,6 +361,7 @@ export class CrearListaComponent implements OnInit {
     this.mostrarErrorContenido = false;
     this.mensajeErrorNombre = '';
     this.mensajeExito = '';
+    this.selectedTags = []; // Limpiar tags seleccionados
     
     // Limpiar búsqueda y caché
     this.contenidosEncontrados = [];
@@ -467,13 +524,18 @@ export class CrearListaComponent implements OnInit {
   private cargarDatosLista(): void {
     if (!this.listaParaEditar) return;
 
+    // Cargar tags seleccionados
+    if (this.listaParaEditar.tags && this.listaParaEditar.tags.length > 0) {
+      this.selectedTags = [...this.listaParaEditar.tags];
+    }
+
     // Cargar datos básicos en el formulario
     this.listaForm.patchValue({
       nombre: this.listaParaEditar.nombre || '',
       descripcion: this.listaParaEditar.descripcion || '',
       especializacion: this.listaParaEditar.especializacionGestor || '',
       visible: this.listaParaEditar.visible || false,
-      tagsInput: this.listaParaEditar.tags ? this.listaParaEditar.tags.join(', ') : ''
+      tagsInput: this.selectedTags.join(', ')
     });
 
     // Cargar contenidos si existen
@@ -492,6 +554,47 @@ export class CrearListaComponent implements OnInit {
         });
       });
     }
+  }
+
+  /**
+   * Métodos para manejar selección múltiple de tags
+   */
+  toggleTag(tagValue: string) {
+    const index = this.selectedTags.indexOf(tagValue);
+    if (index > -1) {
+      this.selectedTags.splice(index, 1);
+    } else {
+      this.selectedTags.push(tagValue);
+    }
+    
+    // Actualizar el formulario
+    this.listaForm.patchValue({ tagsInput: this.selectedTags.join(',') });
+  }
+
+  isTagSelected(tagValue: string): boolean {
+    return this.selectedTags.includes(tagValue);
+  }
+
+  getSelectedTagsText(): string {
+    if (this.selectedTags.length === 0) return '';
+    return this.selectedTags.map(tag => {
+      const tagObj = this.availableListTags.find(t => t.value === tag);
+      return tagObj ? tagObj.label : tag;
+    }).join(', ');
+  }
+
+  /**
+   * Verifica si hay al menos un tag seleccionado
+   */
+  hasSelectedTags(): boolean {
+    return this.selectedTags.length > 0;
+  }
+
+  /**
+   * Obtiene el número de tags seleccionados
+   */
+  getSelectedTagsCount(): number {
+    return this.selectedTags.length;
   }
 
   /**

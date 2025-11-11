@@ -1,4 +1,14 @@
 <div class="crear-lista-container" [class.modal-mode]="modal">
+  <!-- Botón circular de cerrar para modo modal -->
+  <button 
+    *ngIf="modal"
+    type="button"
+    class="modal-close-btn"
+    (click)="onCancelar()"
+    aria-label="Cerrar modal">
+    X
+  </button>
+  
   <!-- Header bar similar al visu-dashboard -->
   <div class="header-bar" *ngIf="!modal">
     <h2>🎵 {{ tituloModal }}</h2>
@@ -61,16 +71,20 @@
       <!-- Campo Especialización (solo para gestores) -->
       <div class="form-field" *ngIf="modo === 'gestor'">
         <label for="especializacion">Especialización del gestor *</label>
-        <input 
+        <select 
           id="especializacion"
-          type="text" 
           formControlName="especializacion"
           class="full-width"
-          placeholder="Ej: Rock clásico, Jazz contemporáneo..."
           aria-label="Especialización del gestor">
+          <option value="" disabled>Selecciona tu especialización</option>
+          <option *ngFor="let especialidad of especializacionesDisponibles" [value]="especialidad">
+            {{ especialidad }}
+          </option>
+        </select>
         <div class="error" *ngIf="listaForm.get('especializacion')?.invalid && listaForm.get('especializacion')?.touched">
           <span *ngIf="listaForm.get('especializacion')?.errors?.['required']">⚠️ La especialización es requerida</span>
         </div>
+        <div class="hint">Selecciona el área de contenido en la que tienes más experiencia</div>
       </div>
     </div>
 
@@ -80,15 +94,38 @@
       
       <!-- Campo Tags -->
       <div class="form-field">
-        <label for="tagsInput">Etiquetas</label>
-        <input 
-          id="tagsInput"
-          type="text" 
-          formControlName="tagsInput"
-          class="full-width"
-          placeholder="rock, pop, jazz (separadas por comas)"
-          aria-label="Etiquetas de la lista">
-        <div class="hint">Separa las etiquetas con comas</div>
+        <label for="tags-section">
+          Etiquetas 
+          <span *ngIf="hasSelectedTags()" class="selected-count">({{ getSelectedTagsCount() }} seleccionadas)</span>
+        </label>
+        
+        <!-- Grid de tags seleccionables -->
+        <fieldset id="tags-section" class="tags-grid" aria-label="Seleccionar etiquetas para la lista">
+          <legend class="sr-only">Selecciona las etiquetas que describan tu lista</legend>
+          <div *ngFor="let tag of availableListTags" 
+               class="tag-option">
+            <input 
+              type="checkbox" 
+              [id]="'tag-' + tag.value"
+              [checked]="isTagSelected(tag.value)"
+              (change)="toggleTag(tag.value)"
+              class="tag-checkbox"
+              [attr.aria-describedby]="'tag-' + tag.value + '-desc'">
+            <label [for]="'tag-' + tag.value" 
+                   class="tag-label"
+                   [id]="'tag-' + tag.value + '-desc'">
+              {{ tag.label }}
+            </label>
+          </div>
+        </fieldset>
+        
+        <!-- Resumen de tags seleccionados -->
+        <div class="tags-summary" *ngIf="!hasSelectedTags()">
+          💡 Selecciona las etiquetas que mejor describan tu lista para ayudar a otros usuarios a encontrarla
+        </div>
+        <div class="tags-summary selected" *ngIf="hasSelectedTags()">
+          ✅ <strong>{{ getSelectedTagsCount() }} etiqueta(s) seleccionada(s):</strong> {{ getSelectedTagsText() }}
+        </div>
       </div>
 
       <!-- Campo Visible (solo para gestores) -->

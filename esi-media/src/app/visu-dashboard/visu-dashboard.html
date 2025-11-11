@@ -36,6 +36,9 @@
         
         <!-- Menú desplegable del usuario -->
         <div class="user-dropdown" *ngIf="showUserMenu" role="menu">
+          <button class="dropdown-item" (click)="toggleConfigUser()" role="menuitem">
+            <span class="dropdown-text">Configuración de perfil</span>
+          </button>
           <button class="dropdown-item" (click)="toggleListasPrivadas()" role="menuitem">
             <span class="dropdown-text">Ver mis listas privadas</span>
             <span class="dropdown-badge" *ngIf="mostrarListasPrivadas">●</span>
@@ -153,4 +156,14 @@
     (cerrar)="closeCrearListaModal()"
     (creada)="closeCrearListaModal(true)">
   </crear-lista>
+</dialog>
+
+<!-- Modal para configuración de usuario -->
+<div class="modal-backdrop" *ngIf="showConfigModal" (click)="closeConfigUserModal()" (keydown)="$event.key === 'Escape' && closeConfigUserModal()"></div>
+<dialog class="modal-container" [attr.open]="showConfigModal ? true : null">
+  <app-config-user 
+    [modal]="true"
+    (cerrar)="closeConfigUserModal()"
+    (actualizado)="onUserUpdated($event)">
+  </app-config-user>
 </dialog>
