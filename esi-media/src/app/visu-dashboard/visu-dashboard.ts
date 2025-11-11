@@ -55,17 +55,33 @@ export class VisuDashboard implements OnInit, AfterViewInit {
         const url = evt.urlAfterRedirects || evt.url;
         if (url.includes('/dashboard/videos')) {
           this.filtroTipo = 'VIDEO';
+          this.mostrarListasPublicas = false;
         } else if (url.includes('/dashboard/audios')) {
           this.filtroTipo = 'AUDIO';
+          this.mostrarListasPublicas = false;
+        } else if (url.includes('/dashboard/listas-publicas')) {
+          this.mostrarListasPublicas = true;
+          this.filtroTipo = null;
+          this.forceReloadListasPublicas = Math.random();
         } else {
           this.filtroTipo = null; // mostrar ambos
+          this.mostrarListasPublicas = false;
         }
       }
     });
     // Inicial rápido
     const initUrl = this.router.url || '';
-    if (initUrl.includes('/dashboard/videos')) this.filtroTipo = 'VIDEO';
-    else if (initUrl.includes('/dashboard/audios')) this.filtroTipo = 'AUDIO';
+    if (initUrl.includes('/dashboard/videos')) {
+      this.filtroTipo = 'VIDEO';
+      this.mostrarListasPublicas = false;
+    } else if (initUrl.includes('/dashboard/audios')) {
+      this.filtroTipo = 'AUDIO';
+      this.mostrarListasPublicas = false;
+    } else if (initUrl.includes('/dashboard/listas-publicas')) {
+      this.mostrarListasPublicas = true;
+      this.filtroTipo = null;
+      this.forceReloadListasPublicas = Math.random();
+    }
   }
 
   ngAfterViewInit(): void {
@@ -131,25 +147,7 @@ export class VisuDashboard implements OnInit, AfterViewInit {
     }
   }
 
-  /**
-   * Muestra u oculta las listas públicas como tab principal
-   */
-  toggleListasPublicas(): void {
-    this.mostrarListasPublicas = !this.mostrarListasPublicas;
-    this.closeUserMenu();
-    
-    // Si se abren las listas públicas, cerrar las privadas
-    if (this.mostrarListasPublicas && this.mostrarListasPrivadas) {
-      this.mostrarListasPrivadas = false;
-      if (this.isBrowser) {
-        document.body.classList.remove('no-scroll');
-      }
-    }
-    
-    if (this.mostrarListasPublicas) {
-      this.forceReloadListasPublicas = Math.random();
-    }
-  }
+
 
   /**
    * Navega a la página de gestión de listas usando el router

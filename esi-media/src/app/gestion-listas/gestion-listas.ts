@@ -114,6 +114,7 @@ export class GestionListasComponent implements OnInit, OnChanges {
     if (this.modo === 'gestor') {
       this.router.navigate(['gestor-dashboard/gestion-listas', lista.id]);
     } else {
+      // Para visualizadores, siempre navegar a las rutas de dashboard
       this.router.navigate(['dashboard/listas', lista.id]);
     }
   }
