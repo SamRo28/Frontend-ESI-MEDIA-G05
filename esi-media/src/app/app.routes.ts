@@ -104,9 +104,11 @@ export const routes: Routes = [
     component: GestorDashboardComponent
   },
   {
+    // Ruta legacy eliminada: la vista principal vive en /dashboard.
+    // Se mantienen redirecciones más abajo para preservar enlaces antiguos.
     path: 'multimedia',
-    component: MultimediaListComponent,
-    canActivate: [MultimediaGuard]
+    redirectTo: 'dashboard',
+    pathMatch: 'full'
   },
   {
     path: 'dashboard/videos',
@@ -127,10 +129,6 @@ export const routes: Routes = [
     path: 'dashboard/:id',
     component: MultimediaDetailComponent,
     canActivate: [MultimediaGuard]
-  },
-  {
-    path: 'gestor-dashboard',
-    component: GestorDashboardComponent
   },
   // Redirecciones legacy desde /multimedia* a /dashboard*
   { path: 'multimedia', redirectTo: 'dashboard', pathMatch: 'full' },
