@@ -29,7 +29,6 @@
 
   <div class="detalle" *ngIf="!cargando && detalle">
     <div class="cabecera">
-      <div class="caratula" *ngIf="caratulaUrl()" [style.background-image]="'url(' + caratulaUrl() + ')'"></div>
       <div class="cabecera-info">
         <h1 class="titulo">{{ detalle!.titulo }}</h1>
         <!-- Se eliminan descripción y metadatos en cabecera para evitar duplicidad -->
