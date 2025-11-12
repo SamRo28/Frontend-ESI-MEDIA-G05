@@ -33,38 +33,38 @@
         <h1 class="titulo">{{ detalle!.titulo }}</h1>
         <!-- Se eliminan descripción y metadatos en cabecera para evitar duplicidad -->
       </div>
-      <!-- Desplegable de listas privadas -->
-      <div class="cabecera-actions">
-        <div class="dropdown-listas" *ngIf="listasPrivadas.length > 0">
-          <button class="btn-dropdown-listas" (click)="toggleDropdownListas()">
-            <span>Añadir a lista</span>
-            <span class="dropdown-arrow" [class.rotated]="mostrarDropdownListas">▼</span>
-          </button>
-          <div class="dropdown-menu-listas" *ngIf="mostrarDropdownListas" role="menu">
-            <div class="dropdown-item-lista" 
-                 *ngFor="let lista of listasPrivadas" 
-                 (click)="incluirALista(lista)"
-                 (keydown)="onListaKeyDown($event, lista)"
-                 tabindex="0"
-                 role="menuitem">
-              <span class="lista-nombre">{{ lista.nombre }}</span>
-              <span class="lista-info">{{ lista.contenidosIds?.length || 0 }} elementos</span>
-            </div>
-            <div class="dropdown-divider" *ngIf="listasPrivadas.length > 0"></div>
-            <div class="dropdown-item-lista nueva-lista" 
-                 (click)="crearNuevaLista()"
-                 (keydown)="onNuevaListaKeyDown($event)"
-                 tabindex="0"
-                 role="menuitem">
-              <span class="lista-nombre">+ Crear nueva lista</span>
-            </div>
+    </div>
+    <!-- Desplegable de listas privadas movido horizontalmente a la derecha -->
+    <div class="cabecera-actions-horizontal">
+      <div class="dropdown-listas" *ngIf="listasPrivadas.length > 0">
+        <button class="btn-dropdown-listas" (click)="toggleDropdownListas()">
+          <span>Añadir a lista</span>
+          <span class="dropdown-arrow" [class.rotated]="mostrarDropdownListas">▼</span>
+        </button>
+        <div class="dropdown-menu-listas" *ngIf="mostrarDropdownListas" role="menu">
+          <div class="dropdown-item-lista" 
+               *ngFor="let lista of listasPrivadas" 
+               (click)="incluirALista(lista)"
+               (keydown)="onListaKeyDown($event, lista)"
+               tabindex="0"
+               role="menuitem">
+            <span class="lista-nombre">{{ lista.nombre }}</span>
+            <span class="lista-info">{{ lista.contenidosIds?.length || 0 }} elementos</span>
+          </div>
+          <div class="dropdown-divider" *ngIf="listasPrivadas.length > 0"></div>
+          <div class="dropdown-item-lista nueva-lista" 
+               (click)="crearNuevaLista()"
+               (keydown)="onNuevaListaKeyDown($event)"
+               tabindex="0"
+               role="menuitem">
+            <span class="lista-nombre">+ Crear nueva lista</span>
           </div>
         </div>
-        <!-- Mensaje si no hay listas -->
-        <button class="btn-primera-lista" *ngIf="listasPrivadas.length === 0" (click)="crearNuevaLista()">
-          <span>Crear primera lista</span>
-        </button>
       </div>
+      <!-- Mensaje si no hay listas -->
+      <button class="btn-primera-lista" *ngIf="listasPrivadas.length === 0" (click)="crearNuevaLista()">
+        <span>Crear primera lista</span>
+      </button>
     </div>
 
     <div class="detalle-body">
