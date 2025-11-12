@@ -1,0 +1,144 @@
+<div class="min-h-screen bg-gray-50 py-8 px-4">
+  <div class="max-w-6xl mx-auto flex gap-6">
+    <!-- Sidebar cuenta -->
+    <aside class="w-64 hidden md:block">
+      <h2 class="text-xl font-bold text-gray-900 mb-4">Cuenta</h2>
+      <nav class="side-nav bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <button class="side-item" [class.active]="activeSection==='info'" (click)="select('info')">
+          <span class="icon">🏠</span>
+          <span>Información general</span>
+        </button>
+        <button class="side-item" [class.active]="activeSection==='suscripcion'" (click)="select('suscripcion')">
+          <span class="icon">💳</span>
+          <span>Suscripción</span>
+        </button>
+        <button class="side-item" [class.active]="activeSection==='seguridad'" (click)="select('seguridad')">
+          <span class="icon">🛡️</span>
+          <span>Seguridad</span>
+        </button>
+        <button class="side-item" [class.active]="activeSection==='dispositivos'" (click)="select('dispositivos')">
+          <span class="icon">📱</span>
+          <span>Dispositivos</span>
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Contenido -->
+    <section class="flex-1">
+      <h1 class="text-2xl font-bold text-gray-900 mb-4">Detalles de la cuenta</h1>
+
+      <!-- Mensajes -->
+      <div *ngIf="errorMessage" class="mb-4 p-3 rounded bg-red-50 text-red-700 border border-red-200">{{ errorMessage }}</div>
+      <div *ngIf="successMessage" class="mb-4 p-3 rounded bg-green-50 text-green-700 border border-green-200">{{ successMessage }}</div>
+
+      <!-- Información general -->
+      <div *ngIf="activeSection==='info'" class="space-y-6">
+        <div class="card">
+          <div class="row">
+            <div class="row-title">Nombre y apellidos</div>
+            <div class="row-content">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input [(ngModel)]="form.nombre" name="nombre" type="text" maxlength="80" class="input" placeholder="Nombre" />
+                <input [(ngModel)]="form.apellidos" name="apellidos" type="text" maxlength="120" class="input" placeholder="Apellidos" />
+              </div>
+            </div>
+          </div>
+          <hr />
+          <div class="row">
+            <div class="row-title">Correo</div>
+            <div class="row-content">
+              <div class="text-sm text-gray-700">{{ email }}</div>
+              <div class="text-xs text-red-600 mt-1" *ngIf="!email">No verificado</div>
+            </div>
+          </div>
+          <hr />
+          <div class="row">
+            <div class="row-title">Alias</div>
+            <div class="row-content">
+              <input [(ngModel)]="form.alias" name="alias" type="text" maxlength="80" class="input" placeholder="Alias" />
+            </div>
+          </div>
+          <hr />
+          <div class="row">
+            <div class="row-title">Fecha de nacimiento</div>
+            <div class="row-content">
+              <input [(ngModel)]="form.fechaNacimiento" name="fechaNacimiento" type="date" class="input" />
+            </div>
+          </div>
+          <hr />
+          <div class="row">
+            <div class="row-title">Tipo de usuario</div>
+            <div class="row-content">
+              <span class="badge">{{ rol || 'Visualizador' }}</span>
+            </div>
+          </div>
+          <hr />
+          <div class="row">
+            <div class="row-title">Tipo de cuenta</div>
+            <div class="row-content">
+              <span class="badge" [class.badge-vip]="form.vip">{{ form.vip ? 'VIP' : 'Estándar' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="row">
+            <div class="row-title">Foto</div>
+            <div class="row-content">
+              <div class="flex items-center gap-3">
+                <img *ngIf="form.foto" [src]="form.foto" class="w-12 h-12 rounded-full object-cover border" />
+                <input [(ngModel)]="form.foto" name="foto" type="text" class="input flex-1" placeholder="https://..." />
+              </div>
+            </div>
+          </div>
+          <hr />
+          <div class="row">
+            <div class="row-title">Contraseña</div>
+            <div class="row-content">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input [(ngModel)]="form.newPassword" name="newPassword" type="password" class="input" placeholder="Nueva contraseña" (input)="onPasswordInput()" />
+                <input [(ngModel)]="form.repeatPassword" name="repeatPassword" type="password" class="input" placeholder="Repetir contraseña" (input)="onPasswordInput()" />
+              </div>
+              <ul class="rules">
+                <li [class.ok]="passwordRules.minLength">8-64 caracteres</li>
+                <li [class.ok]="passwordRules.upper">Mayúscula</li>
+                <li [class.ok]="passwordRules.lower">Minúscula</li>
+                <li [class.ok]="passwordRules.number">Número</li>
+                <li [class.ok]="passwordRules.special">Caracter especial</li>
+                <li [class.ok]="passwordRules.match">Coinciden</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-3 justify-end">
+          <button type="button" class="btn" [disabled]="loading" (click)="errorMessage=''; successMessage=''">Cancelar</button>
+          <button type="button" class="btn-primary" [disabled]="loading || !canSubmit()" (click)="openConfirm()">Guardar cambios</button>
+        </div>
+      </div>
+
+      <!-- Suscripción (placeholder) -->
+      <div *ngIf="activeSection==='suscripcion'" class="card">
+        <div class="p-4 text-sm text-gray-700">Sección de Suscripción (próximamente)</div>
+      </div>
+
+      <!-- Seguridad / Dispositivos (placeholders) -->
+      <div *ngIf="activeSection==='seguridad'" class="card"><div class="p-4 text-sm text-gray-700">Seguridad (próximamente)</div></div>
+      <div *ngIf="activeSection==='dispositivos'" class="card"><div class="p-4 text-sm text-gray-700">Dispositivos (próximamente)</div></div>
+    </section>
+  </div>
+
+  <!-- Confirmación -->
+  <div *ngIf="showConfirm" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" (click)="cancelConfirm()">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-md mx-4" (click)="$event.stopPropagation()">
+      <div class="p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Confirmar cambios</h3>
+        <p class="text-sm text-gray-600">¿Deseas guardar los cambios de tu perfil?</p>
+        <div class="mt-6 flex justify-end gap-3">
+          <button class="px-4 py-2 rounded border" (click)="cancelConfirm()">Cancelar</button>
+          <button class="px-4 py-2 rounded bg-blue-600 text-white" [disabled]="loading" (click)="save()">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
