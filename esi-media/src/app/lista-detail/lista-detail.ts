@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ListaService } from '../services/lista.service';
 import { MultimediaService, ContenidoResumenDTO } from '../services/multimedia.service';
 import { ContentService, ContenidoSearchResult } from '../services/content.service';
