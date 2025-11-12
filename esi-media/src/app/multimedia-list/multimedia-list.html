@@ -1,25 +1,27 @@
-<header class="dashboard-header">
-  <div class="header-content">
-    <div class="logo-section">
-      <div class="logo">
-        <span class="logo-icon">🎵</span>
-        <span class="logo-text">EsiMedia</span>
+<ng-container *ngIf="showHeader">
+  <header class="dashboard-header">
+    <div class="header-content">
+      <div class="logo-section">
+        <div class="logo">
+          <span class="logo-icon">🎵</span>
+          <span class="logo-text">EsiMedia</span>
+        </div>
+      </div>
+      <nav class="nav-menu">
+        <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" class="nav-link">Inicio</a>
+        <a routerLink="/dashboard/videos" routerLinkActive="active" class="nav-link">Videos</a>
+        <a routerLink="/dashboard/audios" routerLinkActive="active" class="nav-link">Audios</a>
+      </nav>
+      <div class="user-section">
+        <div class="user-avatar">U</div>
+        <span class="user-name">Usuario</span>
       </div>
     </div>
-    <nav class="nav-menu">
-      <a routerLink="/multimedia" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" class="nav-link">Inicio</a>
-      <a routerLink="/multimedia/videos" routerLinkActive="active" class="nav-link">Videos</a>
-      <a routerLink="/multimedia/audios" routerLinkActive="active" class="nav-link">Audios</a>
-    </nav>
-    <div class="user-section">
-      <div class="user-avatar">U</div>
-      <span class="user-name">Usuario</span>
-    </div>
-  </div>
-</header>
+  </header>
+</ng-container>
 
 <div class="mm-container">
-  <h1 class="mm-title gradient-heading">{{ titulo }}</h1>
+  <h1 class="mm-title gradient-heading" *ngIf="showTitle">{{ titulo }}</h1>
 
   <!-- Loader Skeleton -->
   <div class="grid" *ngIf="cargando">
@@ -43,7 +45,7 @@
 
   <!-- Grid de contenido -->
   <div class="grid" *ngIf="!cargando && !errores && contenido.length">
-    <a class="card" *ngFor="let item of contenido; trackBy: trackById" [routerLink]="['/multimedia', item.id]">
+    <a class="card" *ngFor="let item of contenido; trackBy: trackById" [routerLink]="['/dashboard', item.id]">
       <div class="thumb" [class.vip]="item.vip">
         <img *ngIf="caratulaUrl(item)" class="thumb-img" [src]="caratulaUrl(item)!" loading="lazy" alt="" />
         <span class="badge" *ngIf="item.vip">VIP</span>

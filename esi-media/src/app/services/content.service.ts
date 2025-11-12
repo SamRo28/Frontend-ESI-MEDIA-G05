@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, from } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 
 export interface AudioUploadData {
@@ -13,7 +15,7 @@ export interface AudioUploadData {
   fechaDisponibleHasta?: Date | null;
   visible: boolean;
   archivo: File;
-  caratula?: any;
+  caratula?: File;
 }
 
 export interface VideoUploadData {
@@ -27,7 +29,7 @@ export interface VideoUploadData {
   visible: boolean;
   url: string;
   resolucion: string;
-  caratula?: any;
+  caratula?: File;
 }
 
 export interface UploadResponse {
@@ -37,6 +39,23 @@ export interface UploadResponse {
   videoId?: string;
   titulo?: string;
   url?: string;
+}
+
+export interface ContenidoSearchResult {
+  id: string;
+  titulo: string;
+  tipo: 'Video' | 'Audio';
+  descripcion?: string;
+  duracion?: number;
+  resolucion?: string;
+}
+
+export interface SearchContentResponse {
+  success: boolean;
+  mensaje: string;
+  contenidos: ContenidoSearchResult[];
+  total: number;
+  query: string;
 }
 
 // Interface para manejo de errores del backend
@@ -95,6 +114,28 @@ export class ContentService {
    * Sube un video por URL usando el endpoint /gestor/video/subir
    */
   uploadVideo(videoData: VideoUploadData): Observable<UploadResponse> {
+    if (videoData.caratula) {
+      // Convertir la carátula a base64 para enviarla como JSON
+      const fileToBase64Promise = new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Error al leer el archivo de carátula'));
+        reader.readAsDataURL(videoData.caratula!);
+      });
+
+      return from(fileToBase64Promise).pipe(
+        switchMap(base64String => this.sendVideoData({...videoData, caratulaBase64: base64String}))
+      );
+    } else {
+      // Sin carátula, enviar directamente
+      return this.sendVideoData(videoData);
+    }
+  }
+
+  /**
+   * Método privado para enviar los datos del video como JSON
+   */
+  private sendVideoData(videoData: VideoUploadData & { caratulaBase64?: string }): Observable<UploadResponse> {
     const payload = {
       titulo: videoData.titulo,
       descripcion: videoData.descripcion || null,
@@ -108,7 +149,7 @@ export class ContentService {
       visible: videoData.visible,
       url: videoData.url,
       resolucion: videoData.resolucion,
-      caratula: videoData.caratula || null
+      caratula: videoData.caratulaBase64 || null
     };
 
     // El interceptor authInterceptor se encarga automáticamente del header Authorization
@@ -130,5 +171,91 @@ export class ContentService {
    */
   checkVideoStatus(): Observable<any> {
     return this.http.get(`${this.baseUrl}/video/estado`);
+  }
+
+
+  /**
+   * Busca contenidos usando el endpoint /multimedia con parámetro query
+   * Este endpoint respeta todos los filtros de usuario (edad, VIP, etc.)
+   */
+  buscarContenidos(query: string, limit: number = 10): Observable<SearchContentResponse> {
+    if (!query || query.trim().length < 2) {
+      return of({
+        success: false,
+        mensaje: 'El query debe tener al menos 2 caracteres',
+        contenidos: [],
+        total: 0,
+        query: query
+      });
+    }
+
+    const params = new URLSearchParams({
+      query: query.trim(),
+      size: Math.min(limit, 20).toString(), // Limitar a máximo 20 para evitar sobrecarga
+      page: '0'
+    });
+
+    console.log('Realizando búsqueda en backend:', query.trim());
+
+    // El interceptor se encarga del Authorization header automáticamente
+    return this.http.get<any>(`http://localhost:8080/multimedia?${params}`).pipe(
+      catchError(error => {
+        console.error('Error en búsqueda de contenidos:', error);
+        
+        let mensajeError = 'Error al buscar contenidos';
+        if (error.status === 401) {
+          mensajeError = 'No tienes permisos para buscar contenidos';
+        } else if (error.status === 0) {
+          mensajeError = 'No se puede conectar al servidor';
+        } else if (error.status >= 500) {
+          mensajeError = 'Error interno del servidor';
+        }
+
+        return of({
+          success: false,
+          mensaje: mensajeError,
+          contenidos: [],
+          total: 0,
+          query: query.trim()
+        });
+      }),
+      // Transformar la respuesta del endpoint /multimedia al formato esperado
+      map((response: any) => {
+        if (response && response.content) {
+          // Convertir ContenidoResumenDTO[] a ContenidoSearchResult[]
+          const contenidos: ContenidoSearchResult[] = response.content.map((item: any) => ({
+            id: item.id,
+            titulo: item.titulo,
+            tipo: item.tipo === 'AUDIO' ? 'Audio' : 'Video',
+            descripcion: '', // ContenidoResumenDTO no incluye descripción
+            duracion: undefined, // No disponible en resumen
+            resolucion: undefined // No disponible en resumen
+          }));
+
+          return {
+            success: true,
+            mensaje: `${contenidos.length} contenidos encontrados`,
+            contenidos: contenidos,
+            total: response.totalElements || contenidos.length,
+            query: query.trim()
+          };
+        } else {
+          return {
+            success: false,
+            mensaje: 'No se encontraron contenidos',
+            contenidos: [],
+            total: 0,
+            query: query.trim()
+          };
+        }
+      })
+    );
+  }
+
+  /**
+   * Método legacy mantenido para compatibilidad
+   */
+  buscarPorNombre(nombre: string): Observable<any> {
+    return this.buscarContenidos(nombre, 10);
   }
 }

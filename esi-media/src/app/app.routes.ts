@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard';
-import { UserDetailComponent } from './user-detail/user-detail';
+
 import { Home } from './home/home';
 import { Login } from './login/login';
 import { AudioUploadComponent } from './audio-upload/audio-upload.component';
@@ -17,16 +17,18 @@ import { GestorDashboardComponent } from './gestor-dashboard/gestor-dashboard';
 import { MultimediaListComponent } from './multimedia-list/multimedia-list';
 import { MultimediaDetailComponent } from './multimedia-detail/multimedia-detail';
 import { MultimediaGuard } from './guards/multimedia.guard';
+import { GestionListasComponent } from './gestion-listas/gestion-listas';
+import { CrearListaComponent } from './crear-lista/crear-lista';
+import { ListaDetailComponent } from './lista-detail/lista-detail';
+import { ForgotPasswordComponent } from './forgot-password/forgot-password';
+import { ResetPasswordComponent } from './reset-password/reset-password';
 
 export const routes: Routes = [
   {
     path: 'home',
     component: Home
   },
-  {
-    path: 'user-detail/:id',
-    component: UserDetailComponent
-  },
+
   {
     path: 'admin-dashboard',
     component: AdminDashboardComponent
@@ -67,33 +69,83 @@ export const routes: Routes = [
     path: 'video/subir',
     component: VideoUploadComponent
   },
+  { 
+    path: 'forgot-password', 
+    component: ForgotPasswordComponent 
+  },
+  { 
+    path: 'reset-password', 
+    component: ResetPasswordComponent 
+  },
   {
     path: 'dashboard',
     component: VisuDashboard
+  },
+  {
+    path: 'dashboard/listas',
+    component: GestionListasComponent,
+    canActivate: [MultimediaGuard]
+  },
+  {
+    path: 'dashboard/listas/crear',
+    component: CrearListaComponent,
+    canActivate: [MultimediaGuard]
+  },
+  {
+    path: 'dashboard/listas/:id',
+    component: ListaDetailComponent,
+    canActivate: [MultimediaGuard]
   },
   {
     path: 'gestor-dashboard',
     component: GestorDashboardComponent
   },
   {
+    // Ruta legacy eliminada: la vista principal vive en /dashboard.
+    // Se mantienen redirecciones más abajo para preservar enlaces antiguos.
     path: 'multimedia',
-    component: MultimediaListComponent,
+    redirectTo: 'dashboard',
+    pathMatch: 'full'
+  },
+  {
+    path: 'dashboard/videos',
+    component: VisuDashboard,
     canActivate: [MultimediaGuard]
   },
   {
-    path: 'multimedia/videos',
-    component: MultimediaListComponent,
+    path: 'dashboard/audios',
+    component: VisuDashboard,
     canActivate: [MultimediaGuard]
   },
   {
-    path: 'multimedia/audios',
-    component: MultimediaListComponent,
+    path: 'dashboard/listas-publicas',
+    component: VisuDashboard,
     canActivate: [MultimediaGuard]
   },
   {
-    path: 'multimedia/:id',
+    path: 'dashboard/:id',
     component: MultimediaDetailComponent,
     canActivate: [MultimediaGuard]
   },
-  
+  // Redirecciones legacy desde /multimedia* a /dashboard*
+  { path: 'multimedia', redirectTo: 'dashboard', pathMatch: 'full' },
+  { path: 'multimedia/videos', redirectTo: 'dashboard/videos', pathMatch: 'full' },
+  { path: 'multimedia/audios', redirectTo: 'dashboard/audios', pathMatch: 'full' },
+  { path: 'multimedia/:id', redirectTo: 'dashboard/:id', pathMatch: 'full' },
+  {
+
+    path: 'gestor-dashboard/gestion-listas',
+    component: GestionListasComponent,
+    canActivate: [MultimediaGuard]
+  },
+  {
+    path: 'gestor-dashboard/gestion-listas/crear',
+    component: CrearListaComponent,
+    canActivate: [MultimediaGuard]
+  },
+  {
+    path: 'gestor-dashboard/gestion-listas/:id',
+    component: ListaDetailComponent,
+    canActivate: [MultimediaGuard]
+  }
 ];

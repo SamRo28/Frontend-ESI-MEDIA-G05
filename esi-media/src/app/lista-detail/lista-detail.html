@@ -1,0 +1,292 @@
+<div class="lista-detail-container">
+  <!-- Loading state -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Cargando lista...</p>
+  </div>
+
+  <!-- Error state -->
+  <div *ngIf="error && !loading" class="error-state">
+    <div class="error-icon">❌</div>
+    <h2>Error</h2>
+    <p>{{ error }}</p>
+    <button class="btn btn-primary" (click)="volver()">Volver</button>
+  </div>
+
+  <!-- Content - Solo si tiene permisos para ver -->
+  <div *ngIf="!loading" class="content">
+    <div *ngIf="!error && lista && puedeVerLista()">
+      <!-- Contenido normal aquí -->
+    <!-- Header -->
+    <header class="lista-header">
+      <div class="header-content">
+        <div class="breadcrumb">
+          <button class="breadcrumb-link" (click)="volver()">
+            Listas
+          </button>
+          <span class="separator">/</span>
+          <span class="current">{{ lista.nombre }}</span>
+        </div>
+
+        <div class="header-main">
+          <div class="lista-info">
+            <h1 class="lista-title">{{ lista.nombre }}</h1>
+            <p class="lista-description" *ngIf="lista.descripcion">{{ lista.descripcion }}</p>
+            
+            <div class="lista-meta">
+              <div class="meta-item">
+                <span class="icon">🎵</span>
+                <span>{{ contenidos.length }} contenido{{ contenidos.length !== 1 ? 's' : '' }}</span>
+              </div>
+              
+              <div class="meta-item" *ngIf="lista.tags && lista.tags.length > 0">
+                Tags:
+                <span class="tags">
+                  <span class="tag" *ngFor="let tag of lista.tags; let last = last">
+                    {{ tag }}{{ !last ? ', ' : '' }}
+                  </span>
+                </span>
+              </div>
+              
+              <div class="meta-item" *ngIf="lista.visible !== undefined">
+                <span class="visibility-badge" [class.public]="lista.visible" [class.private]="!lista.visible">
+                  <span class="icon">{{ lista.visible ? '🌐' : '🔒' }}</span>
+                  {{ lista.visible ? 'Pública' : 'Privada' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions (solo para el propietario) -->
+          <div class="header-actions" *ngIf="esPropietario()">
+            <button 
+              class="btn" 
+              [class.btn-secondary]="!modoEdicion" 
+              [class.btn-primary]="modoEdicion"
+              (click)="toggleEdicion()">
+              <span class="icon">{{ modoEdicion ? '💾' : '✏️' }}</span>
+              {{ modoEdicion ? 'Guardar' : 'Editar' }}
+            </button>
+            <button 
+              class="btn btn-secondary" 
+              *ngIf="modoEdicion"
+              (click)="cancelarEdicion()">
+              <span class="icon">❌</span>
+              Cancelar
+            </button>
+            <button class="btn btn-danger" (click)="mostrarConfirmacionEliminar()">
+              <span class="icon">🗑️</span>
+              Eliminar
+            </button>
+          </div>
+
+          <!-- Información para visualizadores (sin opciones de edición) -->
+          <div class="header-info" *ngIf="!esPropietario() && esVisualizador()">
+            <div class="info-badge">
+              <span class="icon">👁️</span>
+              <span>Solo lectura</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Formulario de edición -->
+    <section class="edit-section" *ngIf="modoEdicion">
+      <div class="form-section">
+        <h2>Editar información básica</h2>
+        
+        <!-- Nombre -->
+        <div class="form-field">
+          <label for="nombre">Nombre de la lista *</label>
+          <input 
+            id="nombre"
+            type="text" 
+            [(ngModel)]="datosEdicion.nombre"
+            class="form-input"
+            placeholder="Nombre de la lista">
+        </div>
+
+        <!-- Descripción -->
+        <div class="form-field">
+          <label for="descripcion">Descripción *</label>
+          <textarea 
+            id="descripcion"
+            [(ngModel)]="datosEdicion.descripcion"
+            rows="3"
+            class="form-input"
+            placeholder="Descripción de la lista"></textarea>
+        </div>
+
+        <!-- Tags -->
+        <div class="form-field">
+          <label for="tagsInput">Etiquetas</label>
+          <input 
+            id="tagsInput"
+            type="text" 
+            [(ngModel)]="datosEdicion.tagsInput"
+            class="form-input"
+            placeholder="rock, pop, jazz (separadas por comas)">
+        </div>
+
+        <!-- Visible (solo para gestores de contenido) -->
+        <div class="form-field" *ngIf="esGestorDeContenido()">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="datosEdicion.visible">
+            Lista pública
+          </label>
+        </div>
+      </div>
+
+      <!-- Gestión de contenidos en modo edición -->
+      <div class="form-section">
+        <h2>Gestionar contenidos</h2>
+        
+        <!-- Búsqueda de contenidos -->
+        <div class="form-field">
+          <label for="contenidoInput">Añadir contenido</label>
+          <div class="search-content-container">
+            <div class="input-with-button">
+              <input 
+                id="contenidoInput"
+                type="text" 
+                [(ngModel)]="nuevoContenido"
+                (input)="onBuscarContenido()"
+                (blur)="cerrarSugerencias()"
+                (keydown.enter)="agregarContenido()"
+                (keydown.escape)="cerrarSugerencias()"
+                placeholder="Escribe para buscar contenidos..."
+                class="content-input"
+                autocomplete="off">
+              <button 
+                type="button" 
+                class="btn btn-add-content"
+                (click)="agregarContenido()"
+                [disabled]="!nuevoContenido.trim()">
+                <span class="icon" *ngIf="!buscandoContenidos">➕</span>
+                <span class="icon spinner" *ngIf="buscandoContenidos">🔄</span>
+              </button>
+            </div>
+            
+            <!-- Sugerencias -->
+            <div class="content-suggestions" *ngIf="mostrarSugerencias && contenidosEncontrados.length > 0">
+              <div class="suggestions-header">
+                <span class="suggestions-title">Contenidos encontrados:</span>
+              </div>
+              <div 
+                *ngFor="let contenido of contenidosEncontrados" 
+                class="suggestion-item"
+                (mousedown)="seleccionarContenido(contenido)">
+                <div class="suggestion-main">
+                  <span class="suggestion-title">{{ contenido.titulo }}</span>
+                  <span class="suggestion-type">{{ contenido.tipo }}</span>
+                </div>
+                <div class="suggestion-details" *ngIf="contenido.descripcion">
+                  <span class="suggestion-description">{{ contenido.descripcion }}</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Estado de búsqueda -->
+            <div class="search-status" *ngIf="buscandoContenidos">
+              <span class="search-loading">🔍 Buscando contenidos...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de contenidos en edición -->
+        <div class="contenidos-edit-list">
+          <div class="contenidos-header">
+            <span>Contenidos en la lista ({{ contenidosEditables.length }})</span>
+          </div>
+          
+          <div *ngIf="contenidosEditables.length === 0" class="empty-contenidos">
+            <span class="icon">📭</span>
+            <p>No hay contenidos en la lista</p>
+          </div>
+          
+          <div class="contenidos-list" *ngIf="contenidosEditables.length > 0">
+            <div *ngFor="let contenido of contenidosEditables; let i = index" class="contenido-edit-item">
+              <span class="contenido-text">{{ obtenerNombreContenido(contenido) }}</span>
+              <button 
+                type="button"
+                class="btn btn-remove-content"
+                (click)="quitarContenido(i)"
+                title="Eliminar contenido">
+                <span class="icon">🗑️</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contenidos (modo visualización) -->
+    <section class="contenidos-section" *ngIf="!modoEdicion">
+      <div class="section-header">
+        <h2>Contenidos ({{ contenidos.length }})</h2>
+      </div>
+
+      <!-- Empty state -->
+      <div *ngIf="contenidos.length === 0" class="empty-state">
+        <div class="empty-icon">📭</div>
+        <h3>No hay contenidos</h3>
+        <p>Esta lista no tiene contenidos añadidos.</p>
+        <button class="btn btn-primary" (click)="toggleEdicion()" *ngIf="esPropietario()">
+          <span class="icon">+</span>
+          Añadir contenidos
+        </button>
+      </div>
+
+      <!-- Contenidos grid -->
+      <div *ngIf="contenidos && contenidos.length > 0" class="contenidos-grid">
+        <button 
+          *ngFor="let contenido of contenidos; trackBy: trackById; let i = index" 
+          class="contenido-card"
+          (click)="verContenido(contenido)"
+          [attr.aria-label]="'Ver contenido: ' + contenido.titulo"
+          [attr.data-index]="i">
+          
+          <div class="card-image">
+            <img 
+              *ngIf="caratulaUrl(contenido)" 
+              [src]="caratulaUrl(contenido)" 
+              [alt]="contenido.titulo"
+              class="caratula">
+            <div *ngIf="!caratulaUrl(contenido)" class="caratula-placeholder">
+              <span class="placeholder-icon">{{ contenido.tipo === 'VIDEO' ? '🎬' : '🎵' }}</span>
+            </div>
+            <div class="card-overlay">
+              <button class="play-button" [attr.aria-label]="'Reproducir ' + contenido.titulo">
+                ▶️
+              </button>
+            </div>
+          </div>
+
+          <div class="card-content">
+            <h3 class="contenido-title">{{ contenido.titulo }}</h3>
+            <p class="contenido-type">{{ contenido.tipo }}</p>
+            <p class="contenido-badge" [class.vip]="contenido.vip" *ngIf="contenido.vip">
+              VIP
+            </p>
+          </div>
+        </button>
+      </div>
+    </section>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmación para eliminar -->
+<app-confirmation-modal
+  [isVisible]="mostrarModalEliminar"
+  title="Eliminar lista"
+  [message]="getMensajeEliminar()"
+  submessage="Esta acción no se puede deshacer y se perderán todos los contenidos de la lista."
+  confirmText="Eliminar"
+  cancelText="Cancelar"
+  processingText="Eliminando..."
+  [isProcessing]="eliminandoLista"
+  (confirmed)="confirmarEliminarLista()"
+  (cancelled)="cancelarEliminarLista()">
+</app-confirmation-modal>

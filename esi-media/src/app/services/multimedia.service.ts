@@ -9,6 +9,7 @@ export interface ContenidoResumenDTO {
   tipo: 'AUDIO' | 'VIDEO';
   caratula?: any;
   vip: boolean;
+  tags?: string[]; // Añadido para permitir filtrado
 }
 
 export interface ContenidoDetalleDTO {
@@ -18,6 +19,12 @@ export interface ContenidoDetalleDTO {
   tipo: 'AUDIO' | 'VIDEO';
   caratula?: any;
   vip: boolean;
+  duracion?: number; // en segundos
+  // Nuevos campos para enriquecer el detalle
+  fechadisponiblehasta?: string | Date; // Spring suele serializar Date como ISO string
+  edadvisualizacion?: number;
+  nvisualizaciones?: number;
+  tags?: string[];
   referenciaReproduccion: string;
 }
 

@@ -1,0 +1,176 @@
+.gestion-listas-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.state {
+  color: #b8a8d4;
+  text-align: center;
+  padding: 20px 0;
+  font-size: 16px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2px;
+}
+
+.playlist-card {
+  background: rgba(50, 35, 75, 0.7);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  border-radius: 16px;
+  padding: 16px;
+  backdrop-filter: blur(16px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-align: left;
+  width: 100%;
+  position: relative;
+}
+
+.playlist-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
+}
+
+.card-content {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  color: inherit;
+  font-family: inherit;
+}
+
+.card-content:focus {
+  outline: 2px solid rgba(168, 85, 247, 0.6);
+  outline-offset: 2px;
+}
+
+.card-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(168, 85, 247, 0.15);
+}
+
+.content-count {
+  color: #b8a8d4;
+  font-size: 12px;
+}
+
+.visibility-badge {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.description {
+  color: #d1c5e8;
+  font-size: 13px;
+  margin: 4px 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.thumb {
+  height: 170px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2f2450, #4b2b77);
+  margin-bottom: 12px;
+}
+
+.title {
+  color: #fff;
+  font-size: 18px;
+  margin: 4px 0;
+  font-weight: 600;
+}
+
+.meta {
+  color: #b8a8d4;
+  margin: 0 0 6px 0;
+  font-size: 14px;
+}
+
+.link {
+  color: #e9d5ff;
+  text-decoration: none;
+  font-size: 14px;
+  margin: 0;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+/* Botones de acción */
+.card-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-action {
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  color: white;
+}
+
+.btn-action:hover {
+  background: rgba(168, 85, 247, 0.4);
+  border-color: rgba(168, 85, 247, 0.6);
+  transform: scale(1.05);
+}
+
+.btn-action:focus {
+  outline: 2px solid rgba(168, 85, 247, 0.6);
+  outline-offset: 2px;
+}
+
+.btn-edit:hover {
+  background: rgba(34, 197, 94, 0.4);
+  border-color: rgba(34, 197, 94, 0.6);
+}
+
+.btn-delete:hover {
+  background: rgba(239, 68, 68, 0.4);
+  border-color: rgba(239, 68, 68, 0.6);
+}
+
+/* Modal de edición */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-container {
+  background: linear-gradient(135deg, #1a103a 0%, #2d1b69 100%);
+  border-radius: 20px;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}

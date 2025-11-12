@@ -4,25 +4,55 @@
     <div class="header-content">
       <div class="logo-section">
         <div class="logo">
-          <span class="logo-icon">🎵</span>
+          <img src="/EsiMedia icono sin fondo.png" alt="ESIMedia Logo" class="w-8 h-8">
           <span class="logo-text">EsiMedia</span>
         </div>
       </div>
 
       <nav class="nav-menu">
-        <a routerLink="/multimedia" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" class="nav-link">Inicio</a>
-        <a routerLink="/multimedia/videos" routerLinkActive="active" class="nav-link">Videos</a>
-        <a routerLink="/multimedia/audios" routerLinkActive="active" class="nav-link">Audios</a>
+        <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" class="nav-link">Inicio</a>
+        <a routerLink="/dashboard/videos" routerLinkActive="active" class="nav-link">Videos</a>
+        <a routerLink="/dashboard/audios" routerLinkActive="active" class="nav-link">Audios</a>
+        <a routerLink="/dashboard/listas-publicas" routerLinkActive="active" class="nav-link">Listas Públicas</a>
       </nav>
 
       <div class="user-section">
+        <!-- Botón de filtro -->
+        <app-content-filter 
+          [contentType]="contentFilterType"
+          (filtersApplied)="onFiltersApplied($event)">
+        </app-content-filter>
+        
         <button class="notification-btn">
           <span class="notification-icon">🔔</span>
           <span class="notification-badge">3</span>
         </button>
-        <div class="user-profile" (click)="toggleUserMenu()">
-          <div class="user-avatar">U</div>
-          <span class="user-name">Usuario</span>
+        <button class="user-profile" 
+                (click)="toggleUserMenu()" 
+                (keydown)="onUserProfileKeydown($event)" 
+                [attr.aria-expanded]="showUserMenu"
+                [attr.aria-label]="'Menú de usuario de ' + userName">
+          <div class="user-avatar-container">
+            <div [class]="getAvatarClasses()">{{ userInitial }}</div>
+            <div class="avatar-indicator" *ngIf="mostrarListasPrivadas"></div>
+          </div>
+          <span class="user-name">{{ userName }}</span>
+          <div class="dropdown-arrow" [class.rotated]="showUserMenu">▼</div>
+        </button>
+        
+        <!-- Menú desplegable del usuario -->
+        <div class="user-dropdown" *ngIf="showUserMenu" role="menu">
+          <button class="dropdown-item" (click)="toggleConfigUser()" role="menuitem">
+            <span class="dropdown-text">Configuración de perfil</span>
+          </button>
+          <button class="dropdown-item" (click)="toggleListasPrivadas()" role="menuitem">
+            <span class="dropdown-text">Ver mis listas privadas</span>
+            <span class="dropdown-badge" *ngIf="mostrarListasPrivadas">●</span>
+          </button>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item logout-item" (click)="logout()" role="menuitem">
+            <span class="dropdown-text">Cerrar sesión</span>
+          </button>
         </div>
       </div>
     </div>
@@ -30,6 +60,45 @@
 
   <!-- Main Content -->
   <main class="dashboard-main">
+    <section class="dashboard-section">
+      <div class="section-header">
+        <h2 class="section-title">{{ mostrarListasPublicas ? 'Listas Públicas' : 'Contenido Multimedia' }}</h2>
+        <div class="section-actions">
+          <button class="btn-toggle-panel" (click)="toggleListasPrivadas()">
+            {{ mostrarListasPrivadas ? 'Ocultar Listas' : 'Ver Mis Listas' }}
+          </button>
+        </div>
+      </div>
+      
+      <!-- Lista de listas públicas -->
+      <div *ngIf="mostrarListasPublicas" class="listas-publicas-section">
+        <app-gestion-listas [modo]="'visualizador'" [forceReload]="forceReloadListasPublicas"></app-gestion-listas>
+      </div>
+      
+      <!-- Lista multimedia (cuando no se muestran listas públicas) -->
+      <div *ngIf="!mostrarListasPublicas">
+        <app-multimedia-list 
+          [showHeader]="false" 
+          [showTitle]="false" 
+          [tipoForzado]="filtroTipo"
+          [tagFilters]="currentTagFilters">
+        </app-multimedia-list>
+      </div>
+    <!-- Panel lateral de listas privadas -->
+    <aside class="listas-privadas-panel" *ngIf="mostrarListasPrivadas">
+      <div class="panel-header">
+        <h2 class="panel-title">Mis Listas Privadas</h2>
+        <div class="panel-actions">
+          <button class="btn-cerrar-panel" (click)="toggleListasPrivadas()">✕</button>
+        </div>
+      </div>
+      <app-listas-privadas 
+        [forceReload]="forceReloadListas"
+        (abrirCrearModal)="openCrearListaModal()">
+      </app-listas-privadas>
+    </aside>
+    </section>
+
     <div class="coming-soon-section">
       <div class="stars-background">
         <div class="star" *ngFor="let star of stars" [style.left.%]="star.left" [style.top.%]="star.top" [style.animation-delay.s]="star.delay"></div>
@@ -88,3 +157,24 @@
     </div>
   </footer>
 </div>
+
+<!-- Modal para crear lista -->
+<div class="modal-backdrop" *ngIf="showCrearModal" (click)="closeCrearListaModal()" (keydown)="$event.key === 'Escape' && closeCrearListaModal()"></div>
+<dialog class="modal-container" [attr.open]="showCrearModal ? true : null">
+  <crear-lista 
+    [modo]="'visualizador'"
+    [modal]="true"
+    (cerrar)="closeCrearListaModal()"
+    (creada)="closeCrearListaModal(true)">
+  </crear-lista>
+</dialog>
+
+<!-- Modal para configuración de usuario -->
+<div class="modal-backdrop" *ngIf="showConfigModal" (click)="closeConfigUserModal()" (keydown)="$event.key === 'Escape' && closeConfigUserModal()"></div>
+<dialog class="modal-container" [attr.open]="showConfigModal ? true : null">
+  <app-config-user 
+    [modal]="true"
+    (cerrar)="closeConfigUserModal()"
+    (actualizado)="onUserUpdated($event)">
+  </app-config-user>
+</dialog>
