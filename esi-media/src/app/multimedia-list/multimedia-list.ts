@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ChangeDetectorRef, Input } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, inject, ChangeDetectorRef, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { MultimediaService, ContenidoResumenDTO, PageResponse } from '../services/multimedia.service';
@@ -13,12 +13,13 @@ import { isPlatformBrowser } from '@angular/common';
   templateUrl: './multimedia-list.html',
   styleUrl: './multimedia-list.css'
 })
-export class MultimediaListComponent implements OnInit {
+export class MultimediaListComponent implements OnInit, OnChanges {
   private platformId = inject(PLATFORM_ID);
   private cdr = inject(ChangeDetectorRef);
   @Input() showHeader: boolean = true;
   @Input() showTitle: boolean = true;
   @Input() tipoForzado: 'AUDIO' | 'VIDEO' | null = null;
+  @Input() tagFilters: string[] = [];
   pagina = 0;
   tamano = 12;
   cargando = false;
@@ -30,6 +31,18 @@ export class MultimediaListComponent implements OnInit {
   filtroTipo: 'AUDIO' | 'VIDEO' | null = null;
 
   constructor(private multimedia: MultimediaService, private route: ActivatedRoute, private router: Router) {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    // Detectar cambios en tagFilters y recargar contenido si es necesario
+    if (changes['tagFilters'] && !changes['tagFilters'].firstChange) {
+      console.log('🔄 Cambio en tagFilters detectado:', changes['tagFilters'].currentValue);
+      // Si hay contenido cargado, reaplicar filtros
+      if (this.contenido.length > 0) {
+        // Forzar recarga para aplicar nuevos filtros
+        this.cargar(0);
+      }
+    }
+  }
 
   ngOnInit(): void {
     // Evitar peticiones en SSR
@@ -76,7 +89,12 @@ export class MultimediaListComponent implements OnInit {
       next: (resp: PageResponse<ContenidoResumenDTO>) => {
         const items = resp.content || [];
         // Ya delegamos filtrado al backend; si por alguna razón vinieran mezclados, aplicamos filtro defensivo
-        this.contenido = this.filtroTipo ? items.filter(i => i.tipo === this.filtroTipo) : items;
+        let contenidoFiltrado = this.filtroTipo ? items.filter(i => i.tipo === this.filtroTipo) : items;
+        
+        // Aplicar filtrado por tags client-side
+        contenidoFiltrado = this.applyTagFiltering(contenidoFiltrado);
+        
+        this.contenido = contenidoFiltrado;
         this.totalPaginas = typeof resp.totalPages === 'number' ? resp.totalPages : null;
         this.totalElementos = typeof resp.totalElements === 'number' ? resp.totalElements : null;
         // Con filtrado en backend mantenemos los totales; solo los anulamos si el backend no los envía
@@ -136,6 +154,30 @@ export class MultimediaListComponent implements OnInit {
   }
 
   trackById(index: number, item: ContenidoResumenDTO): string { return item.id; }
+
+  /**
+   * Aplica filtrado por tags client-side al contenido
+   */
+  private applyTagFiltering(items: ContenidoResumenDTO[]): ContenidoResumenDTO[] {
+    // Si no hay filtros de tags, devolver todos los items
+    if (!this.tagFilters || this.tagFilters.length === 0) {
+      return items;
+    }
+
+    // Filtrar items que contengan al menos uno de los tags seleccionados
+    return items.filter(item => {
+      // Verificar si el item tiene tags
+      const tags = item.tags;
+      if (!tags || !Array.isArray(tags)) {
+        return false;
+      }
+
+      // Verificar si alguno de los tags del filtro está en los tags del item
+      return this.tagFilters.some(filterTag =>
+        tags.includes(filterTag)
+      );
+    });
+  }
 
   private prefetchSiguiente(): void {
   const siguiente = this.pagina + 1;
