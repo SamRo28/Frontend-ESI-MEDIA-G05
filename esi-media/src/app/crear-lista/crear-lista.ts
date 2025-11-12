@@ -220,11 +220,7 @@ export class CrearListaComponent implements OnInit {
         this.guardando = false;
         console.error('Error procesando lista:', err);
         if (err.status === 400 && err.error?.mensaje) {
-          if (err.error.mensaje.includes('nombre') && err.error.mensaje.includes('existe')) {
             this.mensajeErrorNombre = err.error.mensaje;
-          } else {
-            this.mensajeErrorNombre = err.error.mensaje;
-          }
         } else {
           this.mensajeErrorNombre = 'Error al procesar la lista. Inténtalo de nuevo.';
         }

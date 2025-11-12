@@ -1331,35 +1331,35 @@ export class AdminDashboardComponent implements OnInit {
     }, 7000);
 
     accion$.subscribe({
-      next: async (response) => {
-        console.log('✅ Usuario', this.accionBloqueo === 'bloquear' ? 'bloqueado' : 'desbloqueado');
-        
-        // Actualizar el estado local INMEDIATAMENTE (usuarios y filtrados)
-        const nuevoEstado = this.accionBloqueo === 'bloquear';
-        const idObjetivo = this.usuarioABloquear?.id;
-        if (idObjetivo) {
-          // Actualizar referencia directa (objeto seleccionado)
-          this.usuarioABloquear!.bloqueado = nuevoEstado;
+      next: (response) => {
+      console.log('✅ Usuario', this.accionBloqueo === 'bloquear' ? 'bloqueado' : 'desbloqueado');
+      
+      // Actualizar el estado local INMEDIATAMENTE (usuarios y filtrados)
+      const nuevoEstado = this.accionBloqueo === 'bloquear';
+      const idObjetivo = this.usuarioABloquear?.id;
+      if (idObjetivo) {
+        // Actualizar referencia directa (objeto seleccionado)
+        this.usuarioABloquear!.bloqueado = nuevoEstado;
 
-          // Actualizar lista principal
-          this.usuarios = this.usuarios.map(u => u.id === idObjetivo ? { ...u, bloqueado: nuevoEstado } : u);
+        // Actualizar lista principal
+        this.usuarios = this.usuarios.map(u => u.id === idObjetivo ? { ...u, bloqueado: nuevoEstado } : u);
 
-          // Sincronizar con servidor tras un pequeño delay para evitar sobrescribir con datos obsoletos
-          setTimeout(() => this.loadUsuarios(), 600);
-        }
-        
-        // Cerrar modal
-        this.cerrarModalBloqueo();
-        this.loadingBloqueo = false;
-        clearTimeout(backup);
-        this.cdr.detectChanges();
+        // Sincronizar con servidor tras un pequeño delay para evitar sobrescribir con datos obsoletos
+        setTimeout(() => this.loadUsuarios(), 600);
+      }
+      
+      // Cerrar modal
+      this.cerrarModalBloqueo();
+      this.loadingBloqueo = false;
+      clearTimeout(backup);
+      this.cdr.detectChanges();
       },
       error: (error) => {
-        console.error('🛑 Error:', error);
-        this.errorBloqueo = error.message || `Error al ${this.accionBloqueo} usuario`;
-        this.loadingBloqueo = false;
-        clearTimeout(backup);
-        this.cdr.detectChanges();
+      console.error('🛑 Error:', error);
+      this.errorBloqueo = error.message || `Error al ${this.accionBloqueo} usuario`;
+      this.loadingBloqueo = false;
+      clearTimeout(backup);
+      this.cdr.detectChanges();
       }
     });
   }
