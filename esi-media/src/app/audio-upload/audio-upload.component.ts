@@ -109,44 +109,73 @@ export class AudioUploadComponent extends BaseMediaUploadComponent {
     this.fileError = '';
 
     if (file) {
-      if (!file.type.includes('audio/mpeg') && !file.type.includes('audio/mp3')) {
-        this.showFileError('Solo se permiten archivos MP3', inputEl);
-        return;
+      const validationResult = await this.validateAudioFile(file, inputEl);
+      if (!validationResult.isValid) {
+        return; // Error ya manejado en validateAudioFile
       }
 
-      if (file.size > 2 * 1024 * 1024) {
-        this.showFileError('El archivo excede el tamaño máximo de 2MB', inputEl);
-        return;
-      }
-
-      if (!file.name.toLowerCase().endsWith('.mp3')) {
-        this.showFileError('Se requiere archivo con extensión .mp3', inputEl);
-        return;
-      }
-
-      try {
-        const detected = await this.detectAudioFormatByMagicBytes(file);
-        if (detected !== 'mp3') {
-          this.showFileError(`Se requiere un archivo MP3 (Formato detectado: ${detected || 'desconocido'})`, inputEl);
-          return;
-        }
-      } catch (err) {
-        console.error('Error comprobando magic bytes:', err);
-        this.showFileError('No se pudo verificar el tipo del archivo', inputEl);
-        return;
-      }
-
-      this.selectedFile = file;
-      this.mediaForm.patchValue({ archivo: file });
-      const archivoControl = this.mediaForm.get('archivo');
-      if (archivoControl) {
-        archivoControl.setErrors(null);
-        archivoControl.markAsDirty();
-      }
-      this.uploadMessage = '';
-      inputEl.value = '';
-      this.cdr.detectChanges();
+      this.processValidFile(file, inputEl);
     }
+  }
+
+  private async validateAudioFile(file: File, inputEl: HTMLInputElement): Promise<{ isValid: boolean }> {
+    // Validar tipo MIME
+    if (!this.isValidAudioMimeType(file.type)) {
+      this.showFileError('Solo se permiten archivos MP3', inputEl);
+      return { isValid: false };
+    }
+
+    // Validar tamaño
+    if (!this.isValidFileSize(file.size)) {
+      this.showFileError('El archivo excede el tamaño máximo de 2MB', inputEl);
+      return { isValid: false };
+    }
+
+    // Validar extensión
+    if (!this.isValidFileExtension(file.name)) {
+      this.showFileError('Se requiere archivo con extensión .mp3', inputEl);
+      return { isValid: false };
+    }
+
+    // Validar magic bytes
+    try {
+      const detected = await this.detectAudioFormatByMagicBytes(file);
+      if (detected !== 'mp3') {
+        this.showFileError(`Se requiere un archivo MP3 (Formato detectado: ${detected || 'desconocido'})`, inputEl);
+        return { isValid: false };
+      }
+    } catch (err) {
+      console.error('Error comprobando magic bytes:', err);
+      this.showFileError('No se pudo verificar el tipo del archivo', inputEl);
+      return { isValid: false };
+    }
+
+    return { isValid: true };
+  }
+
+  private isValidAudioMimeType(mimeType: string): boolean {
+    return mimeType.includes('audio/mpeg') || mimeType.includes('audio/mp3');
+  }
+
+  private isValidFileSize(size: number): boolean {
+    return size <= 2 * 1024 * 1024; // 2MB
+  }
+
+  private isValidFileExtension(fileName: string): boolean {
+    return fileName.toLowerCase().endsWith('.mp3');
+  }
+
+  private processValidFile(file: File, inputEl: HTMLInputElement): void {
+    this.selectedFile = file;
+    this.mediaForm.patchValue({ archivo: file });
+    const archivoControl = this.mediaForm.get('archivo');
+    if (archivoControl) {
+      archivoControl.setErrors(null);
+      archivoControl.markAsDirty();
+    }
+    this.uploadMessage = '';
+    inputEl.value = '';
+    this.cdr.detectChanges();
   }
 
   override confirmUpload(): void {

@@ -845,11 +845,29 @@ export class AdminDashboardComponent implements OnInit {
     const nombreUsuario = this.usuarioAEliminar.nombre;
     const apellidosUsuario = this.usuarioAEliminar.apellidos;
 
+    const permissionResult = this.validateUserDeletionPermissions(userId);
+    if (permissionResult.hasError) {
+      this.showDeleteError(permissionResult.errorMessage!);
+      return;
+    }
+    
+    if (!userId) {
+      this.showDeleteError('Error: ID de usuario no disponible');
+      return;
+    }
+    
+    this.executeUserDeletion(userId, nombreUsuario, apellidosUsuario);
+  }
+
+  // ============================================
+  // MÃ‰TODOS PARA EL MODAL DE VISUALIZACIÃ“N DE PERFIL
+  // ============================================
+
+  private validateUserDeletionPermissions(userId: string | undefined): { hasError: boolean; errorMessage?: string } {
     // Normalizar identificadores y roles
     const currentUserId = this.currentUser?.id || this.currentUser?._id || null;
     const currentUserEmail = (this.currentUser?.email || '').toString();
-   
-
+    
     const targetId = userId || null;
     const targetEmail = (this.usuarioAEliminar?.email || '').toString();
     const targetRole = (this.usuarioAEliminar?.rol || '').toString().toLowerCase();
@@ -858,39 +876,35 @@ export class AdminDashboardComponent implements OnInit {
     const isSameByEmail = currentUserEmail && targetEmail && currentUserEmail === targetEmail;
     const isSelf = !!(isSameById || isSameByEmail);
 
-    // Si el objetivo es Visualizador, SOLO él mismo puede eliminarse.
-    // Ni administradores, ni gestores, ni otros visualizadores pueden borrarlo.
+    // Si el objetivo es Visualizador, SOLO él mismo puede eliminarse
     if (targetRole === 'visualizador') {
-
-        this.errorMessage = 'Sólo un visualizador puede eliminar su propia cuenta.';
-        this.closeDeleteModal();
-        setTimeout(() => { this.errorMessage = ''; }, 5000);
-        return;
-
-      // Si es self y rol también es visualizador, permitir continuar
-    } else if (isSelf) {
-
-
-    // En el admin-dashboard (acceso solo para administradores) no se permite
-    // que el usuario actual se elimine a sí mismo. No hace falta comprobar explícitamente
-    // el rol porque este dashboard solo lo usan administradores.
-      this.errorMessage = 'No puedes eliminar tu propia cuenta de administrador.';
-      this.closeDeleteModal();
-      setTimeout(() => { this.errorMessage = ''; }, 5000);
-      return;
-    }
+      return {
+        hasError: true,
+        errorMessage: 'Sólo un visualizador puede eliminar su propia cuenta.'
+      };
+    } 
     
-    if (!userId) {
-      this.errorMessage = 'Error: ID de usuario no disponible';
-      this.closeDeleteModal();
-      return;
+    // En el admin-dashboard no se permite que el usuario actual se elimine a sí mismo
+    if (isSelf) {
+      return {
+        hasError: true,
+        errorMessage: 'No puedes eliminar tu propia cuenta de administrador.'
+      };
     }
-    
-    // Activar flag para prevenir mÃºltiples clics
+
+    return { hasError: false };
+  }
+
+  private showDeleteError(message: string): void {
+    this.errorMessage = message;
+    this.closeDeleteModal();
+    setTimeout(() => { this.errorMessage = ''; }, 5000);
+  }
+
+  private executeUserDeletion(userId: string, nombreUsuario: string, apellidosUsuario: string): void {
+    // Activar flag para prevenir múltiples clics
     this.isDeleting = true;
     
-    // CAMBIO IMPORTANTE: Cerrar el modal ANTES de la llamada al API
-    // Esto garantiza que el modal se cierre independientemente de la respuesta del servidor
     // Guardar referencia local del usuario y sus datos
     const tempId = userId;
     const tempNombre = nombreUsuario;
@@ -902,53 +916,61 @@ export class AdminDashboardComponent implements OnInit {
     // Realizar la llamada al backend para eliminar el usuario
     this.adminService.deleteUser(tempId).subscribe({
       next: (response: any) => {
-        console.log('Usuario eliminado correctamente:', response);
-        
-        // Actualizar la lista despuÃ©s de la eliminaciÃ³n exitosa
-        this.usuarios = this.usuarios.filter(u => u.id !== tempId);
-        this.aplicarFiltros();
-        
-        // Limpiar la referencia al usuario eliminado
-        this.usuarioAEliminar = null;
-        
-        // Mostrar mensaje de Ã©xito
-        this.successMessage = `Usuario ${tempNombre} ${tempApellidos} eliminado correctamente`;
-        
-        // Limpiar mensaje despuÃ©s de unos segundos
-        setTimeout(() => {
-          this.successMessage = '';
-        }, 3000);
+        this.handleDeletionSuccess(response, tempId, tempNombre, tempApellidos);
       },
       error: (error) => {
-        console.error('Error al eliminar usuario:', error);
-        
-        // Asegurar que el modal estÃ© cerrado y la referencia limpia
-        this.usuarioAEliminar = null;
-        
-        // Mostrar mensaje de error
-        this.errorMessage = `Error al eliminar el usuario ${tempNombre}. IntÃ©ntelo de nuevo.`;
-        
-        // Recargar la lista de usuarios para asegurarnos de que estÃ¡ actualizada
-        this.loadUsuarios();
-        
-        // Limpiar mensaje despuÃ©s de unos segundos
-        setTimeout(() => {
-          this.errorMessage = '';
-        }, 5000);
+        this.handleDeletionError(error, tempNombre);
       },
       complete: () => {
-        // Restablecer flag de eliminaciÃ³n siempre
-        this.isDeleting = false;
-        
-        // Forzar detecciÃ³n de cambios
-        this.cdr.detectChanges();
+        this.finalizeDeletion();
       }
     });
   }
 
-  // ============================================
-  // MÃ‰TODOS PARA EL MODAL DE VISUALIZACIÃ“N DE PERFIL
-  // ============================================
+  private handleDeletionSuccess(response: any, tempId: string, tempNombre: string, tempApellidos: string): void {
+    console.log('Usuario eliminado correctamente:', response);
+    
+    // Actualizar la lista después de la eliminación exitosa
+    this.usuarios = this.usuarios.filter(u => u.id !== tempId);
+    this.aplicarFiltros();
+    
+    // Limpiar la referencia al usuario eliminado
+    this.usuarioAEliminar = null;
+    
+    // Mostrar mensaje de éxito
+    this.successMessage = `Usuario ${tempNombre} ${tempApellidos} eliminado correctamente`;
+    
+    // Limpiar mensaje después de unos segundos
+    setTimeout(() => {
+      this.successMessage = '';
+    }, 3000);
+  }
+
+  private handleDeletionError(error: any, tempNombre: string): void {
+    console.error('Error al eliminar usuario:', error);
+    
+    // Asegurar que el modal esté cerrado y la referencia limpia
+    this.usuarioAEliminar = null;
+    
+    // Mostrar mensaje de error
+    this.errorMessage = `Error al eliminar el usuario ${tempNombre}. Inténtelo de nuevo.`;
+    
+    // Recargar la lista de usuarios para asegurarnos de que está actualizada
+    this.loadUsuarios();
+    
+    // Limpiar mensaje después de unos segundos
+    setTimeout(() => {
+      this.errorMessage = '';
+    }, 5000);
+  }
+
+  private finalizeDeletion(): void {
+    // Restablecer flag de eliminación siempre
+    this.isDeleting = false;
+    
+    // Forzar detección de cambios
+    this.cdr.detectChanges();
+  }
 
   /**
    * Abre el modal de perfil y carga los datos del usuario
