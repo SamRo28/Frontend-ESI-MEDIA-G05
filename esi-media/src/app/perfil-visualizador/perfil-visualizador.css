@@ -140,4 +140,12 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.9) brig
   .plan-card { min-height: 340px; }
 }
 
-.summary-desc { color:#c4b5fd; font-size:.98rem; margin-top: 6px; }
+.summary-desc { color:#c4b5fd; font-size:.98rem; margin-top: 6px; }/* Confirmation visual copy */
+.confirm-copy { margin: 8px 0 12px; }
+.confirm-copy .confirm-lead { font-weight: 800; margin-bottom: 6px; }
+.confirm-copy.upgrade .confirm-lead { color: #a78bfa; }
+.confirm-copy.warn .confirm-lead { color: #fca5a5; }
+.confirm-copy p { margin: 0 0 6px; color:#c4b5fd; }
+.confirm-list { margin: 0 0 6px 1rem; padding: 0; color:#e9d5ff; }
+.confirm-list li { list-style: disc; margin: 2px 0; }
+.confirm-note { font-size: .85rem; color:#c4b5fd; }

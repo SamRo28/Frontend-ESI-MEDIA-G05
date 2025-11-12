@@ -23,6 +23,12 @@ export class PerfilVisualizadorComponent implements OnInit {
   // Datos
   userId: string | null = null;
   email: string = '';
+  private authToken: string | null = null;
+  private normalizeToken(t: string | null): string | null {
+    if(!t) return null;
+    const v = t.trim().replace(/^['\"]/,'').replace(/['\"]$/,'');
+    return v || null;
+  }
   form = {
     nombre: '', apellidos: '', alias: '', fechaNacimiento: '', foto: '', vip: false,
     currentPassword: '', newPassword: '', repeatPassword: ''
@@ -69,12 +75,39 @@ export class PerfilVisualizadorComponent implements OnInit {
 
   @Output() close = new EventEmitter<void>();
 
+  private getAuthContext(): void {
+    // Prioriza localStorage(authToken + currentUser) y luego sessionStorage(token + user)
+    try {
+      const lsToken = localStorage.getItem('authToken');
+      const lsUserRaw = localStorage.getItem('currentUser');
+      const ssToken = sessionStorage.getItem('token');
+      const ssUserRaw = sessionStorage.getItem('user');
+      if (lsToken && lsUserRaw) {
+        const u = JSON.parse(lsUserRaw);
+        this.authToken = this.normalizeToken(lsToken);
+        this.userId = u?.id || u?._id || null;
+        this.email = u?.email || this.email;
+        return;
+      }
+      if (ssToken && ssUserRaw) {
+        const u = JSON.parse(ssUserRaw);
+        this.authToken = this.normalizeToken(ssToken);
+        this.userId = u?.id || u?._id || null;
+        this.email = u?.email || this.email;
+        return;
+      }
+      // Fallbacks: conserva la lógica anterior si nada consistente encontrado\r
+      const raw = sessionStorage.getItem('user') || localStorage.getItem('currentUser');
+      if (raw) { const u = JSON.parse(raw); this.userId = u?.id || u?._id || null; this.email = u?.email || ''; }
+      this.authToken = this.normalizeToken(sessionStorage.getItem('token') || localStorage.getItem('authToken'));
+    } catch {
+      this.authToken = this.normalizeToken(sessionStorage.getItem('token') || localStorage.getItem('authToken'));
+    }
+  }
+
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
-      try {
-        const raw = sessionStorage.getItem('user') || localStorage.getItem('currentUser');
-        if (raw) { const u = JSON.parse(raw); this.userId = u?.id || u?._id || null; this.email = u?.email || ''; }
-      } catch {}
+      this.getAuthContext();
     }
     if (this.userId) {
       this.loading = true;
@@ -151,10 +184,9 @@ export class PerfilVisualizadorComponent implements OnInit {
 
   // =================== SUSCRIPCION ===================
   private getAuthHeaders(): HttpHeaders | null {
-    const token = sessionStorage.getItem('token') || localStorage.getItem('authToken') || '';
-    return token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : null;
+    return (this.authToken && this.authToken.length>0) ? new HttpHeaders({ Authorization: `Bearer ${this.authToken}`, "Content-Type": "application/json" }) : null;
   }
-  private getRawToken(): string | null { return sessionStorage.getItem('token') || localStorage.getItem('authToken'); }
+  private getRawToken(): string | null { return this.authToken; }
   private buildOptions(): { headers?: HttpHeaders; observe: 'body' } {
     const headers = this.getAuthHeaders();
     return headers ? { headers, observe: 'body' } : { observe: 'body' };
@@ -173,7 +205,7 @@ export class PerfilVisualizadorComponent implements OnInit {
   cancelarCambioSuscripcion(): void { this.showSubConfirm=false; this.pendingVip=null; }
   selectPlan(plan: 'STD'|'VIP'): void { this.subError=''; this.subSuccess=''; this.selectedPlan = plan; }
   confirmarSeleccion(): void { if(this.selectedPlan===null) return; const targetVip = this.selectedPlan==='VIP'; if(targetVip===!!this.form.vip){ this.subError='Ya tienes ese plan seleccionado'; return; } this.abrirCambioSuscripcion(targetVip); }
-  confirmarCambioSuscripcion(): void {
+  confirmarCambioSuscripcion(): void { console.debug("[Suscripcion] confirm: id=", this.userId, " token=", (this.authToken || "").slice(-6));
     if(!this.userId||this.pendingVip===null||this.subLoading) return;
     this.subLoading=true;
     let url = `http://localhost:8080/users/${this.userId}/subscription`;

@@ -223,8 +223,26 @@
   <!-- Confirmación Suscripción -->
   <div *ngIf="showSubConfirm" class="confirm-backdrop" (click)="cancelarCambioSuscripcion()">
     <div class="confirm-card" (click)="$event.stopPropagation()">
-      <div class="confirm-title">Confirmar cambio de suscripción</div>
-      <div class="confirm-text">¿Deseas cambiar tu suscripción a <b>{{ pendingVip ? 'VIP' : 'Estándar' }}</b>?</div>
+      <div class="confirm-title">Confirmar cambio de suscripcion</div>
+      <div class="confirm-copy upgrade" *ngIf="pendingVip === true">
+        <div class="confirm-lead">Vas a pasar a VIP.</div>
+        <p>La mejor opcion para disfrutar de todas las ventajas:</p>
+        <ul class="confirm-list">
+          <li>Acceso a contenido VIP</li>
+          <li>Novedades destacadas antes</li>
+          <li>Mas dispositivos simultaneos</li>
+        </ul>
+      </div>
+      <div class="confirm-copy warn" *ngIf="pendingVip === false">
+        <div class="confirm-lead">Estas seguro de cambiar a Estandar?</div>
+        <p>Perderas acceso a:</p>
+        <ul class="confirm-list">
+          <li>Contenido VIP</li>
+          <li>Novedades destacadas</li>
+          <li>Mas dispositivos a la vez</li>
+        </ul>
+        <div class="confirm-note">Podras volver a VIP cuando quieras.</div>
+      </div>
       <div class="confirm-actions">
         <button class="btn" (click)="cancelarCambioSuscripcion()">Cancelar</button>
         <button class="btn-primary" (click)="confirmarCambioSuscripcion()">Confirmar</button>
