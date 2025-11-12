@@ -79,8 +79,8 @@
                 class="video-player"
                 [src]="youtubeSafeUrl"
                 width="100%" height="420"
-                frameborder="0"
                 (load)="onIframeLoaded()"
+                title="{{ detalle!.titulo }}"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowfullscreen>
               </iframe>
@@ -90,7 +90,21 @@
                 (loadedmetadata)="onVideoLoaded()"
                 (canplay)="onVideoCanPlay()"
                 (waiting)="onVideoWaiting()"
-                (playing)="onVideoPlaying()"></video>
+                (playing)="onVideoPlaying()">
+                <!-- Subtítulos (WebVTT) -->
+                <track *ngIf="$any(detalle).subtitlesUrl" kind="subtitles" srclang="es" label="Español" [src]="$any(detalle).subtitlesUrl">
+                <track *ngIf="$any(detalle).captionsUrl" kind="captions" srclang="es" label="Captions (ES)" [src]="$any(detalle).captionsUrl">
+                <!-- Descripciones de audio -->
+                <track *ngIf="$any(detalle).descriptionsUrl" kind="descriptions" [src]="$any(detalle).descriptionsUrl">
+              </video>
+
+              <!-- Enlaces a recursos (subtítulos / descripciones) para usuarios y para descarga -->
+              <div class="player-resources text-sm text-gray-600 mt-2" *ngIf="$any(detalle).subtitlesUrl || $any(detalle).descriptionsUrl">
+                <span>Recursos:</span>
+                <a *ngIf="$any(detalle).subtitlesUrl" [href]="$any(detalle).subtitlesUrl" download class="ml-2 underline">Subtítulos</a>
+                <a *ngIf="$any(detalle).captionsUrl" [href]="$any(detalle).captionsUrl" download class="ml-2 underline">Captions</a>
+                <a *ngIf="$any(detalle).descriptionsUrl" [href]="$any(detalle).descriptionsUrl" download class="ml-2 underline">Descripciones</a>
+              </div>
             </ng-template>
             <!-- Skeleton overlay -->
             <div class="player-skeleton" *ngIf="!playerReady">
@@ -126,11 +140,11 @@
         <div class="info-card">
           <h3>Información</h3>
           <ul class="info-list">
-            <li><label>Duración:</label><b>{{ duracionTexto() }}</b></li>
-            <li><label>Edad mínima:</label><b>{{ edadTexto() }}</b></li>
-            <li><label>Visualizaciones:</label><b>{{ visualizacionesTexto() }}</b></li>
-            <li><label>Disponible hasta:</label><b>{{ fechaDisponibleTexto() }}</b></li>
-            <li class="desc"><label>Descripción:</label><div class="desc-text">{{ detalle!.descripcion || 'Sin descripción' }}</div></li>
+            <li><label for="mm-duracion">Duración:</label><b>{{ duracionTexto() }}</b></li>
+            <li><label for="mm-edad-minima">Edad mínima:</label><b>{{ edadTexto() }}</b></li>
+            <li><label for="mm-visualizaciones">Visualizaciones:</label><b>{{ visualizacionesTexto() }}</b></li>
+            <li><label for="mm-disponible-hasta">Disponible hasta:</label><b>{{ fechaDisponibleTexto() }}</b></li>
+            <li class="desc"><label for="mm-descripcion">Descripción:</label><div class="desc-text">{{ detalle!.descripcion || 'Sin descripción' }}</div></li>
           </ul>
         </div>
       </aside>
