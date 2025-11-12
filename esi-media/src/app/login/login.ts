@@ -99,9 +99,9 @@ export class Login {
           this.router.navigate(['/2fa'], { state: { allowFa2: true } });
         }
         else{
-          const tokens = response.usuario.sesionstoken;
-          const ultimoToken = tokens[tokens.length - 1].token;
-          sessionStorage.setItem('token', ultimoToken);
+          //const tokens = response.usuario.sesionstoken;
+          //const ultimoToken = tokens[tokens.length - 1].token;
+          sessionStorage.setItem('token', response.token);
           this.router.navigate(['/dashboard']);
         }
       },
