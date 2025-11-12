@@ -167,9 +167,42 @@
         </div>
       </div>
 
-      <!-- Suscripci贸n (placeholder) -->
-      <div *ngIf="activeSection==='suscripcion'" class="card">
-        <div class="p-4 text-sm text-gray-300">Secci贸n de Suscripci贸n (pr贸ximamente)</div>
+      <!-- Suscripci髇 -->
+      <div *ngIf="activeSection=='suscripcion'" class="sub-stack">
+        <div class="card sub-summary">
+          <div class="summary-tag">Suscriptor/a desde {{ (subscriberSince || lastSubscriptionChange) | date:'MMMM y' }}</div>
+          <div class="summary-row">
+            <div class="summary-title">Plan {{ form.vip ? 'VIP' : 'Est醤dar' }}</div>
+            <div class="summary-desc">{{ form.vip ? vipDesc : stdDesc }}</div>
+          </div>
+        </div>
+
+
+        <div class="plan-chooser">
+          <div class="plan-card" [class.current]="!form.vip" [class.selected]="selectedPlan==='STD'" (click)="selectPlan('STD')">
+            <div class="pc-top std"></div>
+            <div class="pc-title">Est醤dar</div>
+            <ul class="pc-list">
+              <li *ngFor="let f of stdFeatures">{{ f }}</li>
+            </ul>
+            <div class="pc-actions">
+              <span class="pc-badge" *ngIf="!form.vip">Plan actual</span>
+            </div>
+          </div>
+          <div class="plan-card" [class.current]="form.vip" [class.selected]="selectedPlan==='VIP'" (click)="selectPlan('VIP')">
+            <div class="pc-top vip"></div>
+            <div class="pc-title">VIP</div>
+            <ul class="pc-list">
+              <li *ngFor="let f of vipFeatures">{{ f }}</li>
+            </ul>
+            <div class="pc-actions">
+              <span class="pc-badge" *ngIf="form.vip">Plan actual</span>
+            </div>
+          </div>
+        </div>
+        <div class="plan-accept">
+          <button class="btn primary" [disabled]="selectedPlan===null || (selectedPlan==='VIP')===form.vip || subLoading" (click)="confirmarSeleccion()">Aceptar</button>
+        </div>
       </div>
     </section>
   </div>
@@ -186,3 +219,15 @@
     </div>
   </div>
 </div>
+
+  <!-- Confirmaci髇 Suscripci髇 -->
+  <div *ngIf="showSubConfirm" class="confirm-backdrop" (click)="cancelarCambioSuscripcion()">
+    <div class="confirm-card" (click)="$event.stopPropagation()">
+      <div class="confirm-title">Confirmar cambio de suscripci髇</div>
+      <div class="confirm-text">緿eseas cambiar tu suscripci髇 a <b>{{ pendingVip ? 'VIP' : 'Est醤dar' }}</b>?</div>
+      <div class="confirm-actions">
+        <button class="btn" (click)="cancelarCambioSuscripcion()">Cancelar</button>
+        <button class="btn-primary" (click)="confirmarCambioSuscripcion()">Confirmar</button>
+      </div>
+    </div>
+  </div>
