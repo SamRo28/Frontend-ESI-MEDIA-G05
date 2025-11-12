@@ -20,7 +20,8 @@
         <!-- Botón de filtro -->
         <app-content-filter 
           [contentType]="contentFilterType"
-          (filtersApplied)="onFiltersApplied($event)">
+          (filtersApplied)="onFiltersApplied($event)"
+          (filtersChanged)="onFiltersChanged($event)">
         </app-content-filter>
         
         <button class="notification-btn">

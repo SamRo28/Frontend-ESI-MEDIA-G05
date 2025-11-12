@@ -44,10 +44,16 @@ describe('ContentFilterComponent', () => {
 
   it('should clear all filters', () => {
     component.selectedTags = ['pop', 'rock', 'jazz'];
+    component.selectedSuscripcion = 'VIP';
+    component.selectedEdad = '18';
+    component.selectedResolutions = ['1080p'];
     
     component.clearFilters();
     
     expect(component.selectedTags).toEqual([]);
+    expect(component.selectedSuscripcion).toBe('ANY');
+    expect(component.selectedEdad).toBeNull();
+    expect(component.selectedResolutions).toEqual([]);
     expect(component.selectedCount).toBe(0);
   });
 
