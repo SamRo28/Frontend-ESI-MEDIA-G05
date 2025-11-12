@@ -5,6 +5,8 @@ import { MultimediaService, ContenidoResumenDTO, PageResponse } from '../service
 import { ActivatedRoute, Router } from '@angular/router';
 import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { forkJoin } from 'rxjs';
+import { take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-multimedia-list',
@@ -35,10 +37,18 @@ export class MultimediaListComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     // Detectar cambios en tagFilters y recargar contenido si es necesario
     if (changes['tagFilters'] && !changes['tagFilters'].firstChange) {
-      console.log('🔄 Cambio en tagFilters detectado:', changes['tagFilters'].currentValue);
-      // Si hay contenido cargado, reaplicar filtros
-      if (this.contenido.length > 0) {
-        // Forzar recarga para aplicar nuevos filtros
+      const newFilters: string[] = changes['tagFilters'].currentValue || [];
+      const prevFilters: string[] = changes['tagFilters'].previousValue || [];
+      console.log('🔄 Cambio en tagFilters detectado:', { previous: prevFilters, current: newFilters });
+      // Reaplicar filtros siempre que haya un cambio, aunque el listado actual esté vacío.
+      // Si limpiamos la selección (newFilters.length === 0) queremos recargar la página actual
+      // para recuperar el conjunto "total" en la sección/página en la que estemos.
+      if (newFilters.length === 0) {
+        // Forzar recarga limpia: vaciar caché de páginas para no reutilizar respuestas ya filtradas en memoria.
+        this.multimedia.clearCache();
+        this.cargar(this.pagina);
+      } else {
+        // Si aplicamos filtros nuevos, empezar desde la primera página
         this.cargar(0);
       }
     }
@@ -88,22 +98,57 @@ export class MultimediaListComponent implements OnInit, OnChanges {
     this.multimedia.listar(pagina, this.tamano, this.filtroTipo ?? undefined).subscribe({
       next: (resp: PageResponse<ContenidoResumenDTO>) => {
         const items = resp.content || [];
-        // Ya delegamos filtrado al backend; si por alguna razón vinieran mezclados, aplicamos filtro defensivo
-        let contenidoFiltrado = this.filtroTipo ? items.filter(i => i.tipo === this.filtroTipo) : items;
-        
-        // Aplicar filtrado por tags client-side
-        contenidoFiltrado = this.applyTagFiltering(contenidoFiltrado);
-        
-        this.contenido = contenidoFiltrado;
-        this.totalPaginas = typeof resp.totalPages === 'number' ? resp.totalPages : null;
-        this.totalElementos = typeof resp.totalElements === 'number' ? resp.totalElements : null;
-        // Con filtrado en backend mantenemos los totales; solo los anulamos si el backend no los envía
-        this.pagina = pagina;
-        this.cargando = false;
-        // Prefetch de la siguiente página para navegación fluida
-        this.prefetchSiguiente();
-        // Zoneless: asegurar refresco de vista
-        this.cdr.markForCheck();
+
+        // Log informativo para depuración: verificar si el backend envía tags en los resúmenes
+        const itemsWithTagsCount = items.filter(i => Array.isArray((i as any).tags) && (i as any).tags.length > 0).length;
+        const sample = items.slice(0, 10).map(i => ({ id: i.id, titulo: i.titulo, tipo: i.tipo, tags: (i as any).tags }));
+        console.info('📥 Contenidos recibidos (multimedia.listar):', { pagina: pagina, received: items.length, withTags: itemsWithTagsCount, sample });
+
+        // Si hay items sin tags, intentar enriquecerlos solicitando el detalle de cada uno
+        const itemsWithoutTags = items.filter(i => !Array.isArray((i as any).tags));
+        const proceed = (resolvedItems: ContenidoResumenDTO[]) => {
+          // Ya delegamos filtrado al backend; si por alguna razón vinieran mezclados, aplicamos filtro defensivo
+          let contenidoFiltrado = this.filtroTipo ? resolvedItems.filter(i => i.tipo === this.filtroTipo) : resolvedItems;
+          // Aplicar filtrado por tags client-side
+          contenidoFiltrado = this.applyTagFiltering(contenidoFiltrado);
+
+          this.contenido = contenidoFiltrado;
+          this.totalPaginas = typeof resp.totalPages === 'number' ? resp.totalPages : null;
+          this.totalElementos = typeof resp.totalElements === 'number' ? resp.totalElements : null;
+          // Con filtrado en backend mantenemos los totales; solo los anulamos si el backend no los envía
+          this.pagina = pagina;
+          this.cargando = false;
+          // Prefetch de la siguiente página para navegación fluida
+          this.prefetchSiguiente();
+          // Zoneless: asegurar refresco de vista
+          this.cdr.markForCheck();
+        };
+
+        if (itemsWithoutTags.length > 0) {
+          // Hacer llamadas concurrentes a detalle para enriquecer tags (limitadas a la página actual)
+          const calls = itemsWithoutTags.map(it => this.multimedia.detalle(it.id).pipe(take(1)));
+          console.info(`🔎 Enriqueciendo items sin tags: ${itemsWithoutTags.length} llamadas a detalle`);
+          forkJoin(calls).subscribe({
+            next: (details: any[]) => {
+              // Asignar tags obtenidos a los items originales
+              for (const d of details) {
+                const match = items.find(i => i.id === d.id);
+                if (match) {
+                  (match as any).tags = Array.isArray(d.tags) ? d.tags : [];
+                }
+              }
+              console.info(`🔁 Detalles recibidos: ${details.length}`);
+              proceed(items);
+            },
+            error: () => {
+              // Si falla la obtención de detalles, procedemos con lo que tengamos
+              console.info('⚠️ Error al obtener detalles para enriquecer tags, procediendo con los resúmenes');
+              proceed(items);
+            }
+          });
+        } else {
+          proceed(items);
+        }
       },
       error: (err) => {
         console.error('Error cargando contenidos', err);
