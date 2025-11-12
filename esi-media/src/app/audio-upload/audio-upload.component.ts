@@ -107,104 +107,43 @@ export class AudioUploadComponent extends BaseMediaUploadComponent {
     const inputEl = event.target as HTMLInputElement;
     const file = inputEl.files ? inputEl.files[0] : null;
     this.fileError = '';
-    const inputEl = event.target as HTMLInputElement;
-    const file = inputEl.files ? inputEl.files[0] : null;
-    this.fileError = ''; // Limpiar errores previos
-
-    if (!file) return;
-
-    // Delegamos la validación y asignación a un helper para reducir la complejidad cognitiva
-    await this.validateAndSetSelectedFile(file, inputEl);
-  }
-
-  // Helper que valida el archivo de audio y, si es válido, lo asigna al formulario
-  private async validateAndSetSelectedFile(file: File, inputEl?: HTMLInputElement): Promise<boolean> {
-    // Validar tipo de archivo en función del MIME type
-    if (!file.type.includes('audio/mpeg') && !file.type.includes('audio/mp3')) {
-      this.showFileError('Solo se permiten archivos MP3', inputEl);
-      return false;
-    }
-
-    // Validar tamaño (2MB máximo)
-    if (file.size > 2 * 1024 * 1024) {
-      this.showFileError('El archivo excede el tamaño máximo de 2MB', inputEl);
-      return false;
-    }
-
-    // Validar extensión
-    if (!file.name.toLowerCase().endsWith('.mp3')) {
-      this.showFileError('Se requiere archivo con extensión .mp3', inputEl);
-      return false;
-    }
-
-    // Verificar magic-bytes para confirmar que es mp3
-    try {
-      const detected = await this.detectAudioFormatByMagicBytes(file);
-      if (detected !== 'mp3') {
-        this.showFileError(`Se requiere un archivo MP3 /// (Formato detectado: ${detected || 'desconocido'})`, inputEl);
-        return false;
-      }
-    } catch (err) {
-      console.error('Error comprobando magic bytes:', err);
-      this.showFileError('No se pudo verificar el tipo del archivo', inputEl);
-      return false;
-    }
-
-  // Asignar file válido al formulario
-    this.selectedFile = file;
-    this.audioForm.patchValue({ archivo: file });
-    const archivoControl = this.audioForm.get('archivo');
-    if (archivoControl) {
-      archivoControl.setErrors(null);
-      archivoControl.markAsDirty();
-    }
-
-    this.uploadMessage = '';
-    if (inputEl) inputEl.value = '';
-    this.cdr.detectChanges();
-    return true;
-  }
-
-  async onCoverSelected(event: any) {
-    const inputEl = event.target as HTMLInputElement;
-    const file = inputEl.files ? inputEl.files[0] : null;
-    this.coverError = ''; // Limpiar errores previos
 
     if (file) {
-      // Validar tipo de archivo
-      const imageTypeRegex = /^image\/(png|jpeg|jpg)$/;
-      if (!imageTypeRegex.exec(file.type)) {
-        this.showCoverError('Solo se permiten archivos PNG, JPG o JPEG', inputEl);
+      if (!file.type.includes('audio/mpeg') && !file.type.includes('audio/mp3')) {
+        this.showFileError('Solo se permiten archivos MP3', inputEl);
         return;
       }
 
-      // Validar tamaño (1MB máximo)
-      if (file.size > 1024 * 1024) {
-        this.showCoverError('El archivo excede el tamaño máximo de 1MB', inputEl);
+      if (file.size > 2 * 1024 * 1024) {
+        this.showFileError('El archivo excede el tamaño máximo de 2MB', inputEl);
         return;
       }
 
-      // Validar extensión
-      const validExtensions = ['.png', '.jpg', '.jpeg'];
-      const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
-      if (!validExtensions.includes(fileExtension)) {
-        this.showCoverError('Se requiere archivo con extensión PNG, JPG o JPEG', inputEl);
+      if (!file.name.toLowerCase().endsWith('.mp3')) {
+        this.showFileError('Se requiere archivo con extensión .mp3', inputEl);
         return;
       }
 
-      this.selectedCover = file;
-      this.audioForm.patchValue({ caratula: file });
-      
-      // Crear preview de la imagen
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        this.coverPreviewUrl = e.target?.result as string;
-        this.cdr.detectChanges();
-      };
-      reader.readAsDataURL(file);
+      try {
+        const detected = await this.detectAudioFormatByMagicBytes(file);
+        if (detected !== 'mp3') {
+          this.showFileError(`Se requiere un archivo MP3 (Formato detectado: ${detected || 'desconocido'})`, inputEl);
+          return;
+        }
+      } catch (err) {
+        console.error('Error comprobando magic bytes:', err);
+        this.showFileError('No se pudo verificar el tipo del archivo', inputEl);
+        return;
+      }
 
+      this.selectedFile = file;
+      this.mediaForm.patchValue({ archivo: file });
+      const archivoControl = this.mediaForm.get('archivo');
+      if (archivoControl) {
+        archivoControl.setErrors(null);
+        archivoControl.markAsDirty();
+      }
       this.uploadMessage = '';
-      // limpiar valor del input para permitir re-selección del mismo fichero si el usuario lo desea
       inputEl.value = '';
       this.cdr.detectChanges();
     }
