@@ -1,18 +1,17 @@
 import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ListaService } from '../services/lista.service';
 import { MultimediaService, ContenidoResumenDTO } from '../services/multimedia.service';
 import { ContentService, ContenidoSearchResult } from '../services/content.service';
 import { Subject, takeUntil, forkJoin, debounceTime, distinctUntilChanged, switchMap, of, catchError } from 'rxjs';
-import { MultimediaListComponent } from '../multimedia-list/multimedia-list';
 import { ConfirmationModalComponent } from '../shared/confirmation-modal/confirmation-modal';
 
 @Component({
   selector: 'app-lista-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MultimediaListComponent, ConfirmationModalComponent],
+  imports: [CommonModule, FormsModule, ConfirmationModalComponent],
   templateUrl: './lista-detail.html',
   styleUrls: ['./lista-detail.css']
 })
