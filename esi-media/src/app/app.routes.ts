@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard';
-import { UserDetailComponent } from './user-detail/user-detail';
+
 import { Home } from './home/home';
 import { Login } from './login/login';
 import { AudioUploadComponent } from './audio-upload/audio-upload.component';
@@ -29,10 +29,7 @@ export const routes: Routes = [
     path: 'home',
     component: Home
   },
-  {
-    path: 'user-detail/:id',
-    component: UserDetailComponent
-  },
+
   {
     path: 'admin-dashboard',
     component: AdminDashboardComponent
