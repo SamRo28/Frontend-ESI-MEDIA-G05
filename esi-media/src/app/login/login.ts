@@ -99,65 +99,17 @@ export class Login {
           this.router.navigate(['/2fa'], { state: { allowFa2: true } });
         }
         else{
-          const tokens = response.usuario.sesionstoken;
-          const ultimoToken = tokens[tokens.length - 1].token;
-          sessionStorage.setItem('token', ultimoToken);
+          sessionStorage.setItem('token', response.token);
           this.router.navigate(['/dashboard']);
         }
       },
       error: (error) => {
-        // Obtener el texto del error correctamente
-        let errorText = '';
+        const errorText = this.extractErrorText(error);
         
-        if (typeof error.error === 'string') {
-          errorText = error.error;
-        } else if (error.error?.message) {
-          errorText = error.error.message;
-        } else if (error.message) {
-          errorText = error.message;
+        if (this.isIpBlockedError(error, errorText)) {
+          this.handleIpBlockedError(errorText);
         } else {
-          errorText = '';
-        }
-        
-        // Detectar bloqueo de IP
-        const textToSearch = errorText.toLowerCase();
-        const isIpBlocked = error.status === 403 && (
-          textToSearch.includes('ip ha sido bloqueada') || 
-          textToSearch.includes('ip está bloqueada') ||
-          textToSearch.includes('demasiados intentos')
-        );
-        
-        if (isIpBlocked) {
-          // Extraer el tiempo de bloqueo
-          const timeMatch = errorText.match(/(\d+)\s*segundo/i);
-          const blockTime = timeMatch ? parseInt(timeMatch[1]) : 60;
-          
-          this.isBlocked = true;
-          this.blockTimeRemaining = blockTime;
-          this.errorMsg = `Ha sido bloqueado por demasiados intentos fallidos. Inténtelo de nuevo en ${this.formatTime(blockTime)}.`;
-          
-          // Iniciar contador regresivo
-          this.startBlockTimer();
-          
-          this.cdr.markForCheck();
-          this.cdr.detectChanges();
-          
-        } else {
-          // Resto de la lógica de errores existente
-          const backendMsg = errorText || '';
-          const lowerMsg = backendMsg.toLowerCase();
-          
-          if (lowerMsg.includes('bloquead')) {
-            this.errorMsg = 'No puede iniciar sesión. Usuario bloqueado';
-          } else if (lowerMsg.includes('credenciales inválidas') || lowerMsg.includes('credenciales invalidas')) {
-            this.errorMsg = 'No se pudo iniciar sesión. Inténtelo de nuevo.';
-          } else if (backendMsg) {
-            this.errorMsg = backendMsg; // Mostrar el mensaje original del backend
-          } else {
-            this.errorMsg = 'Ha habido un problema con su acceso, consulte con su administrador';
-          }
-          
-          this.cdr.detectChanges();
+          this.handleStandardError(errorText);
         }
       }
     });
@@ -183,5 +135,59 @@ export class Login {
       
       this.cdr.detectChanges();
     }, 1000);
+  }
+
+  private extractErrorText(error: any): string {
+    if (typeof error.error === 'string') {
+      return error.error;
+    } else if (error.error?.message) {
+      return error.error.message;
+    } else if (error.message) {
+      return error.message;
+    } else {
+      return '';
+    }
+  }
+
+  private isIpBlockedError(error: any, errorText: string): boolean {
+    const textToSearch = errorText.toLowerCase();
+    return error.status === 403 && (
+      textToSearch.includes('ip ha sido bloqueada') || 
+      textToSearch.includes('ip está bloqueada') ||
+      textToSearch.includes('demasiados intentos')
+    );
+  }
+
+  private handleIpBlockedError(errorText: string): void {
+    // Extraer el tiempo de bloqueo
+    const timeMatch = errorText.match(/(\d+)\s*segundo/i);
+    const blockTime = timeMatch ? parseInt(timeMatch[1]) : 60;
+    
+    this.isBlocked = true;
+    this.blockTimeRemaining = blockTime;
+    this.errorMsg = `Ha sido bloqueado por demasiados intentos fallidos. Inténtelo de nuevo en ${this.formatTime(blockTime)}.`;
+    
+    // Iniciar contador regresivo
+    this.startBlockTimer();
+    
+    this.cdr.markForCheck();
+    this.cdr.detectChanges();
+  }
+
+  private handleStandardError(errorText: string): void {
+    const backendMsg = errorText || '';
+    const lowerMsg = backendMsg.toLowerCase();
+    
+    if (lowerMsg.includes('bloquead')) {
+      this.errorMsg = 'No puede iniciar sesión. Usuario bloqueado';
+    } else if (lowerMsg.includes('credenciales inválidas') || lowerMsg.includes('credenciales invalidas')) {
+      this.errorMsg = 'No se pudo iniciar sesión. Inténtelo de nuevo.';
+    } else if (backendMsg) {
+      this.errorMsg = backendMsg; // Mostrar el mensaje original del backend
+    } else {
+      this.errorMsg = 'Ha habido un problema con su acceso, consulte con su administrador';
+    }
+    
+    this.cdr.detectChanges();
   }
 }
