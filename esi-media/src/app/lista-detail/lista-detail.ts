@@ -218,9 +218,9 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
     const tipoUsuario = this.obtenerTipoUsuario();
     
     // Redirigir según el tipo de usuario y contexto
-    if (tipoUsuario === 'Gestor' || tipoUsuario === 'GestordeContenido') {
+    if (tipoUsuario === 'GestordeContenido') {
       // Los gestores van a su dashboard con gestión de listas
-      this.router.navigate(['/gestor-dashboard/gestion-listas']);
+      this.router.navigate(['/gestor-dashboard']);
     } else {
       // Los visualizadores van al dashboard con listas públicas
       this.router.navigate(['/dashboard/listas-publicas']);
