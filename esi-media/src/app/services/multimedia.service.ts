@@ -60,6 +60,10 @@ export class MultimediaService {
     return this.http.get<ContenidoDetalleDTO>(`${this.baseUrl}/${id}`);
   }
 
+  reproducir(id: string): Observable<{ nvisualizaciones: number }> {
+    return this.http.post<{ nvisualizaciones: number }>(`${this.baseUrl}/${id}/reproducir`, {});
+  }
+
   descargarAudio(id: string): Observable<Blob> {
     // Ruta correcta en backend: /multimedia/audio/{id}
     return this.http.get(`${this.baseUrl}/audio/${id}`, { responseType: 'blob' });
