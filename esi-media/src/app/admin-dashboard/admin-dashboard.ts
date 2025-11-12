@@ -848,7 +848,7 @@ export class AdminDashboardComponent implements OnInit {
     // Normalizar identificadores y roles
     const currentUserId = this.currentUser?.id || this.currentUser?._id || null;
     const currentUserEmail = (this.currentUser?.email || '').toString();
-    const currentUserRole = (this.currentUser?.rol || this.currentUser?.role || '').toString().toLowerCase();
+   
 
     const targetId = userId || null;
     const targetEmail = (this.usuarioAEliminar?.email || '').toString();
@@ -861,27 +861,19 @@ export class AdminDashboardComponent implements OnInit {
     // Si el objetivo es Visualizador, SOLO él mismo puede eliminarse.
     // Ni administradores, ni gestores, ni otros visualizadores pueden borrarlo.
     if (targetRole === 'visualizador') {
-      if (!isSelf) {
-        this.errorMessage = 'Sólo un visualizador puede eliminar su propia cuenta.';
-        this.closeDeleteModal();
-        setTimeout(() => { this.errorMessage = ''; }, 5000);
-        return;
-      }
 
-      // Además, asegurarnos de que el usuario actual tenga rol Visualizador
-      if (currentUserRole !== 'visualizador') {
         this.errorMessage = 'Sólo un visualizador puede eliminar su propia cuenta.';
         this.closeDeleteModal();
         setTimeout(() => { this.errorMessage = ''; }, 5000);
         return;
-      }
+
       // Si es self y rol también es visualizador, permitir continuar
-    }
+    } else if (isSelf) {
+
 
     // En el admin-dashboard (acceso solo para administradores) no se permite
     // que el usuario actual se elimine a sí mismo. No hace falta comprobar explícitamente
     // el rol porque este dashboard solo lo usan administradores.
-    if (isSelf) {
       this.errorMessage = 'No puedes eliminar tu propia cuenta de administrador.';
       this.closeDeleteModal();
       setTimeout(() => { this.errorMessage = ''; }, 5000);
