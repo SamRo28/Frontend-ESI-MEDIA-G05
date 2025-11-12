@@ -8,6 +8,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ListasPrivadas } from '../listas-privadas/listas-privadas';
 import { CrearListaComponent } from '../crear-lista/crear-lista';
 import { ConfigUserComponent, ConfigUserDTO } from '../config-user/config-user';
+import { PerfilVisualizadorComponent } from '../perfil-visualizador/perfil-visualizador';
 import { ContentFilterComponent } from '../shared/content-filter/content-filter.component';
 
 interface Star {
@@ -20,7 +21,7 @@ interface Star {
   selector: 'app-visu-dashboard',
   standalone: true,
 
-  imports: [CommonModule, RouterLink, RouterLinkActive, RouterModule, ListasPrivadas, CrearListaComponent, GestionListasComponent, MultimediaListComponent, ConfigUserComponent, ContentFilterComponent],
+  imports: [CommonModule, RouterLink, RouterLinkActive, RouterModule, ListasPrivadas, CrearListaComponent, GestionListasComponent, MultimediaListComponent, ConfigUserComponent, ContentFilterComponent, PerfilVisualizadorComponent],
 
   templateUrl: './visu-dashboard.html',
   styleUrl: './visu-dashboard.css'
@@ -39,6 +40,7 @@ export class VisuDashboard implements OnInit, AfterViewInit {
   forceReloadListasPublicas: number = 0;
   showCrearModal: boolean = false;
   showConfigModal: boolean = false;
+  showCuentaModal: boolean = false;
   
   // Variables para el sistema de filtrado
   currentTagFilters: string[] = [];
@@ -342,6 +344,8 @@ export class VisuDashboard implements OnInit, AfterViewInit {
       this.closeCrearListaModal();
     } else if (this.showConfigModal) {
       this.closeConfigUserModal();
+    } else if (this.showCuentaModal) {
+      this.closeCuentaModal();
     } else if (this.mostrarListasPrivadas) {
       this.toggleListasPrivadas();
     } else if (this.showUserMenu) {
@@ -371,6 +375,23 @@ export class VisuDashboard implements OnInit, AfterViewInit {
   closeConfigUserModal(): void {
     this.showConfigModal = false;
     
+    if (this.isBrowser) {
+      document.body.classList.remove('no-scroll');
+    }
+  }
+
+  /** Abre la ventana de Cuenta (modal) */
+  openCuentaModal(): void {
+    this.showCuentaModal = true;
+    this.closeUserMenu();
+    if (this.isBrowser) {
+      document.body.classList.add('no-scroll');
+    }
+  }
+
+  /** Cierra la ventana de Cuenta */
+  closeCuentaModal(): void {
+    this.showCuentaModal = false;
     if (this.isBrowser) {
       document.body.classList.remove('no-scroll');
     }
