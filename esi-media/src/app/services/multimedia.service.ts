@@ -9,6 +9,7 @@ export interface ContenidoResumenDTO {
   tipo: 'AUDIO' | 'VIDEO';
   caratula?: any;
   vip: boolean;
+  tags?: string[]; // Añadido para permitir filtrado
 }
 
 export interface ContenidoDetalleDTO {

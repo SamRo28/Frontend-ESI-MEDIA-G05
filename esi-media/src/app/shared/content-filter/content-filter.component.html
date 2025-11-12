@@ -1,0 +1,78 @@
+<!-- Botón de filtro -->
+<div class="filter-container">
+  <button 
+    class="filter-button" 
+    [class.active]="selectedCount > 0"
+    (click)="toggleFilterPanel()"
+    [attr.aria-label]="'Filtrar contenido. ' + selectedCount + ' filtros aplicados'"
+    type="button">
+    <span class="filter-icon">{{ filterIcon }}</span>
+    <span class="filter-text">{{ filterButtonText }}</span>
+    <span class="filter-arrow" [class.rotated]="showFilterPanel">▼</span>
+  </button>
+
+  <!-- Panel desplegable de filtros -->
+  <div class="filter-backdrop" *ngIf="showFilterPanel" (click)="onBackdropClick()">
+    <div class="filter-panel" (click)="onPanelClick($event)">
+      
+      <!-- Header del panel -->
+      <div class="panel-header">
+        <h3 class="panel-title">
+          <span class="panel-icon">{{ filterIcon }}</span>
+          Filtrar por categorías
+        </h3>
+        <button 
+          class="close-button" 
+          (click)="onBackdropClick()"
+          aria-label="Cerrar panel de filtros"
+          type="button">
+          ✕
+        </button>
+      </div>
+
+      <!-- Lista de tags disponibles -->
+      <div class="tags-section">
+        <div class="tags-grid">
+          <button
+            *ngFor="let tag of availableTags"
+            class="tag-option"
+            [class.selected]="isTagSelected(tag.value)"
+            (click)="toggleTag(tag.value)"
+            [attr.aria-pressed]="isTagSelected(tag.value)"
+            type="button">
+            {{ tag.label }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Información de selección actual -->
+      <div class="selection-info" *ngIf="selectedCount > 0">
+        <p class="selection-text">
+          <strong>{{ selectedCount }}</strong> 
+          {{ selectedCount === 1 ? 'categoría seleccionada' : 'categorías seleccionadas' }}
+        </p>
+        <p class="selection-tags">{{ getSelectedTagsText() }}</p>
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="panel-actions">
+        <button 
+          class="action-button clear-button" 
+          (click)="clearFilters()"
+          [disabled]="selectedCount === 0"
+          type="button">
+          <span class="button-icon">🗑️</span>
+          Limpiar
+        </button>
+        
+        <button 
+          class="action-button apply-button" 
+          (click)="applyFilters()"
+          type="button">
+          <span class="button-icon">✓</span>
+          Aplicar filtros
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

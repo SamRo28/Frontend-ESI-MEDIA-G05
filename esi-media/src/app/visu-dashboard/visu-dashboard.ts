@@ -7,6 +7,8 @@ import { MultimediaListComponent } from '../multimedia-list/multimedia-list';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ListasPrivadas } from '../listas-privadas/listas-privadas';
 import { CrearListaComponent } from '../crear-lista/crear-lista';
+import { ConfigUserComponent, ConfigUserDTO } from '../config-user/config-user';
+import { ContentFilterComponent } from '../shared/content-filter/content-filter.component';
 
 interface Star {
   left: number;
@@ -17,7 +19,9 @@ interface Star {
 @Component({
   selector: 'app-visu-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, RouterModule, ListasPrivadas, CrearListaComponent, GestionListasComponent, MultimediaListComponent],
+
+  imports: [CommonModule, RouterLink, RouterLinkActive, RouterModule, ListasPrivadas, CrearListaComponent, GestionListasComponent, MultimediaListComponent, ConfigUserComponent, ContentFilterComponent],
+
   templateUrl: './visu-dashboard.html',
   styleUrl: './visu-dashboard.css'
 })
@@ -34,6 +38,10 @@ export class VisuDashboard implements OnInit, AfterViewInit {
   forceReloadListas: number = 0;
   forceReloadListasPublicas: number = 0;
   showCrearModal: boolean = false;
+  showConfigModal: boolean = false;
+  
+  // Variables para el sistema de filtrado
+  currentTagFilters: string[] = [];
 
   private isBrowser: boolean;
   private documentClickHandler = (event: Event) => this.onDocumentClick(event);
@@ -332,11 +340,58 @@ export class VisuDashboard implements OnInit, AfterViewInit {
   onEscapeKey(): void {
     if (this.showCrearModal) {
       this.closeCrearListaModal();
+    } else if (this.showConfigModal) {
+      this.closeConfigUserModal();
     } else if (this.mostrarListasPrivadas) {
       this.toggleListasPrivadas();
     } else if (this.showUserMenu) {
       this.closeUserMenu();
     }
+  }
+
+  /**
+   * Abre/cierra el modal de configuración de usuario
+   */
+  toggleConfigUser(): void {
+    this.showConfigModal = !this.showConfigModal;
+    this.closeUserMenu();
+    
+    if (this.isBrowser) {
+      if (this.showConfigModal) {
+        document.body.classList.add('no-scroll');
+      } else {
+        document.body.classList.remove('no-scroll');
+      }
+    }
+  }
+
+  /**
+   * Cierra el modal de configuración de usuario
+   */
+  closeConfigUserModal(): void {
+    this.showConfigModal = false;
+    
+    if (this.isBrowser) {
+      document.body.classList.remove('no-scroll');
+    }
+  }
+
+  /**
+   * Maneja la actualización de datos del usuario
+   */
+  onUserUpdated(updatedUser: ConfigUserDTO): void {
+    console.log('Usuario actualizado:', updatedUser);
+    
+    // Actualizar los datos locales del usuario
+    if (this.currentUser) {
+      Object.assign(this.currentUser, updatedUser);
+    }
+    
+    // Actualizar los datos de visualización
+    this.updateUserDisplayData();
+    
+    // Mostrar notificación de éxito (opcional)
+    this.showToast('Perfil actualizado correctamente');
   }
 
   /**
@@ -352,5 +407,21 @@ export class VisuDashboard implements OnInit, AfterViewInit {
     } catch {}
     this.multimedia.clearCache();
     this.router.navigate(['/login']);
+  }
+
+  /**
+   * Maneja la aplicación de filtros de tags desde el componente de filtro
+   */
+  onFiltersApplied(selectedTags: string[]): void {
+    this.currentTagFilters = [...selectedTags];
+  }
+
+  /**
+   * Obtiene el tipo de contenido para el componente de filtro según la ruta actual
+   */
+  get contentFilterType(): 'all' | 'video' | 'audio' {
+    if (this.filtroTipo === 'VIDEO') return 'video';
+    if (this.filtroTipo === 'AUDIO') return 'audio';
+    return 'all';
   }
 }

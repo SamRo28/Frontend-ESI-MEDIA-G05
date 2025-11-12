@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { of } from 'rxjs';
 
 
@@ -153,8 +153,8 @@ export class ContentService {
 
 
   /**
-   * Busca contenidos por nombre usando el backend real
-   * Utiliza el endpoint /contenidos/buscar
+   * Busca contenidos usando el endpoint /multimedia con parámetro query
+   * Este endpoint respeta todos los filtros de usuario (edad, VIP, etc.)
    */
   buscarContenidos(query: string, limit: number = 10): Observable<SearchContentResponse> {
     if (!query || query.trim().length < 2) {
@@ -169,13 +169,14 @@ export class ContentService {
 
     const params = new URLSearchParams({
       query: query.trim(),
-      limit: limit.toString()
+      size: Math.min(limit, 20).toString(), // Limitar a máximo 20 para evitar sobrecarga
+      page: '0'
     });
 
     console.log('Realizando búsqueda en backend:', query.trim());
 
     // El interceptor se encarga del Authorization header automáticamente
-    return this.http.get<SearchContentResponse>(`http://localhost:8080/contenidos/buscar?${params}`).pipe(
+    return this.http.get<any>(`http://localhost:8080/multimedia?${params}`).pipe(
       catchError(error => {
         console.error('Error en búsqueda de contenidos:', error);
         
@@ -195,6 +196,36 @@ export class ContentService {
           total: 0,
           query: query.trim()
         });
+      }),
+      // Transformar la respuesta del endpoint /multimedia al formato esperado
+      map((response: any) => {
+        if (response && response.content) {
+          // Convertir ContenidoResumenDTO[] a ContenidoSearchResult[]
+          const contenidos: ContenidoSearchResult[] = response.content.map((item: any) => ({
+            id: item.id,
+            titulo: item.titulo,
+            tipo: item.tipo === 'AUDIO' ? 'Audio' : 'Video',
+            descripcion: '', // ContenidoResumenDTO no incluye descripción
+            duracion: undefined, // No disponible en resumen
+            resolucion: undefined // No disponible en resumen
+          }));
+
+          return {
+            success: true,
+            mensaje: `${contenidos.length} contenidos encontrados`,
+            contenidos: contenidos,
+            total: response.totalElements || contenidos.length,
+            query: query.trim()
+          };
+        } else {
+          return {
+            success: false,
+            mensaje: 'No se encontraron contenidos',
+            contenidos: [],
+            total: 0,
+            query: query.trim()
+          };
+        }
       })
     );
   }

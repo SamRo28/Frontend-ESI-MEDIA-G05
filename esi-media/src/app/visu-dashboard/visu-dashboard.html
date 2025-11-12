@@ -17,6 +17,12 @@
       </nav>
 
       <div class="user-section">
+        <!-- Botón de filtro -->
+        <app-content-filter 
+          [contentType]="contentFilterType"
+          (filtersApplied)="onFiltersApplied($event)">
+        </app-content-filter>
+        
         <button class="notification-btn">
           <span class="notification-icon">🔔</span>
           <span class="notification-badge">3</span>
@@ -36,6 +42,9 @@
         
         <!-- Menú desplegable del usuario -->
         <div class="user-dropdown" *ngIf="showUserMenu" role="menu">
+          <button class="dropdown-item" (click)="toggleConfigUser()" role="menuitem">
+            <span class="dropdown-text">Configuración de perfil</span>
+          </button>
           <button class="dropdown-item" (click)="toggleListasPrivadas()" role="menuitem">
             <span class="dropdown-text">Ver mis listas privadas</span>
             <span class="dropdown-badge" *ngIf="mostrarListasPrivadas">●</span>
@@ -68,7 +77,12 @@
       
       <!-- Lista multimedia (cuando no se muestran listas públicas) -->
       <div *ngIf="!mostrarListasPublicas">
-        <app-multimedia-list [showHeader]="false" [showTitle]="false" [tipoForzado]="filtroTipo"></app-multimedia-list>
+        <app-multimedia-list 
+          [showHeader]="false" 
+          [showTitle]="false" 
+          [tipoForzado]="filtroTipo"
+          [tagFilters]="currentTagFilters">
+        </app-multimedia-list>
       </div>
     <!-- Panel lateral de listas privadas -->
     <aside class="listas-privadas-panel" *ngIf="mostrarListasPrivadas">
@@ -153,4 +167,14 @@
     (cerrar)="closeCrearListaModal()"
     (creada)="closeCrearListaModal(true)">
   </crear-lista>
+</dialog>
+
+<!-- Modal para configuración de usuario -->
+<div class="modal-backdrop" *ngIf="showConfigModal" (click)="closeConfigUserModal()" (keydown)="$event.key === 'Escape' && closeConfigUserModal()"></div>
+<dialog class="modal-container" [attr.open]="showConfigModal ? true : null">
+  <app-config-user 
+    [modal]="true"
+    (cerrar)="closeConfigUserModal()"
+    (actualizado)="onUserUpdated($event)">
+  </app-config-user>
 </dialog>
