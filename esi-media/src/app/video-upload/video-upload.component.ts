@@ -34,8 +34,11 @@ function futureDateValidator(): ValidatorFn {
 })
 export class VideoUploadComponent {
   videoForm: FormGroup;
+  selectedCover: File | null = null;
+  coverPreviewUrl: string | null = null;
   isUploading = false;
   uploadMessage = '';
+  coverError = '';
   uploadSuccess = false;
   showUploadConfirmation = false;
 
@@ -185,7 +188,7 @@ export class VideoUploadComponent {
         visible: formValues.visible,
         url: formValues.url,
         resolucion: formValues.resolucion,
-        caratula: formValues.caratula || undefined
+        caratula: this.selectedCover || undefined
       };
 
       this.contentService.uploadVideo(videoData).subscribe({
@@ -571,5 +574,77 @@ export class VideoUploadComponent {
       field.markAsDirty();
       field.updateValueAndValidity();
     }
+  }
+
+  // === MÉTODOS PARA MANEJO DE CARÁTULA ===
+
+  async onCoverSelected(event: any) {
+    const inputEl = event.target as HTMLInputElement;
+    const file = inputEl.files ? inputEl.files[0] : null;
+    this.coverError = ''; // Limpiar errores previos
+
+    if (file) {
+      // Validar tipo de archivo
+      if (!file.type.match(/^image\/(png|jpeg|jpg)$/)) {
+        this.showCoverError('Solo se permiten archivos PNG, JPG o JPEG', inputEl);
+        return;
+      }
+
+      // Validar tamaño (1MB máximo)
+      if (file.size > 1024 * 1024) {
+        this.showCoverError('El archivo excede el tamaño máximo de 1MB', inputEl);
+        return;
+      }
+
+      // Validar extensión
+      const validExtensions = ['.png', '.jpg', '.jpeg'];
+      const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+      if (!validExtensions.includes(fileExtension)) {
+        this.showCoverError('Se requiere archivo con extensión PNG, JPG o JPEG', inputEl);
+        return;
+      }
+
+      this.selectedCover = file;
+      this.videoForm.patchValue({ caratula: file });
+      
+      // Crear preview de la imagen
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.coverPreviewUrl = e.target?.result as string;
+        this.cdr.detectChanges();
+      };
+      reader.readAsDataURL(file);
+
+      this.uploadMessage = '';
+      // limpiar valor del input para permitir re-selección del mismo fichero si el usuario lo desea
+      inputEl.value = '';
+      this.cdr.detectChanges();
+    }
+  }
+
+  removeCover() {
+    this.selectedCover = null;
+    this.coverPreviewUrl = null;
+    this.coverError = '';
+    this.videoForm.patchValue({ caratula: null });
+    this.cdr.detectChanges();
+  }
+
+  // Helper para mostrar errores relacionados con la carátula
+  private showCoverError(message: string, inputEl?: HTMLInputElement): void {
+    this.coverError = message;
+    this.selectedCover = null;
+    this.coverPreviewUrl = null;
+    // marcar control como inválido si es necesario
+    const caratulaControl = this.videoForm.get('caratula');
+    if (caratulaControl) {
+      caratulaControl.setErrors({ invalidCover: true });
+      caratulaControl.markAsTouched();
+    }
+    if (inputEl) {
+      inputEl.value = '';
+    }
+    // Forzar detección de cambios inmediatamente
+    this.cdr.detectChanges();
   }
 }

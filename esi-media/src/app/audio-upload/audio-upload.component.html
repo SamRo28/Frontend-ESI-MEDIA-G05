@@ -252,15 +252,62 @@
             </div>
           </div>
 
-          <!-- Carátula (placeholder para futuros sprints) -->
+          <!-- Carátula -->
           <div>
             <label for="caratula" class="block text-white font-semibold mb-2">
-              Carátula <span class="text-white/60">(próximamente)</span>
+              <span class="flex items-center gap-2">
+                Carátula
+                <span *ngIf="selectedCover" class="text-green-400 text-sm">✓</span>
+              </span>
             </label>
-            <div class="border-2 border-dashed border-white/20 rounded-lg p-6 text-center opacity-50">
-              <div class="text-4xl text-white/30 mb-2">🖼️</div>
-              <p class="text-white/40">Funcionalidad de carátula disponible en próximos sprints</p>
-              <p class="text-white/30 text-sm mt-1">Podrás subir imágenes PNG o seleccionar carátulas prediseñadas</p>
+            <div class="border-2 border-dashed border-white/30 rounded-lg p-6 text-center hover:border-purple-400 transition-colors">
+              <input 
+                type="file" 
+                id="caratula"
+                accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                (change)="onCoverSelected($event)"
+                class="hidden"
+                #coverInput
+              >
+              <button 
+                type="button"
+                *ngIf="!selectedCover" 
+                class="w-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-400 rounded-lg p-4" 
+                (click)="coverInput.click()">
+                <div class="text-4xl text-white/50 mb-2">🖼️</div>
+                <p class="text-white">Haz clic para seleccionar una carátula</p>
+                <p class="text-white/60 text-sm mt-1">Opcional • PNG o JPG • Máximo 1MB</p>
+              </button>
+              <div *ngIf="selectedCover" class="text-white">
+                <div class="mb-3">
+                  <img [src]="coverPreviewUrl" alt="Vista previa de carátula" 
+                       class="w-32 h-32 object-cover rounded-lg mx-auto border-2 border-white/20">
+                </div>
+                <p class="font-semibold">{{ selectedCover.name }}</p>
+                <p class="text-blue-300 text-sm">{{ (selectedCover.size / 1024 / 1024).toFixed(2) }} MB</p>
+                <div class="flex gap-2 mt-3 justify-center">
+                  <button 
+                    type="button" 
+                    (click)="coverInput.click()" 
+                    class="text-purple-300 hover:text-purple-200 underline text-sm">
+                    Cambiar carátula
+                  </button>
+                  <button 
+                    type="button" 
+                    (click)="removeCover()" 
+                    class="text-red-300 hover:text-red-200 underline text-sm">
+                    Quitar carátula
+                  </button>
+                </div>
+              </div>
+            </div>
+            <!-- Error específico del archivo de carátula -->
+            <div class="text-red-400 text-sm mt-2" *ngIf="coverError">
+              ❌ {{ coverError }}
+            </div>
+            <!-- Mensaje de ayuda cuando no hay carátula seleccionada -->
+            <div class="text-blue-300 text-sm mt-2" *ngIf="!selectedCover && !coverError">
+              💡 Opcional: Una buena carátula hace tu audio más atractivo
             </div>
           </div>
 
