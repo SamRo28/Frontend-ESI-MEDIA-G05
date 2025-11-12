@@ -18,6 +18,7 @@ export interface ContenidoDetalleDTO {
   tipo: 'AUDIO' | 'VIDEO';
   caratula?: any;
   vip: boolean;
+  duracion?: number; // en segundos
   // Nuevos campos para enriquecer el detalle
   fechadisponiblehasta?: string | Date; // Spring suele serializar Date como ISO string
   edadvisualizacion?: number;
