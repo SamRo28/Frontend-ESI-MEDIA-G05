@@ -535,48 +535,12 @@ export class AdminDashboardComponent implements OnInit {
         
         clearTimeout(backupTimeout); // Cancelar timeout de respaldo
         this.isCreating = false;
-        this.cdr.detectChanges(); // Forzar actualizaciÃ³n en errores tambiÃ©n
+        this.cdr.detectChanges(); // Forzar actualización en errores también
         
-        let mensajeError = 'Error desconocido';
-        
-        // Detectar especÃ­ficamente errores de CORS o conexiÃ³n
-        if (error.status === 0 && error.error?.message?.includes('Failed to fetch')) {
-          mensajeError = 'Error de conexiÃ³n CORS. El backend no estÃ¡ ejecutÃ¡ndose o hay un problema de configuraciÃ³n. Por favor, inicia el servidor backend.';
-        } else if (error.status === 'timeout') {
-          mensajeError = 'La conexiÃ³n tardÃ³ demasiado tiempo. Es posible que el administrador se haya creado correctamente.';
-          // En caso de timeout, asumir que pudo haberse creado y recargar usuarios
-          setTimeout(() => {
-            this.loadUsuarios();
-          }, 1000);
-        } else if (error.status === 0) {
-          mensajeError = 'No se pudo conectar con el servidor. Verifica que el backend estÃ© ejecutÃ¡ndose en el puerto 8080.';
-        } else if (error.error?.mensaje) {
-          // Mensaje del backend
-          mensajeError = error.error.mensaje;
-          
-          // Mejorar mensajes especÃ­ficos de MongoDB
-          if (mensajeError.includes('E11000 duplicate key error')) {
-            if (mensajeError.includes('email')) {
-              mensajeError = 'El email ya estÃ¡ registrado. Por favor, usa un email diferente.';
-            } else {
-              mensajeError = 'Ya existe un registro con estos datos. Verifica la informaciÃ³n.';
-            }
-          } else if (mensajeError.includes('Write operation error')) {
-            mensajeError = 'Error de base de datos. Por favor, contacta al administrador del sistema.';
-          }
-        } else if (error.error?.message) {
-          mensajeError = error.error.message;
-        } else if (error.status === 500) {
-          mensajeError = 'Error interno del servidor. Por favor, intÃ©ntalo de nuevo mÃ¡s tarde.';
-        } else if (error.status === 400) {
-          mensajeError = 'Datos invÃ¡lidos. Verifica la informaciÃ³n ingresada.';
-        } else if (error.status) {
-          mensajeError = `Error del servidor: ${error.status} - ${error.statusText || 'Error HTTP'}`;
-        }
-        
+        const mensajeError = this.processCreateUserError(error);
         this.errorMessage = mensajeError;
         
-        // Limpiar el mensaje despuÃ©s de 10 segundos
+        // Limpiar el mensaje después de 10 segundos
         setTimeout(() => {
           this.errorMessage = '';
         }, 10000);
@@ -616,12 +580,12 @@ export class AdminDashboardComponent implements OnInit {
     return this.usuarios.filter(u => u.rol === 'Administrador').length;
   }
 
-  // MÃ©todo para verificar si un campo tiene error
+  // Metodo para verificar si un campo tiene error
   hasFieldError(fieldName: string): boolean {
     return this.fieldsWithError.includes(fieldName);
   }
 
-  // MÃ©todo para seleccionar/deseleccionar foto de perfil
+  // Metodo para seleccionar/deseleccionar foto de perfil
   selectFoto(fotoId: string) {
     // Si la foto ya estÃ¡ seleccionada y es para Administrador (opcional), deseleccionar
     if (this.newUser.foto === fotoId && this.newUser.rol === 'Administrador') {
@@ -637,7 +601,7 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
-  // MÃ©todo para salir del formulario despuÃ©s del Ã©xito
+  // Metodo para salir del formulario después del éxito
   exitForm() {
     console.log('🚪 SALIENDO del formulario - recargando usuarios...');
     
@@ -1524,51 +1488,13 @@ export class AdminDashboardComponent implements OnInit {
   showCreationConfirmation() {
     // Resetear mensajes
     this.resetMessages();
-    
-    // Limpiar errores anteriores
     this.fieldsWithError = [];
     
-    // Validar campos obligatorios según el rol
-    let requiredFields: string[];
-    
-    if (this.newUser.rol === 'Gestor') {
-      requiredFields = ['nombre', 'apellidos', 'email', 'contrasenia', 'alias', 'especialidad', 'tipoContenido', 'foto'];
-    } else {
-      requiredFields = ['nombre', 'apellidos', 'email', 'contrasenia', 'departamento'];
-    }
-    
-    const emptyFields = requiredFields.filter(field => !this.newUser[field as keyof typeof this.newUser]);
-    
-    if (emptyFields.length > 0) {
-      this.fieldsWithError = [...emptyFields];
-      this.errorMessage = `❌ Complete todos los campos obligatorios: ${emptyFields.join(', ')}`;
-      return;
-    }
-
-    // Validar política de contraseñas
-    this.validatePassword();
-    
-    if (!this.isPasswordValid()) {
-      this.fieldsWithError = ['contrasenia', 'repetirContrasenia'];
-      
-      const errores = [];
-      if (!this.passwordValidation.minLength) errores.push('mínimo 8 caracteres');
-      if (!this.passwordValidation.noStartsWithUpperCase) errores.push('no debe comenzar con mayúscula');
-      if (!this.passwordValidation.hasUpperCase) errores.push('al menos una letra mayúscula');
-      if (!this.passwordValidation.hasLowerCase) errores.push('al menos una letra minúscula');
-      if (!this.passwordValidation.hasNumber) errores.push('al menos un número');
-      if (!this.passwordValidation.hasSpecialChar) errores.push('al menos un carácter especial (!@#$%^&*...)');
-      if (!this.passwordValidation.passwordsMatch) errores.push('las contraseñas deben coincidir');
-      if (!this.passwordValidation.notContainsUsername) errores.push('no debe contener el nombre de usuario');
-      
-      this.errorMessage = `❌ La contraseña no cumple con la política de seguridad: ${errores.join(', ')}`;
-      return;
-    }
-
-    // Validar email
-    if (!this.isValidEmail(this.newUser.email)) {
-      this.fieldsWithError = ['email'];
-      this.errorMessage = '❌ Por favor, ingrese un correo electrónico válido (ejemplo: usuario@dominio.com).';
+    // Validar todos los campos requeridos
+    const validationError = this.validateUserCreationForm();
+    if (validationError) {
+      this.errorMessage = validationError.message;
+      this.fieldsWithError = validationError.fields;
       return;
     }
 
@@ -1756,7 +1682,7 @@ export class AdminDashboardComponent implements OnInit {
     }
     this.cdr.detectChanges(); // Forzar actualización de la vista
   }
-   private formatDateForInput(dateValue: any): string {
+  private formatDateForInput(dateValue: any): string {
     if (!dateValue) return '';
     
     try {
@@ -1785,6 +1711,159 @@ export class AdminDashboardComponent implements OnInit {
     } catch (error) {
       return '';
     }
+  }
+
+  // Helper para procesar errores de creación de usuario y mantener comportamiento idéntico
+  private processCreateUserError(error: any): string {
+    // Detectar errores de conexión primero
+    const connectionError = this.detectConnectionError(error);
+    if (connectionError) return connectionError;
+
+    // Detectar errores de backend/MongoDB
+    const backendError = this.detectBackendError(error);
+    if (backendError) return backendError;
+
+    // Detectar errores HTTP estándar
+    const httpError = this.detectHttpError(error);
+    if (httpError) return httpError;
+
+    return 'Error desconocido';
+  }
+
+  // Detecta errores de conexión (CORS, timeout, sin servidor)
+  private detectConnectionError(error: any): string | null {
+    if (error.status === 0 && error.error?.message?.includes('Failed to fetch')) {
+      return 'Error de conexión CORS. El backend no está ejecutándose o hay un problema de configuración. Por favor, inicia el servidor backend.';
+    }
+
+    if (error.status === 'timeout') {
+      // Efecto secundario: recargar usuarios tras timeout
+      setTimeout(() => {
+        this.loadUsuarios();
+      }, 1000);
+      return 'La conexión tardó demasiado tiempo. Es posible que el administrador se haya creado correctamente.';
+    }
+
+    if (error.status === 0) {
+      return 'No se pudo conectar con el servidor. Verifica que el backend esté ejecutándose en el puerto 8080.';
+    }
+
+    return null;
+  }
+
+  // Detecta y mejora mensajes de errores del backend (MongoDB, etc.)
+  private detectBackendError(error: any): string | null {
+    if (error.error?.mensaje) {
+      let mensajeError = error.error.mensaje;
+      
+      // Mejorar mensajes específicos de MongoDB
+      if (mensajeError.includes('E11000 duplicate key error')) {
+        if (mensajeError.includes('email')) {
+          return 'El email ya está registrado. Por favor, usa un email diferente.';
+        } else {
+          return 'Ya existe un registro con estos datos. Verifica la información.';
+        }
+      } else if (mensajeError.includes('Write operation error')) {
+        return 'Error de base de datos. Por favor, contacta al administrador del sistema.';
+      }
+      
+      return mensajeError;
+    }
+
+    if (error.error?.message) {
+      return error.error.message;
+    }
+
+    return null;
+  }
+
+  // Detecta errores HTTP estándar por código de estado
+  private detectHttpError(error: any): string | null {
+    if (error.status === 500) {
+      return 'Error interno del servidor. Por favor, inténtalo de nuevo más tarde.';
+    } else if (error.status === 400) {
+      return 'Datos inválidos. Verifica la información ingresada.';
+    } else if (error.status) {
+      return `Error del servidor: ${error.status} - ${error.statusText || 'Error HTTP'}`;
+    }
+
+    return null;
+  }
+
+  // Valida el formulario completo de creación de usuario
+  private validateUserCreationForm(): { message: string; fields: string[] } | null {
+    // Validar campos obligatorios según el rol
+    const requiredFieldsError = this.validateRequiredFields();
+    if (requiredFieldsError) return requiredFieldsError;
+
+    // Validar política de contraseñas
+    const passwordError = this.validatePasswordPolicy();
+    if (passwordError) return passwordError;
+
+    // Validar email
+    const emailError = this.validateEmailFormat();
+    if (emailError) return emailError;
+
+    return null;
+  }
+
+  // Valida campos obligatorios según el rol del usuario
+  private validateRequiredFields(): { message: string; fields: string[] } | null {
+    const requiredFields = this.newUser.rol === 'Gestor' 
+      ? ['nombre', 'apellidos', 'email', 'contrasenia', 'alias', 'especialidad', 'tipoContenido', 'foto']
+      : ['nombre', 'apellidos', 'email', 'contrasenia', 'departamento'];
+    
+    const emptyFields = requiredFields.filter(field => !this.newUser[field as keyof typeof this.newUser]);
+    
+    if (emptyFields.length > 0) {
+      return {
+        message: `❌ Complete todos los campos obligatorios: ${emptyFields.join(', ')}`,
+        fields: [...emptyFields]
+      };
+    }
+
+    return null;
+  }
+
+  // Valida la política de contraseñas
+  private validatePasswordPolicy(): { message: string; fields: string[] } | null {
+    this.validatePassword();
+    
+    if (!this.isPasswordValid()) {
+      const errores = this.buildPasswordErrorList();
+      return {
+        message: `❌ La contraseña no cumple con la política de seguridad: ${errores.join(', ')}`,
+        fields: ['contrasenia', 'repetirContrasenia']
+      };
+    }
+
+    return null;
+  }
+
+  // Construye la lista de errores de contraseña
+  private buildPasswordErrorList(): string[] {
+    const errores = [];
+    if (!this.passwordValidation.minLength) errores.push('mínimo 8 caracteres');
+    if (!this.passwordValidation.noStartsWithUpperCase) errores.push('no debe comenzar con mayúscula');
+    if (!this.passwordValidation.hasUpperCase) errores.push('al menos una letra mayúscula');
+    if (!this.passwordValidation.hasLowerCase) errores.push('al menos una letra minúscula');
+    if (!this.passwordValidation.hasNumber) errores.push('al menos un número');
+    if (!this.passwordValidation.hasSpecialChar) errores.push('al menos un carácter especial (!@#$%^&*...)');
+    if (!this.passwordValidation.passwordsMatch) errores.push('las contraseñas deben coincidir');
+    if (!this.passwordValidation.notContainsUsername) errores.push('no debe contener el nombre de usuario');
+    return errores;
+  }
+
+  // Valida el formato del email
+  private validateEmailFormat(): { message: string; fields: string[] } | null {
+    if (!this.isValidEmail(this.newUser.email)) {
+      return {
+        message: '❌ Por favor, ingrese un correo electrónico válido (ejemplo: usuario@dominio.com).',
+        fields: ['email']
+      };
+    }
+
+    return null;
   }
 
 }

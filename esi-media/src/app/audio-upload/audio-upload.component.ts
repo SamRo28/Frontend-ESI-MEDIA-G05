@@ -98,56 +98,62 @@ export class AudioUploadComponent {
   }
 
   async onFileSelected(event: any) {
-  const inputEl = event.target as HTMLInputElement;
-  const file = inputEl.files ? inputEl.files[0] : null;
-  this.fileError = ''; // Limpiar errores previos
+    const inputEl = event.target as HTMLInputElement;
+    const file = inputEl.files ? inputEl.files[0] : null;
+    this.fileError = ''; // Limpiar errores previos
 
-    if (file) {
-      // Validar tipo de archivo en función del MIME type
-      if (!file.type.includes('audio/mpeg') && !file.type.includes('audio/mp3')) {
-        this.showFileError('Solo se permiten archivos MP3', inputEl);
-        return;
-      }
+    if (!file) return;
 
-      // Validar tamaño (2MB máximo)
-      if (file.size > 2 * 1024 * 1024) {
-        this.showFileError('El archivo excede el tamaño máximo de 2MB', inputEl);
-        return;
-      }
+    // Delegamos la validación y asignación a un helper para reducir la complejidad cognitiva
+    await this.validateAndSetSelectedFile(file, inputEl);
+  }
 
-      // Debemos aceptar solo archivos que sean REALMENTE .mp3
-      // Por ello validamos tanto la extensión como los magic-bytes
-      if (!file.name.toLowerCase().endsWith('.mp3')) {
-        this.showFileError('Se requiere archivo con extensión .mp3', inputEl);
-        return;
-      }
-
-      try {
-        const detected = await this.detectAudioFormatByMagicBytes(file);
-        if (detected !== 'mp3') {
-          this.showFileError(`Se requiere un archivo MP3 /// (Formato detectado: ${detected || 'desconocido'})`, inputEl);
-          return;
-        }
-      } catch (err) {
-        console.error('Error comprobando magic bytes:', err);
-        this.showFileError('No se pudo verificar el tipo del archivo', inputEl);
-        return;
-      }
-
-      this.selectedFile = file;
-      this.audioForm.patchValue({ archivo: file });
-      // Limpiar errores previos del control 'archivo' para permitir que el formulario sea válido
-      const archivoControl = this.audioForm.get('archivo');
-      if (archivoControl) {
-        archivoControl.setErrors(null);
-        archivoControl.markAsDirty();
-      }
-      this.uploadMessage = '';
-      // limpiar valor del input para permitir re-selección del mismo fichero si el usuario lo desea
-      inputEl.value = '';
-      // forzar detección de cambios en la UI inmediatamente
-      this.cdr.detectChanges();
+  // Helper que valida el archivo de audio y, si es válido, lo asigna al formulario
+  private async validateAndSetSelectedFile(file: File, inputEl?: HTMLInputElement): Promise<boolean> {
+    // Validar tipo de archivo en función del MIME type
+    if (!file.type.includes('audio/mpeg') && !file.type.includes('audio/mp3')) {
+      this.showFileError('Solo se permiten archivos MP3', inputEl);
+      return false;
     }
+
+    // Validar tamaño (2MB máximo)
+    if (file.size > 2 * 1024 * 1024) {
+      this.showFileError('El archivo excede el tamaño máximo de 2MB', inputEl);
+      return false;
+    }
+
+    // Validar extensión
+    if (!file.name.toLowerCase().endsWith('.mp3')) {
+      this.showFileError('Se requiere archivo con extensión .mp3', inputEl);
+      return false;
+    }
+
+    // Verificar magic-bytes para confirmar que es mp3
+    try {
+      const detected = await this.detectAudioFormatByMagicBytes(file);
+      if (detected !== 'mp3') {
+        this.showFileError(`Se requiere un archivo MP3 /// (Formato detectado: ${detected || 'desconocido'})`, inputEl);
+        return false;
+      }
+    } catch (err) {
+      console.error('Error comprobando magic bytes:', err);
+      this.showFileError('No se pudo verificar el tipo del archivo', inputEl);
+      return false;
+    }
+
+  // Asignar file válido al formulario
+    this.selectedFile = file;
+    this.audioForm.patchValue({ archivo: file });
+    const archivoControl = this.audioForm.get('archivo');
+    if (archivoControl) {
+      archivoControl.setErrors(null);
+      archivoControl.markAsDirty();
+    }
+
+    this.uploadMessage = '';
+    if (inputEl) inputEl.value = '';
+    this.cdr.detectChanges();
+    return true;
   }
 
   async onCoverSelected(event: any) {
@@ -157,7 +163,8 @@ export class AudioUploadComponent {
 
     if (file) {
       // Validar tipo de archivo
-      if (!file.type.match(/^image\/(png|jpeg|jpg)$/)) {
+      const imageTypeRegex = /^image\/(png|jpeg|jpg)$/;
+      if (!imageTypeRegex.exec(file.type)) {
         this.showCoverError('Solo se permiten archivos PNG, JPG o JPEG', inputEl);
         return;
       }
