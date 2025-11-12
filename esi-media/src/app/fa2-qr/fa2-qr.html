@@ -86,25 +86,7 @@
             </div>
             <p class="qr-helper-text">Apunta tu cámara al código QR</p>
         </div>
-
-        <div class="divider">
-            <div class="divider-line"></div>
-            <span class="divider-text">O introduce manualmente</span>
-            <div class="divider-line"></div>
-        </div>
-
-        <div class="manual-code-section">
-            <p class="manual-label">Clave secreta:</p>
-            <div class="secret-key-container">
-                <code class="secret-key">{{ secretKey }}</code>
-                <button class="btn-copy" (click)="copySecretKey()" [class.copied]="isCopied">
-                    <span *ngIf="!isCopied">📋</span>
-                    <span *ngIf="isCopied">✓</span>
-                </button>
-            </div>
-            <p class="manual-helper">Introduce esta clave manualmente en Google Authenticator</p>
-        </div>
-
+        
         <div class="verification-section">
             <p class="verification-label">Verificar código de autenticación:</p>
             <form (ngSubmit)="verifyCode()">
@@ -133,24 +115,6 @@
                 <strong>Importante:</strong> Guarda la clave secreta en un lugar seguro. 
                 La necesitarás si cambias de dispositivo o pierdes acceso a tu autenticador.
             </p>
-        </div>
-
-        <div class="apps-section">
-            <p class="apps-title">Aplicaciones compatibles:</p>
-            <div class="apps-list">
-                <div class="app-item">
-                    <span class="app-icon">📱</span>
-                    <span class="app-name">Google Authenticator</span>
-                </div>
-                <div class="app-item">
-                    <span class="app-icon">🔑</span>
-                    <span class="app-name">Microsoft Authenticator</span>
-                </div>
-                <div class="app-item">
-                    <span class="app-icon">🛡️</span>
-                    <span class="app-name">Authy</span>
-                </div>
-            </div>
         </div>
     </div>
 </div>
