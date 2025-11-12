@@ -71,6 +71,10 @@
     <div class="detalle-body">
       <!-- Columna principal: reproductor -->
       <div class="col-principal">
+        <!-- Botón Reproducir: inicia reproducción y registra 1 reproducción -->
+        <div class="play-action">
+          <button class="btn-play" [disabled]="playDisabled" (click)="onReproducir()">Reproducir</button>
+        </div>
         <!-- VIDEO -->
         <div *ngIf="detalle!.tipo === 'VIDEO'" class="player-card">
           <div class="player-wrapper">
@@ -87,7 +91,7 @@
               </iframe>
             </ng-container>
             <ng-template #videoDirecto>
-              <video controls [src]="detalle!.referenciaReproduccion" class="video-player" preload="metadata"
+              <video #videoPlayer controls [src]="detalle!.referenciaReproduccion" class="video-player" preload="metadata"
                 (loadedmetadata)="onVideoLoaded()"
                 (canplay)="onVideoCanPlay()"
                 (waiting)="onVideoWaiting()"
@@ -108,7 +112,7 @@
         <!-- AUDIO: reproducción directa con <audio> y token en query (?auth=) -->
         <div *ngIf="detalle!.tipo === 'AUDIO'" class="player-card">
           <ng-container *ngIf="!audioError">
-            <audio controls [src]="audioSrc()" (error)="onAudioError($event)" (loadedmetadata)="onAudioLoaded($event)"></audio>
+            <audio #audioPlayer controls [src]="audioSrc()" (error)="onAudioError($event)" (loadedmetadata)="onAudioLoaded($event)"></audio>
           </ng-container>
           <div class="audio-error" *ngIf="audioError">
             {{ audioError }}
