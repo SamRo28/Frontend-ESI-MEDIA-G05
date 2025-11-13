@@ -48,7 +48,10 @@
     <a class="card" *ngFor="let item of contenido; trackBy: trackById" [routerLink]="['/dashboard', item.id]">
       <div class="thumb" [class.vip]="item.vip">
         <img *ngIf="caratulaUrl(item)" class="thumb-img" [src]="caratulaUrl(item)!" loading="lazy" alt="" />
-        <span class="badge" *ngIf="item.vip">VIP</span>
+        <div class="badges">
+          <span class="badge" *ngIf="item.vip">VIP</span>
+          <span class="badge-18" *ngIf="$any(item).edadVisualizacion >= 18">+18</span>
+        </div>
         <span class="tipo">{{ item.tipo }}</span>
       </div>
       <div class="title">{{ item.titulo }}</div>
