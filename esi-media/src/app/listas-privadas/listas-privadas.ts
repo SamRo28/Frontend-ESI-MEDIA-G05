@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ListaService, ListasResponse } from '../services/lista.service';
+import { MultimediaService } from '../services/multimedia.service';
 import { CrearListaComponent } from '../crear-lista/crear-lista';
 import { Router } from '@angular/router';
 
@@ -22,9 +23,13 @@ export class ListasPrivadas implements OnInit, OnChanges {
   // Modal de edición
   mostrarModalEdicion: boolean = false;
   listaParaEditar?: any = null;
+  
+  // Cache de carátulas de los primeros contenidos
+  caratulasCache: { [listaId: string]: string } = {};
 
   constructor(
     private listaService: ListaService,
+    private multimediaService: MultimediaService,
     private router: Router,
     @Inject(PLATFORM_ID) private platformId: Object,
     private cdr: ChangeDetectorRef
@@ -68,6 +73,7 @@ export class ListasPrivadas implements OnInit, OnChanges {
         
         if (response && response.success) {
           this.listas = response.listas || [];
+          this.cargarCaratulasPrimerosContenidos();
         } else {
           this.listas = [];
         }
@@ -178,5 +184,58 @@ export class ListasPrivadas implements OnInit, OnChanges {
    */
   puedeEliminar(lista: any): boolean {
     return this.listaService.puedeEliminarLista(lista);
+  }
+
+  /**
+   * Carga las carátulas de los primeros contenidos de cada lista
+   */
+  private cargarCaratulasPrimerosContenidos(): void {
+    this.listas.forEach(lista => {
+      if (lista.contenidosIds && lista.contenidosIds.length > 0) {
+        const primerContenidoId = lista.contenidosIds[0];
+        this.multimediaService.detalle(primerContenidoId).subscribe({
+          next: (contenido) => {
+            if (contenido.caratula) {
+              this.caratulasCache[lista.id] = this.procesarCaratula(contenido.caratula);
+              this.cdr.detectChanges();
+            }
+          },
+          error: (error) => {
+            console.warn(`No se pudo cargar la carátula para la lista ${lista.nombre}:`, error);
+          }
+        });
+      }
+    });
+  }
+
+  /**
+   * Obtiene la carátula del primer contenido de una lista
+   */
+  obtenerCaratulaPrimerContenido(lista: any): string | null {
+    return this.caratulasCache[lista.id] || null;
+  }
+
+  /**
+   * Procesa la carátula para convertirla a formato mostrable
+   */
+  private procesarCaratula(caratula: any): string {
+    if (!caratula) return '';
+    
+    if (typeof caratula === 'string') {
+      // Si ya es una cadena (base64 o URL), devolverla directamente
+      return caratula;
+    }
+    
+    if (caratula.data && Array.isArray(caratula.data)) {
+      // Si es un objeto con data como array de bytes, convertir a base64
+      const uint8Array = new Uint8Array(caratula.data);
+      let binary = '';
+      for (let i = 0; i < uint8Array.byteLength; i++) {
+        binary += String.fromCharCode(uint8Array[i]);
+      }
+      return `data:image/jpeg;base64,${btoa(binary)}`;
+    }
+    
+    return '';
   }
 }

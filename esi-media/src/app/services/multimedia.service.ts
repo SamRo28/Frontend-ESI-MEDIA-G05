@@ -19,6 +19,7 @@ export interface ContenidoDetalleDTO {
   tipo: 'AUDIO' | 'VIDEO';
   caratula?: any;
   vip: boolean;
+  duracion?: number; // en segundos
   // Nuevos campos para enriquecer el detalle
   fechadisponiblehasta?: string | Date; // Spring suele serializar Date como ISO string
   edadvisualizacion?: number;
@@ -57,6 +58,10 @@ export class MultimediaService {
 
   detalle(id: string): Observable<ContenidoDetalleDTO> {
     return this.http.get<ContenidoDetalleDTO>(`${this.baseUrl}/${id}`);
+  }
+
+  reproducir(id: string): Observable<{ nvisualizaciones: number }> {
+    return this.http.post<{ nvisualizaciones: number }>(`${this.baseUrl}/${id}/reproducir`, {});
   }
 
   descargarAudio(id: string): Observable<Blob> {

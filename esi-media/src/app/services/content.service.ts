@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { Observable, from } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
 
 
@@ -15,7 +15,7 @@ export interface AudioUploadData {
   fechaDisponibleHasta?: Date | null;
   visible: boolean;
   archivo: File;
-  caratula?: any;
+  caratula?: File;
 }
 
 export interface VideoUploadData {
@@ -29,7 +29,7 @@ export interface VideoUploadData {
   visible: boolean;
   url: string;
   resolucion: string;
-  caratula?: any;
+  caratula?: File;
 }
 
 export interface UploadResponse {
@@ -114,6 +114,28 @@ export class ContentService {
    * Sube un video por URL usando el endpoint /gestor/video/subir
    */
   uploadVideo(videoData: VideoUploadData): Observable<UploadResponse> {
+    if (videoData.caratula) {
+      // Convertir la carátula a base64 para enviarla como JSON
+      const fileToBase64Promise = new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Error al leer el archivo de carátula'));
+        reader.readAsDataURL(videoData.caratula!);
+      });
+
+      return from(fileToBase64Promise).pipe(
+        switchMap(base64String => this.sendVideoData({...videoData, caratulaBase64: base64String}))
+      );
+    } else {
+      // Sin carátula, enviar directamente
+      return this.sendVideoData(videoData);
+    }
+  }
+
+  /**
+   * Método privado para enviar los datos del video como JSON
+   */
+  private sendVideoData(videoData: VideoUploadData & { caratulaBase64?: string }): Observable<UploadResponse> {
     const payload = {
       titulo: videoData.titulo,
       descripcion: videoData.descripcion || null,
@@ -127,7 +149,7 @@ export class ContentService {
       visible: videoData.visible,
       url: videoData.url,
       resolucion: videoData.resolucion,
-      caratula: videoData.caratula || null
+      caratula: videoData.caratulaBase64 || null
     };
 
     // El interceptor authInterceptor se encarga automáticamente del header Authorization

@@ -29,48 +29,51 @@
 
   <div class="detalle" *ngIf="!cargando && detalle">
     <div class="cabecera">
-      <div class="caratula" *ngIf="caratulaUrl()" [style.background-image]="'url(' + caratulaUrl() + ')'"></div>
       <div class="cabecera-info">
         <h1 class="titulo">{{ detalle!.titulo }}</h1>
         <!-- Se eliminan descripción y metadatos en cabecera para evitar duplicidad -->
       </div>
-      <!-- Desplegable de listas privadas -->
-      <div class="cabecera-actions">
-        <div class="dropdown-listas" *ngIf="listasPrivadas.length > 0">
-          <button class="btn-dropdown-listas" (click)="toggleDropdownListas()">
-            <span>Añadir a lista</span>
-            <span class="dropdown-arrow" [class.rotated]="mostrarDropdownListas">▼</span>
-          </button>
-          <div class="dropdown-menu-listas" *ngIf="mostrarDropdownListas" role="menu">
-            <div class="dropdown-item-lista" 
-                 *ngFor="let lista of listasPrivadas" 
-                 (click)="incluirALista(lista)"
-                 (keydown)="onListaKeyDown($event, lista)"
-                 tabindex="0"
-                 role="menuitem">
-              <span class="lista-nombre">{{ lista.nombre }}</span>
-              <span class="lista-info">{{ lista.contenidosIds?.length || 0 }} elementos</span>
-            </div>
-            <div class="dropdown-divider" *ngIf="listasPrivadas.length > 0"></div>
-            <div class="dropdown-item-lista nueva-lista" 
-                 (click)="crearNuevaLista()"
-                 (keydown)="onNuevaListaKeyDown($event)"
-                 tabindex="0"
-                 role="menuitem">
-              <span class="lista-nombre">+ Crear nueva lista</span>
-            </div>
+    </div>
+    <!-- Desplegable de listas privadas movido horizontalmente a la derecha -->
+    <div class="cabecera-actions-horizontal">
+      <div class="dropdown-listas" *ngIf="listasPrivadas.length > 0">
+        <button class="btn-dropdown-listas" (click)="toggleDropdownListas()">
+          <span>Añadir a lista</span>
+          <span class="dropdown-arrow" [class.rotated]="mostrarDropdownListas">▼</span>
+        </button>
+        <div class="dropdown-menu-listas" *ngIf="mostrarDropdownListas" role="menu">
+          <div class="dropdown-item-lista" 
+               *ngFor="let lista of listasPrivadas" 
+               (click)="incluirALista(lista)"
+               (keydown)="onListaKeyDown($event, lista)"
+               tabindex="0"
+               role="menuitem">
+            <span class="lista-nombre">{{ lista.nombre }}</span>
+            <span class="lista-info">{{ lista.contenidosIds?.length || 0 }} elementos</span>
+          </div>
+          <div class="dropdown-divider" *ngIf="listasPrivadas.length > 0"></div>
+          <div class="dropdown-item-lista nueva-lista" 
+               (click)="crearNuevaLista()"
+               (keydown)="onNuevaListaKeyDown($event)"
+               tabindex="0"
+               role="menuitem">
+            <span class="lista-nombre">+ Crear nueva lista</span>
           </div>
         </div>
-        <!-- Mensaje si no hay listas -->
-        <button class="btn-primera-lista" *ngIf="listasPrivadas.length === 0" (click)="crearNuevaLista()">
-          <span>Crear primera lista</span>
-        </button>
       </div>
+      <!-- Mensaje si no hay listas -->
+      <button class="btn-primera-lista" *ngIf="listasPrivadas.length === 0" (click)="crearNuevaLista()">
+        <span>Crear primera lista</span>
+      </button>
     </div>
 
     <div class="detalle-body">
       <!-- Columna principal: reproductor -->
       <div class="col-principal">
+        <!-- Botón Reproducir: inicia reproducción y registra 1 reproducción -->
+        <div class="play-action">
+          <button class="btn-play" [disabled]="playDisabled" (click)="onReproducir()">Reproducir</button>
+        </div>
         <!-- VIDEO -->
         <div *ngIf="detalle!.tipo === 'VIDEO'" class="player-card">
           <div class="player-wrapper">
@@ -80,18 +83,32 @@
                 class="video-player"
                 [src]="youtubeSafeUrl"
                 width="100%" height="420"
-                frameborder="0"
                 (load)="onIframeLoaded()"
+                title="{{ detalle!.titulo }}"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowfullscreen>
               </iframe>
             </ng-container>
             <ng-template #videoDirecto>
-              <video controls [src]="detalle!.referenciaReproduccion" class="video-player" preload="metadata"
+              <video #videoPlayer controls [src]="detalle!.referenciaReproduccion" class="video-player" preload="metadata"
                 (loadedmetadata)="onVideoLoaded()"
                 (canplay)="onVideoCanPlay()"
                 (waiting)="onVideoWaiting()"
-                (playing)="onVideoPlaying()"></video>
+                (playing)="onVideoPlaying()">
+                <!-- Subtítulos (WebVTT) -->
+                <track *ngIf="$any(detalle).subtitlesUrl" kind="subtitles" srclang="es" label="Español" [src]="$any(detalle).subtitlesUrl">
+                <track *ngIf="$any(detalle).captionsUrl" kind="captions" srclang="es" label="Captions (ES)" [src]="$any(detalle).captionsUrl">
+                <!-- Descripciones de audio -->
+                <track *ngIf="$any(detalle).descriptionsUrl" kind="descriptions" [src]="$any(detalle).descriptionsUrl">
+              </video>
+
+              <!-- Enlaces a recursos (subtítulos / descripciones) para usuarios y para descarga -->
+              <div class="player-resources text-sm text-gray-600 mt-2" *ngIf="$any(detalle).subtitlesUrl || $any(detalle).descriptionsUrl">
+                <span>Recursos:</span>
+                <a *ngIf="$any(detalle).subtitlesUrl" [href]="$any(detalle).subtitlesUrl" download class="ml-2 underline">Subtítulos</a>
+                <a *ngIf="$any(detalle).captionsUrl" [href]="$any(detalle).captionsUrl" download class="ml-2 underline">Captions</a>
+                <a *ngIf="$any(detalle).descriptionsUrl" [href]="$any(detalle).descriptionsUrl" download class="ml-2 underline">Descripciones</a>
+              </div>
             </ng-template>
             <!-- Skeleton overlay -->
             <div class="player-skeleton" *ngIf="!playerReady">
@@ -108,7 +125,7 @@
         <!-- AUDIO: reproducción directa con <audio> y token en query (?auth=) -->
         <div *ngIf="detalle!.tipo === 'AUDIO'" class="player-card">
           <ng-container *ngIf="!audioError">
-            <audio controls [src]="audioSrc()" (error)="onAudioError($event)" (loadedmetadata)="onAudioLoaded($event)"></audio>
+            <audio #audioPlayer controls [src]="audioSrc()" (error)="onAudioError($event)" (loadedmetadata)="onAudioLoaded($event)"></audio>
           </ng-container>
           <div class="audio-error" *ngIf="audioError">
             {{ audioError }}
@@ -127,11 +144,11 @@
         <div class="info-card">
           <h3>Información</h3>
           <ul class="info-list">
-            <li><label>Duración:</label><b>{{ duracionTexto() }}</b></li>
-            <li><label>Edad mínima:</label><b>{{ edadTexto() }}</b></li>
-            <li><label>Visualizaciones:</label><b>{{ visualizacionesTexto() }}</b></li>
-            <li><label>Disponible hasta:</label><b>{{ fechaDisponibleTexto() }}</b></li>
-            <li class="desc"><label>Descripción:</label><div class="desc-text">{{ detalle!.descripcion || 'Sin descripción' }}</div></li>
+            <li><label for="mm-duracion">Duración:</label><b>{{ duracionTexto() }}</b></li>
+            <li><label for="mm-edad-minima">Edad mínima:</label><b>{{ edadTexto() }}</b></li>
+            <li><label for="mm-visualizaciones">Visualizaciones:</label><b>{{ visualizacionesTexto() }}</b></li>
+            <li><label for="mm-disponible-hasta">Disponible hasta:</label><b>{{ fechaDisponibleTexto() }}</b></li>
+            <li class="desc"><label for="mm-descripcion">Descripción:</label><div class="desc-text">{{ detalle!.descripcion || 'Sin descripción' }}</div></li>
           </ul>
         </div>
       </aside>
@@ -146,5 +163,3 @@
     <button class="close-notification" (click)="cerrarNotificacion()" type="button">×</button>
   </div>
 </div>
-
-```

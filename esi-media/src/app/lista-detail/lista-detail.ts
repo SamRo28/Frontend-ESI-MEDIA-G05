@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ListaService } from '../services/lista.service';
 import { MultimediaService, ContenidoResumenDTO } from '../services/multimedia.service';
 import { ContentService, ContenidoSearchResult } from '../services/content.service';
@@ -218,9 +218,9 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
     const tipoUsuario = this.obtenerTipoUsuario();
     
     // Redirigir según el tipo de usuario y contexto
-    if (tipoUsuario === 'Gestor' || tipoUsuario === 'GestordeContenido') {
+    if (tipoUsuario === 'GestordeContenido') {
       // Los gestores van a su dashboard con gestión de listas
-      this.router.navigate(['/gestor-dashboard/gestion-listas']);
+      this.router.navigate(['/gestor-dashboard']);
     } else {
       // Los visualizadores van al dashboard con listas públicas
       this.router.navigate(['/dashboard/listas-publicas']);

@@ -5,7 +5,6 @@ import { HttpClientModule } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { ListaService } from '../services/lista.service';
 import { ContentService, ContenidoSearchResult } from '../services/content.service';
-import { Lista } from '../model/lista';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 import { Subject, of } from 'rxjs';
 
@@ -212,43 +211,16 @@ export class CrearListaComponent implements OnInit {
       next: (res: any) => {
         this.guardando = false;
         if (res && res.success) {
-          // Mostrar mensaje de éxito
-          const accion = this.listaParaEditar ? 'actualizada' : 'creada';
-          this.mensajeExito = `✅ Lista ${accion} correctamente`;
-          
-          if (this.modal) {
-            // En modo modal, emitir evento correspondiente y cerrar
-            if (this.listaParaEditar) {
-              this.editada.emit(res.lista);
-            } else {
-              this.creada.emit(res.lista);
-            }
-            setTimeout(() => {
-              this.resetearFormulario();
-            }, 500);
-          } else {
-            // En modo normal, navegar después de 2 segundos
-            setTimeout(() => this.router.navigate(['/dashboard/listas']), 2000);
-            this.resetearFormulario();
-          }
+          this.handleSuccessfulListOperation(res);
         } else {
-          console.error('Respuesta inesperada:', res);
-          if (res?.mensaje && (res.mensaje.includes('nombre') && res.mensaje.includes('existe'))) {
-            this.mensajeErrorNombre = res.mensaje;
-          } else {
-            this.mensajeErrorNombre = res?.mensaje || 'No se pudo procesar la lista';
-          }
+          this.handleUnexpectedResponse(res);
         }
       },
       error: (err: any) => {
         this.guardando = false;
         console.error('Error procesando lista:', err);
         if (err.status === 400 && err.error?.mensaje) {
-          if (err.error.mensaje.includes('nombre') && err.error.mensaje.includes('existe')) {
             this.mensajeErrorNombre = err.error.mensaje;
-          } else {
-            this.mensajeErrorNombre = err.error.mensaje;
-          }
         } else {
           this.mensajeErrorNombre = 'Error al procesar la lista. Inténtalo de nuevo.';
         }
@@ -612,5 +584,56 @@ export class CrearListaComponent implements OnInit {
       return this.listaParaEditar ? 'Actualizando...' : 'Creando...';
     }
     return this.listaParaEditar ? 'Actualizar lista' : 'Crear lista';
+  }
+
+  /**
+   * Maneja el caso de operación exitosa (crear/editar lista)
+   */
+  private handleSuccessfulListOperation(res: any): void {
+    // Mostrar mensaje de éxito
+    const accion = this.listaParaEditar ? 'actualizada' : 'creada';
+    this.mensajeExito = `✅ Lista ${accion} correctamente`;
+    
+    if (this.modal) {
+      this.handleModalSuccess(res);
+    } else {
+      this.handleNormalModeSuccess();
+    }
+  }
+
+  /**
+   * Maneja el éxito en modo modal
+   */
+  private handleModalSuccess(res: any): void {
+    // En modo modal, emitir evento correspondiente y cerrar
+    if (this.listaParaEditar) {
+      this.editada.emit(res.lista);
+    } else {
+      this.creada.emit(res.lista);
+    }
+    setTimeout(() => {
+      this.resetearFormulario();
+    }, 500);
+  }
+
+  /**
+   * Maneja el éxito en modo normal (no modal)
+   */
+  private handleNormalModeSuccess(): void {
+    // En modo normal, navegar después de 2 segundos
+    setTimeout(() => this.router.navigate(['/dashboard/listas']), 2000);
+    this.resetearFormulario();
+  }
+
+  /**
+   * Maneja respuesta inesperada del servidor
+   */
+  private handleUnexpectedResponse(res: any): void {
+    console.error('Respuesta inesperada:', res);
+    if (res?.mensaje && (res.mensaje.includes('nombre') && res.mensaje.includes('existe'))) {
+      this.mensajeErrorNombre = res.mensaje;
+    } else {
+      this.mensajeErrorNombre = res?.mensaje || 'No se pudo procesar la lista';
+    }
   }
 }
