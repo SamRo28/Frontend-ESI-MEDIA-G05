@@ -1,6 +1,9 @@
 trigger:
   - main
 
+variables:
+ -⁠ group: 'SonarSecrets'
+
 pool:
   name: 'Default'
 
@@ -25,6 +28,6 @@ steps:
 - script: |
     cd esi-media
     npm install
-    npm run build
+    npm run build -- --configuration=production
     firebase deploy --only hosting --token $(FIREBASE_TOKEN)
   displayName: 'Compilar Angular y desplegar en Firebase Hosting'
