@@ -144,6 +144,20 @@
   font-weight: 700;
 }
 
+.panel-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.panel-subtitle {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  font-weight: 500;
+  font-style: italic;
+}
+
 .panel-icon {
   font-size: 24px;
 }
@@ -171,6 +185,22 @@
 /* Sección de tags */
 .tags-section {
   padding: 24px;
+}
+
+/* Lanes: mejorar contraste y separación para que sean legibles sobre el fondo oscuro */
+.lane {
+  padding: 16px 24px;
+  margin: 8px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02); /* sutilmente más claro que el panel */
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.lane h4 {
+  margin: 0 0 12px 0;
+  color: #dbe9ff; /* encabezados claros */
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .tags-grid {
@@ -219,17 +249,18 @@
 .option-btn {
   padding: 10px 12px;
   border-radius: 8px;
-  border: 2px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255,255,255,0.02);
-  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255,255,255,0.04);
+  color: #f3f7ff;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.18s ease;
   margin: 6px 6px 0 0;
+  box-shadow: none;
 }
 
-.option-btn:hover { background: rgba(255,255,255,0.04); transform: translateY(-2px); }
+.option-btn:hover { background: rgba(255,255,255,0.06); transform: translateY(-2px); }
 .option-btn.selected { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-color: #667eea; color: #fff; box-shadow: 0 6px 18px rgba(102,126,234,0.25); }
 
 .sus-options, .edad-options, .res-options { display:flex; flex-wrap:wrap; gap:8px; padding: 12px 24px; }

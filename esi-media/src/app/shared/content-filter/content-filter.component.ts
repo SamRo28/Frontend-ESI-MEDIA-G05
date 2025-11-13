@@ -160,6 +160,20 @@ export class ContentFilterComponent implements OnInit, OnChanges {
     if (this.contentType !== 'all') return;
     this.activeContentType = type;
     this.initialScreen = false;
+    // Si cambiamos al subpanel de audio, la selección de resolución debe resetearse a 'Todos'
+    // porque resolución sólo aplica a vídeo.
+    if (type === 'audio') {
+      this.selectedResolution = null;
+    }
+  }
+
+  // Setter para suscripción que permite lógica adicional (p.ej. limpiar resolución 4K si no aplica)
+  setSuscripcion(value: 'ANY' | 'VIP' | 'STANDARD'): void {
+    this.selectedSuscripcion = value;
+    // Si se selecciona 'STANDARD' y actualmente está seleccionado 4K (2160p), limpiarlo
+    if (value === 'STANDARD' && this.selectedResolution === '2160p') {
+      this.selectedResolution = null;
+    }
   }
 
   /**
