@@ -9,7 +9,9 @@ export interface ContenidoResumenDTO {
   tipo: 'AUDIO' | 'VIDEO';
   caratula?: any;
   vip: boolean;
-  tags?: string[]; // Añadido para permitir filtrado
+  tags?: string[];
+  edadvisualizacion?: number;
+  resolucion?: string;
 }
 
 export interface ContenidoDetalleDTO {
@@ -26,6 +28,7 @@ export interface ContenidoDetalleDTO {
   nvisualizaciones?: number;
   tags?: string[];
   referenciaReproduccion: string;
+  resolucion?: string; // Campo que faltaba para videos
 }
 
 export interface PageResponse<T> {

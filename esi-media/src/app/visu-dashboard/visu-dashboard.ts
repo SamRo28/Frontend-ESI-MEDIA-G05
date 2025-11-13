@@ -44,6 +44,7 @@ export class VisuDashboard implements OnInit, AfterViewInit {
   
   // Variables para el sistema de filtrado
   currentTagFilters: string[] = [];
+  currentFiltersObject: any = null;
 
   private isBrowser: boolean;
   private documentClickHandler = (event: Event) => this.onDocumentClick(event);
@@ -434,7 +435,19 @@ export class VisuDashboard implements OnInit, AfterViewInit {
    * Maneja la aplicación de filtros de tags desde el componente de filtro
    */
   onFiltersApplied(selectedTags: string[]): void {
-    this.currentTagFilters = [...selectedTags];
+    // El componente de filtro emite string[] con tags
+    this.currentTagFilters = Array.isArray(selectedTags) ? [...selectedTags] : [];
+  }
+
+  /**
+   * Maneja el objeto completo de filtros emitido por el componente de filtro
+   */
+  onFiltersChanged(filters: any): void {
+    if (!filters) return;
+    // Guardar objeto completo para futuras integraciones
+    this.currentFiltersObject = filters;
+    // Actualizar tagFilters para la lista
+    this.currentTagFilters = Array.isArray(filters.tags) ? [...filters.tags] : [];
   }
 
   /**
