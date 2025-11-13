@@ -10,7 +10,7 @@ export interface ContenidoResumenDTO {
   caratula?: any;
   vip: boolean;
   tags?: string[];
-  edadvisualizacion?: number;
+  edadVisualizacion?: number;
   resolucion?: string;
 }
 
@@ -23,8 +23,8 @@ export interface ContenidoDetalleDTO {
   vip: boolean;
   duracion?: number; // en segundos
   // Nuevos campos para enriquecer el detalle
-  fechadisponiblehasta?: string | Date; // Spring suele serializar Date como ISO string
-  edadvisualizacion?: number;
+  fechaDisponibleHasta?: string | Date;
+  edadVisualizacion?: number;
   nvisualizaciones?: number;
   tags?: string[];
   referenciaReproduccion: string;
