@@ -2,6 +2,7 @@ import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpEvent } from '@angul
 import { Observable } from 'rxjs';
 import { inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { environment } from '../../environments/environment';
 
 /**
  * Interceptor funcional para agregar automáticamente el token de autorización
@@ -20,7 +21,7 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
   }
 
   // Solo agregar el token a peticiones hacia nuestro backend  que requieren auth
-  if (req.url.includes('localhost:8080/gestor') || req.url.includes('localhost:8080/users/listar') || req.url.includes('localhost:8080/listas') || req.url.includes('localhost:8080/contenidos/buscar') || req.url.includes('localhost:8080/listas/usuario') || req.url.includes('localhost:8080/listas/gestor') || req.url.includes('localhost:8080/multimedia')) {
+  if (req.url.includes(`${environment.apiUrl}/gestor`) || req.url.includes(`${environment.apiUrl}/users/listar`) || req.url.includes(`${environment.apiUrl}/listas`) || req.url.includes(`${environment.apiUrl}/contenidos/buscar`) || req.url.includes(`${environment.apiUrl}/listas/usuario`) || req.url.includes(`${environment.apiUrl}/listas/gestor`) || req.url.includes(`${environment.apiUrl}/multimedia`)) {
 
 
     let token = '';

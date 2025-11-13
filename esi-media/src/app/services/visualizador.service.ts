@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface ApiFieldError { field?: string; message: string }
 export interface ApiErrorResponse { 
@@ -31,7 +32,7 @@ export interface RegistroResponse {
 @Injectable({ providedIn: 'root' })
 export class VisualizadorService {
   // URL base del API (configurable según entorno)
-  private apiUrl = 'http://localhost:8080/api/visualizador';
+  private apiUrl = `${environment.apiUrl}/api/visualizador`;
 
   constructor(private http: HttpClient) {}
 
