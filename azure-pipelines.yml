@@ -1,0 +1,25 @@
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+# Instalar Node.js
+- task: NodeTool@0
+  inputs:
+    versionSpec: '20.x'
+  displayName: 'Instalar Node.js'
+
+# Instalar Firebase CLI
+- script: |
+    npm install -g firebase-tools
+  displayName: 'Instalar Firebase CLI'
+
+# Build + Deploy Angular
+- script: |
+    cd esi-media
+    npm install
+    npm run build
+    firebase deploy --only hosting --token $(FIREBASE_TOKEN)
+  displayName: 'Compilar Angular y desplegar en Firebase Hosting'
