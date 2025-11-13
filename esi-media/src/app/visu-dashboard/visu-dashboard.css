@@ -967,13 +967,11 @@ body.no-scroll {
   border: 1px solid rgba(168, 85, 247, 0.3);
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  z-index: 120;
+  z-index: 5000;
   overflow: auto;
   padding: 16px;
   max-height: 90vh;
-}
-
-/* Estilos para la sección de listas públicas */
+}/* Estilos para la sección de listas públicas */
 .listas-publicas-section {
   padding: 10px;
   background: rgba(50, 35, 75, 0.3);
