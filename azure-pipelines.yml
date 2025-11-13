@@ -19,10 +19,10 @@ steps:
     npm install -g firebase-tools
   displayName: 'Instalar Firebase CLI'
 
-- script: |
-    cd esi-media
-    sonar-scanner -Dsonar.host.url=%SONAR_HOST_URL% -Dsonar.token=%SONAR_TOKEN%
-  displayName: 'Run SonarQube Analysis (CLI, Windows)'
+#- script: |
+ #   cd esi-media
+   # sonar-scanner -Dsonar.host.url=%SONAR_HOST_URL% -Dsonar.token=%SONAR_TOKEN%
+  #displayName: 'Run SonarQube Analysis (CLI, Windows)'
   env:
     SONAR_HOST_URL: $(SONAR_HOST_URL)
     SONAR_TOKEN: $(SONAR_TOKEN)
