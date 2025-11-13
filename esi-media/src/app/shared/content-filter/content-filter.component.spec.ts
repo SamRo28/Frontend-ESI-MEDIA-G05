@@ -22,7 +22,8 @@ describe('ContentFilterComponent', () => {
 
   it('should emit filters when applyFilters is called', () => {
     spyOn(component.filtersApplied, 'emit');
-    component.selectedTags = ['pop', 'rock'];
+    component.activeContentType = 'audio';
+    component.selectedTagsAudio = ['pop', 'rock'];
     
     component.applyFilters();
     
@@ -43,23 +44,25 @@ describe('ContentFilterComponent', () => {
   });
 
   it('should clear all filters', () => {
-    component.selectedTags = ['pop', 'rock', 'jazz'];
+    component.selectedTagsAudio = ['pop', 'rock'];
+    component.selectedTagsVideo = ['cocina'];
     component.selectedSuscripcion = 'VIP';
     component.selectedEdad = '18';
-    component.selectedResolutions = ['1080p'];
+    component.selectedResolution = '1080p';
     
     component.clearFilters();
     
-    expect(component.selectedTags).toEqual([]);
+    expect(component.selectedTagsAudio).toEqual([]);
+    expect(component.selectedTagsVideo).toEqual([]);
     expect(component.selectedSuscripcion).toBe('ANY');
     expect(component.selectedEdad).toBeNull();
-    expect(component.selectedResolutions).toEqual([]);
+    expect(component.selectedResolution).toBeNull();
     expect(component.selectedCount).toBe(0);
   });
 
   it('should return correct available tags for video content', () => {
-    component.contentType = 'video';
-    
+    component.activeContentType = 'video';
+
     const tags = component.availableTags;
     
     expect(tags.some(tag => tag.value === 'cocina')).toBeTrue();
@@ -67,8 +70,8 @@ describe('ContentFilterComponent', () => {
   });
 
   it('should return correct available tags for audio content', () => {
-    component.contentType = 'audio';
-    
+    component.activeContentType = 'audio';
+
     const tags = component.availableTags;
     
     expect(tags.some(tag => tag.value === 'pop')).toBeTrue();
@@ -76,8 +79,8 @@ describe('ContentFilterComponent', () => {
   });
 
   it('should return combined tags for all content', () => {
-    component.contentType = 'all';
-    
+    component.activeContentType = 'all';
+
     const tags = component.availableTags;
     
     expect(tags.some(tag => tag.value === 'cocina')).toBeTrue(); // video tag
@@ -85,19 +88,20 @@ describe('ContentFilterComponent', () => {
   });
 
   it('should generate correct selected tags text', () => {
-    component.contentType = 'all';
-    component.selectedTags = ['pop', 'cocina'];
-    
+    component.activeContentType = 'audio';
+    component.selectedTagsAudio = ['pop', 'rock'];
+
     const text = component.getSelectedTagsText();
-    
-    expect(text).toBe('Pop, Cocina');
+
+    expect(text).toBe('Pop, Rock');
   });
 
   it('should return empty string when no tags selected', () => {
-    component.selectedTags = [];
-    
+    component.activeContentType = 'video';
+    component.selectedTagsVideo = [];
+
     const text = component.getSelectedTagsText();
-    
+
     expect(text).toBe('');
   });
 });

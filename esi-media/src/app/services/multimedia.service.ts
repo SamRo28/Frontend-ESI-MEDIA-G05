@@ -28,6 +28,7 @@ export interface ContenidoDetalleDTO {
   nvisualizaciones?: number;
   tags?: string[];
   referenciaReproduccion: string;
+  resolucion?: string; // Campo que faltaba para videos
 }
 
 export interface PageResponse<T> {

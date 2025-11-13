@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, SimpleChanges, OnInit, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface TagOption { value: string; label: string; }
@@ -16,9 +16,9 @@ export interface ContentFilterDTO {
   standalone: true,
   imports: [CommonModule],
   templateUrl: './content-filter.component.html',
-  styleUrl: './content-filter.component.css'
+  styleUrls: ['./content-filter.component.css']
 })
-export class ContentFilterComponent {
+export class ContentFilterComponent implements OnInit, OnChanges {
   // Implement lifecycle to react to input changes
   ngOnInit(): void {
     // Inicializar activeContentType según el input; si no viene forzado, por defecto a 'video'
@@ -32,9 +32,8 @@ export class ContentFilterComponent {
       if (this.lockedContentType) {
         // Si el padre fuerza el tipo, usarlo y evitar cambios locales
         this.activeContentType = this.contentType;
-      } else {
-        // Si no viene forzado y no hay selección local, default a video
-        if (this.activeContentType === 'all') this.activeContentType = 'video';
+      } else if (this.activeContentType === 'all'){ 
+        this.activeContentType = 'video';
       }
     }
   }
@@ -59,12 +58,19 @@ export class ContentFilterComponent {
   // filtros adicionales (internos, por ahora no se emiten fuera)
   selectedSuscripcion: 'ANY' | 'VIP' | 'STANDARD' = 'ANY';
   selectedEdad: 'TP' | '18' | null = null;
-  selectedResolutions: string[] = [];
-  
-  toggleResolution(res: string): void {
-    const idx = this.selectedResolutions.indexOf(res);
-    if (idx > -1) this.selectedResolutions.splice(idx, 1);
-    else this.selectedResolutions.push(res);
+  // Solo una resolución permitida (o ninguna). Null = todas
+  selectedResolution: string | null = null;
+
+  selectResolution(res: string | null): void {
+    if (res === null) {
+      this.selectedResolution = null;
+      return;
+    }
+    if (this.selectedResolution === res) {
+      this.selectedResolution = null; // toggle off
+    } else {
+      this.selectedResolution = res;
+    }
   }
 
   // Getter para las tags activas según el sub-panel
@@ -173,7 +179,7 @@ export class ContentFilterComponent {
       tags: [...this.selectedTags],
       suscripcion: this.selectedSuscripcion,
       edad: this.selectedEdad,
-      resoluciones: [...this.selectedResolutions]
+      resoluciones: this.selectedResolution ? [this.selectedResolution] : []
     };
     this.filtersChanged.emit(payload);
     this.showFilterPanel = false;
@@ -188,7 +194,7 @@ export class ContentFilterComponent {
     this.selectedTagsVideo = [];
     this.selectedSuscripcion = 'ANY';
     this.selectedEdad = null;
-    this.selectedResolutions = [];
+    this.selectedResolution = null;
     // permitir aplicar desde la pantalla inicial para "limpiar rápido"
     this.allowApplyFromInitial = true;
     // Emitir cambios tras limpiar para que el receptor pueda recargar

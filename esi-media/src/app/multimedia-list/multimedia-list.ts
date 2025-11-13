@@ -19,6 +19,8 @@ export class MultimediaListComponent implements OnInit, OnChanges {
   @Input() showTitle: boolean = true;
   @Input() tipoForzado: 'AUDIO' | 'VIDEO' | null = null;
   @Input() tagFilters: string[] = [];
+  // Aceptar objeto completo de filtros aparte de los tags (suscripcion, edad, resoluciones)
+  @Input() filtersObject: any = null;
   pagina = 0;
   tamano = 12;
   cargando = false;
@@ -27,25 +29,54 @@ export class MultimediaListComponent implements OnInit, OnChanges {
   totalPaginas: number | null = null;
   totalElementos: number | null = null;
 
+  // Para soportar forzar tipo VIDEO cuando se selecciona resolución
   filtroTipo: 'AUDIO' | 'VIDEO' | null = null;
+  private originalFiltroTipo: 'AUDIO' | 'VIDEO' | null = null;
+  private forcedByResolution = false;
 
   constructor(private multimedia: MultimediaService, private route: ActivatedRoute, private router: Router) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    // Detectar cambios en tagFilters (compatibilidad: solo tags expuestas por el componente de filtro)
-    if (changes['tagFilters'] && !changes['tagFilters'].firstChange) {
-      const newTags: string[] = changes['tagFilters'].currentValue || [];
-      const prevTags: string[] = changes['tagFilters'].previousValue || [];
-      console.log('🔄 Cambio en tagFilters detectado:', { previous: prevTags, current: newTags });
-      // Si se han limpiado los tags, regenerar la página actual (limpiar cache para obtener todo)
-      if (newTags.length === 0 && prevTags.length > 0) {
+    // Detectar cambios en tagFilters o filtersObject
+    const tagChange = changes['tagFilters'] && !changes['tagFilters'].firstChange;
+    const objChange = changes['filtersObject'] && !changes['filtersObject'].firstChange;
+    
+    if (tagChange || objChange) {
+      // Si hay filtro de resoluciones distinto de vacío, forzamos tipo VIDEO
+      const resCount = this.filtersObject?.resoluciones?.length || 0;
+      if (resCount > 0 && !this.forcedByResolution) {
+        // guardar el tipo previo y forzar VIDEO
+        this.originalFiltroTipo = this.originalFiltroTipo ?? this.filtroTipo;
+        this.filtroTipo = 'VIDEO';
+        this.forcedByResolution = true;
+      }
+      // Si se han limpiado las resoluciones y nosotros forzamos el tipo, restaurar
+      if (resCount === 0 && this.forcedByResolution) {
+        this.filtroTipo = this.originalFiltroTipo;
+        this.forcedByResolution = false;
+      }
+
+      // Si se han limpiado todos los filtros, limpiar cache y recargar página actual
+      const noFilters = this.isFiltersEmpty();
+      if (noFilters) {
         this.multimedia.clearCache();
         this.cargar(this.pagina);
       } else {
-        // Aplicación de nuevos filtros: volver a la primera página
+        // Aplicar filtros: ir a página 0
         this.cargar(0);
       }
     }
+  }
+
+  private isFiltersEmpty(): boolean {
+    const tagsEmpty = !Array.isArray(this.tagFilters) || this.tagFilters.length === 0;
+    if (!this.filtersObject) return tagsEmpty;
+    
+    const objEmpty = (!Array.isArray(this.filtersObject.tags) || this.filtersObject.tags.length === 0) &&
+                     (!this.filtersObject.suscripcion || this.filtersObject.suscripcion === 'ANY') &&
+                     (!this.filtersObject.edad) &&
+                     (!Array.isArray(this.filtersObject.resoluciones) || this.filtersObject.resoluciones.length === 0);
+    return tagsEmpty && objEmpty;
   }
 
   ngOnInit(): void {
@@ -62,6 +93,9 @@ export class MultimediaListComponent implements OnInit, OnChanges {
       if (url.includes('/dashboard/videos') || url.includes('/multimedia/videos')) this.filtroTipo = 'VIDEO';
       else if (url.includes('/dashboard/audios') || url.includes('/multimedia/audios')) this.filtroTipo = 'AUDIO';
     }
+    // Guardar el filtro inicial para poder restaurarlo si el usuario aplica filtro por resolución
+    this.originalFiltroTipo = this.filtroTipo;
+
     this.route.queryParamMap.subscribe(params => {
       // Si hay tipoForzado, ignoramos el query param para mantener consistencia de la vista
       if (this.tipoForzado === 'VIDEO' || this.tipoForzado === 'AUDIO') {
@@ -93,26 +127,25 @@ export class MultimediaListComponent implements OnInit, OnChanges {
       next: (resp: PageResponse<ContenidoResumenDTO>) => {
         const items = resp.content || [];
 
-        // Log informativo para depuración: verificar si el backend envía tags en los resúmenes
-        const itemsWithTagsCount = items.filter(i => Array.isArray((i as any).tags) && (i as any).tags.length > 0).length;
-        const sample = items.slice(0, 10).map(i => ({ id: i.id, titulo: i.titulo, tipo: i.tipo, tags: (i as any).tags }));
-        console.info('📥 Contenidos recibidos (multimedia.listar):', { pagina: pagina, received: items.length, withTags: itemsWithTagsCount, sample });
-
-        // Determinar qué campos requiere el filtrado actual (solo tags por ahora, compatibilidad)
-        const needTags = Array.isArray(this.tagFilters) && this.tagFilters.length > 0;
-        const needEdad = false;
-        const needRes = false;
+        // Determinar qué campos requiere el filtrado actual
+        const needTags = Array.isArray(this.tagFilters) && this.tagFilters.length > 0 ||
+             (this.filtersObject && Array.isArray(this.filtersObject.tags) && this.filtersObject.tags.length > 0);
+        const needEdad = !!(this.filtersObject?.edad);
+        const needRes = !!(this.filtersObject?.resoluciones?.length);
 
         const itemsWithoutRequired = items.filter(i => {
           if (needTags && !Array.isArray((i as any).tags)) return true;
+          if (needEdad && typeof (i as any).edadvisualizacion !== 'number') return true;
+          if (needRes && typeof (i as any).resolucion !== 'string') return true;
           return false;
         });
 
         const proceed = (resolvedItems: ContenidoResumenDTO[]) => {
+
           // Aplicar filtro de tipo si corresponde
           let contenidoFiltrado = this.filtroTipo ? resolvedItems.filter(i => i.tipo === this.filtroTipo) : resolvedItems;
-          // Aplicar filtrado por tags: lógica AND (todos los seleccionados)
-          contenidoFiltrado = this.applyFilteringWithTags(contenidoFiltrado);
+          // Aplicar filtrado combinado (tags + suscripción + edad + resolución)
+          contenidoFiltrado = this.applyFilteringCombined(contenidoFiltrado);
 
           this.contenido = contenidoFiltrado;
           this.totalPaginas = typeof resp.totalPages === 'number' ? resp.totalPages : null;
@@ -125,22 +158,12 @@ export class MultimediaListComponent implements OnInit, OnChanges {
 
         if (itemsWithoutRequired.length > 0) {
           const calls = itemsWithoutRequired.map(it => this.multimedia.detalle(it.id).pipe(take(1)));
-          console.info(`🔎 Enriqueciendo items (filtros requieren campos): ${itemsWithoutRequired.length} llamadas a detalle`);
           forkJoin(calls).subscribe({
             next: (details: any[]) => {
-              for (const d of details) {
-                const match = items.find(i => i.id === d.id);
-                if (match) {
-                  (match as any).tags = Array.isArray(d.tags) ? d.tags : (match as any).tags || [];
-                  if (typeof d.edadvisualizacion === 'number') (match as any).edadvisualizacion = d.edadvisualizacion;
-                  if (typeof d.resolucion === 'string') (match as any).resolucion = d.resolucion;
-                }
-              }
-              console.info(`🔁 Detalles recibidos: ${details.length}`);
+              this.applyDetailsToItems(details, items);
               proceed(items);
             },
-            error: () => {
-              console.info('⚠️ Error al obtener detalles para enriquecer filtros, procediendo con los resúmenes');
+            error: (err) => {
               proceed(items);
             }
           });
@@ -149,7 +172,6 @@ export class MultimediaListComponent implements OnInit, OnChanges {
         }
       },
       error: (err) => {
-        console.error('Error cargando contenidos', err);
         this.errores = (err?.error?.mensaje) || 'No se pudo cargar el contenido';
         this.cargando = false;
         // Zoneless: asegurar refresco de vista
@@ -199,8 +221,134 @@ export class MultimediaListComponent implements OnInit, OnChanges {
   trackById(index: number, item: ContenidoResumenDTO): string { return item.id; }
 
   /**
-   * Filtrado simple por tags (AND): devuelve items que contienen todos los tags seleccionados.
-   * Mantiene compatibilidad con la API anterior que solo expone `tagFilters`.
+   * Filtrado combinado: tags (con lógica AND), suscripción, edad y resolución.
+   * Usa filtersObject si está disponible, sino cae a tagFilters para compatibilidad.
+   */
+  private applyFilteringCombined(items: ContenidoResumenDTO[]): ContenidoResumenDTO[] {
+    const fObj = this.filtersObject;
+    
+    // Extraer tags de manera más legible
+    let tags: string[] = [];
+    if (fObj && Array.isArray(fObj.tags)) {
+      tags = fObj.tags;
+    } else if (Array.isArray(this.tagFilters)) {
+      tags = this.tagFilters;
+    }
+    
+    const filters = {
+      tags: tags,
+      suscripcion: fObj ? (fObj.suscripcion || 'ANY') : 'ANY',
+      edad: fObj ? fObj.edad : null,
+      resoluciones: fObj && Array.isArray(fObj.resoluciones) ? fObj.resoluciones : []
+    };
+
+    // Si no hay filtros activos, devolver todos los items
+    const noFilters = filters.tags.length === 0 && filters.suscripcion === 'ANY' && 
+                      !filters.edad && filters.resoluciones.length === 0;
+    if (noFilters) return items;
+    
+    return items.filter(item => this.matchesAllFilters(item, filters));
+  }
+
+  private matchesAllFilters(item: ContenidoResumenDTO, filters: any): boolean {
+    return this.matchesTags(item, filters.tags) &&
+           this.matchesSuscripcion(item, filters.suscripcion) &&
+           this.matchesEdad(item, filters.edad) &&
+           this.matchesResolucion(item, filters.resoluciones);
+  }
+
+  private matchesTags(item: ContenidoResumenDTO, tags: string[]): boolean {
+    if (tags.length === 0) return true;
+    
+    const itemTags = (item as any).tags;
+    if (!Array.isArray(itemTags)) return false;
+    
+    return tags.every((tag: string) => itemTags.includes(tag));
+  }
+
+  private matchesSuscripcion(item: ContenidoResumenDTO, suscripcion: string): boolean {
+    if (suscripcion === 'ANY') return true;
+    if (suscripcion === 'VIP') return item.vip === true;
+    if (suscripcion === 'STANDARD') return item.vip === false;
+    return true;
+  }
+
+  private matchesEdad(item: ContenidoResumenDTO, edad: string | null): boolean {
+    if (!edad) return true;
+    
+    const itemEdad = (item as any).edadvisualizacion;
+    if (typeof itemEdad !== 'number') {
+      return false; // Si no tiene edad válida, no pasa filtro de edad
+    }
+    
+    if (edad === 'TP') {
+      return itemEdad === 0; // TP significa 0
+    }
+    if (edad === '18') {
+      return itemEdad >= 18; // +18 significa 18
+    }
+    
+    return true;
+  }
+
+  private matchesResolucion(item: ContenidoResumenDTO, resoluciones: string[]): boolean {
+    if (resoluciones.length === 0) return true;
+    
+    // Solo aplicar filtro de resolución a videos
+    if (item.tipo !== 'VIDEO') {
+      return true; // Los audios pasan automáticamente este filtro
+    }
+    
+    const itemResolucion = (item as any).resolucion;
+    if (typeof itemResolucion !== 'string') {
+      return false; // Si es video pero no tiene resolución, no pasa el filtro
+    }
+    
+    return resoluciones.includes(itemResolucion);
+  }
+
+  private applyDetailsToItems(details: any[], items: ContenidoResumenDTO[]): void {
+    for (const d of details) {
+      const match = items.find(i => i.id === d.id);
+      if (!match) continue;
+
+      // Aplicar tags, edad y resolución
+      const tagsFromDetail = this.extractTagsFromDetail(d);
+      (match as any).tags = tagsFromDetail ?? (match as any).tags ?? [];
+
+      const edadFromDetail = this.extractEdadFromDetail(d);
+      if (typeof edadFromDetail === 'number') (match as any).edadvisualizacion = edadFromDetail;
+
+      const resolFromDetail = this.extractResolucionFromDetail(d);
+      if (resolFromDetail) {
+        (match as any).resolucion = resolFromDetail;
+      }
+    }
+  }
+
+  private extractTagsFromDetail(d: any): string[] | undefined {
+    if (Array.isArray(d.tags)) return d.tags;
+    if (Array.isArray(d.tag_list)) return d.tag_list;
+    if (Array.isArray(d.tags_list)) return d.tags_list;
+    return undefined;
+  }
+
+  private extractEdadFromDetail(d: any): number | undefined {
+    if (typeof d.edadvisualizacion === 'number') return d.edadvisualizacion;
+    if (typeof d.edad === 'number') return d.edad;
+    if (typeof d.edadVisualizacion === 'number') return d.edadVisualizacion;
+    return undefined;
+  }
+
+  private extractResolucionFromDetail(d: any): string | undefined {
+    if (typeof d.resolucion === 'string') return d.resolucion;
+    if (typeof d.resolution === 'string') return d.resolution;
+    if (typeof d.resolucion_video === 'string') return d.resolucion_video;
+    return undefined;
+  }
+
+  /**
+   * Filtrado simple por tags
    */
   private applyFilteringWithTags(items: ContenidoResumenDTO[]): ContenidoResumenDTO[] {
     if (!Array.isArray(this.tagFilters) || this.tagFilters.length === 0) return items;

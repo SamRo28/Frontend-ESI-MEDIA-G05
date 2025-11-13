@@ -105,9 +105,10 @@
         <div *ngIf="activeContentType==='video'" class="lane resolucion-lane">
           <h4>Resolución</h4>
           <div class="res-options">
-            <button class="option-btn" (click)="toggleResolution('720p')" [class.selected]="selectedResolutions.includes('720p')" type="button">720p</button>
-            <button class="option-btn" (click)="toggleResolution('1080p')" [class.selected]="selectedResolutions.includes('1080p')" type="button">1080p</button>
-            <button class="option-btn" *ngIf="selectedSuscripcion !== 'STANDARD'" (click)="toggleResolution('2160p')" [class.selected]="selectedResolutions.includes('2160p')" type="button">4K</button>
+            <button class="option-btn" (click)="selectResolution(null)" [class.selected]="selectedResolution===null" type="button">Todos</button>
+            <button class="option-btn" (click)="selectResolution('720p')" [class.selected]="selectedResolution==='720p'" type="button">720p</button>
+            <button class="option-btn" (click)="selectResolution('1080p')" [class.selected]="selectedResolution==='1080p'" type="button">1080p</button>
+            <button class="option-btn" *ngIf="selectedSuscripcion !== 'STANDARD'" (click)="selectResolution('2160p')" [class.selected]="selectedResolution==='2160p'" type="button">4K</button>
           </div>
         </div>
 
