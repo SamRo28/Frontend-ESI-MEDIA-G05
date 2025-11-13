@@ -16,13 +16,6 @@ steps:
     npm install -g firebase-tools
   displayName: 'Instalar Firebase CLI'
 
-- ⁠script: |
-
-    cd esi_media
-    sonar-scanner -D sonar.host.url=$(SONAR_HOST_URL) -D sonar.login=$(SONAR_TOKEN)
-    
-  displayName: 'Run SonarQube Analysis (CLI, Windows)'
-
 # Build + Deploy Angular
 - script: |
     cd esi-media
