@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "esi-media/dist/esi-media/browser",
+    "public": "dist/esi-media",
     "ignore": [
       "firebase.json",
       "**/.*",
