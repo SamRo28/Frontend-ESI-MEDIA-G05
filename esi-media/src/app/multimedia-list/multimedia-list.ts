@@ -37,11 +37,23 @@ export class MultimediaListComponent implements OnInit, OnChanges {
   constructor(private multimedia: MultimediaService, private route: ActivatedRoute, private router: Router) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    // Detectar cambios en tagFilters o filtersObject
-    const tagChange = changes['tagFilters'] && !changes['tagFilters'].firstChange;
-    const objChange = changes['filtersObject'] && !changes['filtersObject'].firstChange;
-    
+    // Detectar cambios en tagFilters o filtersObject (incluye la primera emisión)
+    const tagChange = !!changes['tagFilters'];
+    const objChange = !!changes['filtersObject'];
+
     if (tagChange || objChange) {
+      // Si viene un modo especial 'top-contents', mostrar directamente esos contenidos (modo exclusivo)
+      if (this.filtersObject?.specialMode === 'top-contents') {
+        const contents = this.filtersObject?.specialPayload?.contents ?? [];
+        // Intentamos mapear a ContenidoResumenDTO si vienen campos necesarios
+        this.contenido = Array.isArray(contents) ? contents as ContenidoResumenDTO[] : [];
+        this.pagina = 0;
+        this.totalPaginas = this.contenido.length > 0 ? 1 : 0;
+        this.totalElementos = this.contenido.length;
+        this.cargando = false;
+        this.cdr.markForCheck();
+        return;
+      }
       // Si hay filtro de resoluciones distinto de vacío, forzamos tipo VIDEO
       const resCount = this.filtersObject?.resoluciones?.length || 0;
       if (resCount > 0 && !this.forcedByResolution) {
@@ -123,6 +135,8 @@ export class MultimediaListComponent implements OnInit, OnChanges {
     this.errores = null;
     // Zoneless: asegurar refresco de vista
     this.cdr.markForCheck();
+    // Forzar evaluación inmediata de change detection (intento de mitigar problemas de sincronización)
+    this.cdr.detectChanges();
     this.multimedia.listar(pagina, this.tamano, this.filtroTipo ?? undefined).subscribe({
       next: (resp: PageResponse<ContenidoResumenDTO>) => {
         const items = resp.content || [];
@@ -239,7 +253,10 @@ export class MultimediaListComponent implements OnInit, OnChanges {
       tags: tags,
       suscripcion: fObj ? (fObj.suscripcion || 'ANY') : 'ANY',
       edad: fObj ? fObj.edad : null,
-      resoluciones: fObj && Array.isArray(fObj.resoluciones) ? fObj.resoluciones : []
+      resoluciones: fObj && Array.isArray(fObj.resoluciones) ? fObj.resoluciones : [],
+      // specialMode / specialPayload (si vienen)
+      specialMode: fObj ? fObj.specialMode : undefined,
+      specialPayload: fObj ? fObj.specialPayload : undefined
     };
 
     // Si no hay filtros activos, devolver todos los items
@@ -251,18 +268,23 @@ export class MultimediaListComponent implements OnInit, OnChanges {
   }
 
   private matchesAllFilters(item: ContenidoResumenDTO, filters: any): boolean {
-    return this.matchesTags(item, filters.tags) &&
+    // Si es un modo especial top-tags, aplicar solo la comprobación de tags (OR)
+    if (filters?.specialMode === 'top-tags') {
+      return this.matchesTags(item, filters.tags, filters);
+    }
+    return this.matchesTags(item, filters.tags, filters) &&
            this.matchesSuscripcion(item, filters.suscripcion) &&
            this.matchesEdad(item, filters.edad) &&
            this.matchesResolucion(item, filters.resoluciones);
   }
 
-  private matchesTags(item: ContenidoResumenDTO, tags: string[]): boolean {
-    if (tags.length === 0) return true;
-    
+  private matchesTags(item: ContenidoResumenDTO, tags: string[], filters?: any): boolean {
+    if (!Array.isArray(tags) || tags.length === 0) return true;
+
     const itemTags = (item as any).tags;
     if (!Array.isArray(itemTags)) return false;
-    
+
+
     return tags.every((tag: string) => itemTags.includes(tag));
   }
 

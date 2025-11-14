@@ -55,6 +55,17 @@
           [disabled]="contentType !== 'all'">
           🎵 Audio
         </button>
+        <button
+          *ngIf="allowSpecial"
+          type="button"
+          class="type-btn special"
+          [class.active]="activeContentType === 'special'"
+          (click)="openSpecial()"
+          [attr.aria-pressed]="activeContentType === 'special'"
+          [attr.aria-disabled]="contentType !== 'all' ? true : null"
+          [disabled]="contentType !== 'all'">
+          ✨ Especial
+        </button>
       </div>
 
       <!-- Primera pantalla: elegir tipo o limpiar/aplicar rápido -->
@@ -72,7 +83,51 @@
 
       <!-- Pantalla de lanes con opciones avanzadas -->
       <div *ngIf="!initialScreen" class="lanes-screen">
-        <div class="lane tags-lane">
+        <!-- Especial panel -->
+        <div *ngIf="activeContentType === 'special'" class="lane special-lane">
+          <h4>✨Especial</h4>
+          <div class="special-options">
+            <button class="option-btn" (click)="selectSpecialMode('top-contents')" [class.selected]="selectedSpecialMode==='top-contents'" type="button">🔥TOP 5 CONTENIDOS con más REPRODUCCIONES🔥</button>
+            <button class="option-btn" (click)="selectSpecialMode('top-tags')" [class.selected]="selectedSpecialMode==='top-tags'" type="button">🏷️TOP 5 TAGS🏷️</button>
+            <button class="option-btn" (click)="selectSpecialMode('top-rated')" [class.selected]="selectedSpecialMode==='top-rated'" type="button">⭐TOP 5 CONTENIDOS mejor VALORADOS⭐ (🔜Próximamente🔜)</button>
+          </div>
+
+          <div class="special-results">
+            <div *ngIf="loadingSpecial">Cargando...</div>
+            <div *ngIf="specialError" class="special-error">{{ specialError }}</div>
+
+            <div *ngIf="selectedSpecialMode==='top-tags' && topTagsResults.length>0">
+              <h5>TOP 5 TAGS</h5>
+              <div class="special-message">Selecciona los tags que quieres aplicar (puedes elegir varios).</div>
+              <div class="tags-grid special-tags-grid">
+                <button
+                  *ngFor="let t of topTagsResults"
+                  class="tag-option"
+                  type="button"
+                  (click)="toggleTag(t.tag)"
+                  [class.selected]="isTagSelected(t.tag)"
+                  [attr.aria-pressed]="isTagSelected(t.tag)">
+                  {{ t.label }}
+                </button>
+              </div>
+              <div class="panel-actions">
+                <button class="action-button clear-button" (click)="clearFilters()" type="button">🗑️ Limpiar</button>
+                <button class="action-button apply-button" (click)="applyTopTagsAsFilters()" type="button">✓ Aplicar filtros</button>
+              </div>
+            </div>
+
+            <div *ngIf="selectedSpecialMode==='top-contents' && topContentsResults.length>0">
+              <h5>TOP 5 CONTENIDOS CON MÁS REPRODUCCIONES</h5>
+              <div class="special-message">Se aplicarán los Top 5 contenidos con más reproducciones.</div>
+              <div class="panel-actions">
+                <button class="action-button clear-button" (click)="clearFilters()" type="button">🗑️ Limpiar</button>
+                <button class="action-button apply-button" (click)="applyTopContentsAsSpecial()" type="button">✓ Aplicar filtros</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="activeContentType!=='special'" class="lane tags-lane">
           <h4>🏷️Tags</h4>
           <div class="tags-grid">
             <button
@@ -87,7 +142,7 @@
           </div>
         </div>
 
-        <div class="lane suscripcion-lane">
+        <div *ngIf="activeContentType!=='special'" class="lane suscripcion-lane">
           <h4>👑Suscripción</h4>
           <div class="sus-options">
             <button class="option-btn" (click)="setSuscripcion('ANY')" [class.selected]="selectedSuscripcion==='ANY'" type="button">Todos</button>
@@ -96,7 +151,7 @@
           </div>
         </div>
 
-        <div class="lane edad-lane">
+        <div *ngIf="activeContentType!=='special'" class="lane edad-lane">
           <h4>🔞Edad</h4>
           <div class="edad-options">
             <button class="option-btn" (click)="selectedEdad=null" [class.selected]="selectedEdad===null" type="button">Todos</button>
@@ -115,7 +170,7 @@
           </div>
         </div>
 
-        <div class="panel-actions">
+        <div *ngIf="activeContentType!=='special'" class="panel-actions">
           <button class="action-button clear-button" (click)="clearFilters()" type="button">🗑️ Limpiar</button>
           <button class="action-button apply-button" (click)="applyFilters()" type="button">✓ Aplicar filtros</button>
         </div>
