@@ -23,14 +23,30 @@ steps:
  #   cd esi-media
    # sonar-scanner -Dsonar.host.url=%SONAR_HOST_URL% -Dsonar.token=%SONAR_TOKEN%
   #displayName: 'Run SonarQube Analysis (CLI, Windows)'
-  env:
-    SONAR_HOST_URL: $(SONAR_HOST_URL)
-    SONAR_TOKEN: $(SONAR_TOKEN)
+  #env:
+    #SONAR_HOST_URL: $(SONAR_HOST_URL)
+    #SONAR_TOKEN: $(SONAR_TOKEN)
 
 # Build + Deploy Angular
+# Moverse al directorio de trabajo primero
 - script: |
     cd esi-media
+  displayName: 'Mover a carpeta esi-media'
+
+# Instalar dependencias
+- script: |
     npm install
+  displayName: 'Instalar dependencias (npm install)'
+  workingDirectory: 'esi-media' # Ejecutar dentro de esta carpeta
+
+# Compilar para producción
+- script: |
     npm run build -- --configuration=production
+  displayName: 'Compilar Angular (production)'
+  workingDirectory: 'esi-media' # Ejecutar dentro de esta carpeta
+
+# Desplegar en Firebase
+- script: |
     firebase deploy --only hosting --token $(FIREBASE_TOKEN)
-  displayName: 'Compilar Angular y desplegar en Firebase Hosting'
+  displayName: 'Desplegar en Firebase Hosting'
+  workingDirectory: 'esi-media' # Ejecutar dentro de esta carpeta
