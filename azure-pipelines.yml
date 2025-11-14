@@ -45,6 +45,12 @@ steps:
   displayName: 'Compilar Angular (production)'
   workingDirectory: 'esi-media' # Ejecutar dentro de esta carpeta
 
+- script: |
+    ls -R dist
+  displayName: 'Debug: Listar archivos en /dist'
+  workingDirectory: 'esi-media' # Ejecutar dentro de esta carpeta
+
+
 # Desplegar en Firebase
 - script: |
     firebase deploy --only hosting --token $(FIREBASE_TOKEN)
