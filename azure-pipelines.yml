@@ -46,7 +46,7 @@ steps:
   workingDirectory: 'esi-media' # Ejecutar dentro de esta carpeta
 
 - script: |
-    ls -R dist
+    dir /s dist
   displayName: 'Debug: Listar archivos en /dist'
   workingDirectory: 'esi-media' # Ejecutar dentro de esta carpeta
 
