@@ -53,6 +53,6 @@ steps:
 
 # Desplegar en Firebase
 - script: |
-    firebase deploy --only hosting --token $(FIREBASE_TOKEN)
+    firebase deploy --only hosting --token $(FIREBASE_TOKEN) --debug
   displayName: 'Desplegar en Firebase Hosting'
   workingDirectory: 'esi-media' # Ejecutar dentro de esta carpeta

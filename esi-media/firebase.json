@@ -9,7 +9,7 @@
     "rewrites": [
       {
         "source": "**",
-        "destination": "/dist/esi-media/server/index.server.html"
+        "destination": "dist/esi-media/browser/index.csr.html"
       }
     ],
     "headers": [
