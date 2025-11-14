@@ -41,42 +41,52 @@ export class MultimediaListComponent implements OnInit, OnChanges {
     const tagChange = !!changes['tagFilters'];
     const objChange = !!changes['filtersObject'];
 
-    if (tagChange || objChange) {
-      // Si viene un modo especial 'top-contents', mostrar directamente esos contenidos (modo exclusivo)
-      if (this.filtersObject?.specialMode === 'top-contents') {
-        const contents = this.filtersObject?.specialPayload?.contents ?? [];
-        // Intentamos mapear a ContenidoResumenDTO si vienen campos necesarios
-        this.contenido = Array.isArray(contents) ? contents as ContenidoResumenDTO[] : [];
-        this.pagina = 0;
-        this.totalPaginas = this.contenido.length > 0 ? 1 : 0;
-        this.totalElementos = this.contenido.length;
-        this.cargando = false;
-        this.cdr.markForCheck();
-        return;
-      }
-      // Si hay filtro de resoluciones distinto de vacío, forzamos tipo VIDEO
-      const resCount = this.filtersObject?.resoluciones?.length || 0;
-      if (resCount > 0 && !this.forcedByResolution) {
-        // guardar el tipo previo y forzar VIDEO
-        this.originalFiltroTipo = this.originalFiltroTipo ?? this.filtroTipo;
-        this.filtroTipo = 'VIDEO';
-        this.forcedByResolution = true;
-      }
-      // Si se han limpiado las resoluciones y nosotros forzamos el tipo, restaurar
-      if (resCount === 0 && this.forcedByResolution) {
-        this.filtroTipo = this.originalFiltroTipo;
-        this.forcedByResolution = false;
-      }
+    if (!(tagChange || objChange)) return;
 
-      // Si se han limpiado todos los filtros, limpiar cache y recargar página actual
-      const noFilters = this.isFiltersEmpty();
-      if (noFilters) {
-        this.multimedia.clearCache();
-        this.cargar(this.pagina);
-      } else {
-        // Aplicar filtros: ir a página 0
-        this.cargar(0);
-      }
+    // Si viene un modo especial 'top-contents', manejar y salir temprano
+    if (this.handleSpecialModeEarlyReturn()) return;
+
+    // Forzar tipo por resolución si aplica
+    this.handleResolutionForcing();
+
+    // Si se han limpiado todos los filtros, limpiar cache y recargar página actual
+    const noFilters = this.isFiltersEmpty();
+    if (noFilters) {
+      this.multimedia.clearCache();
+      this.cargar(this.pagina);
+    } else {
+      // Aplicar filtros: ir a página 0
+      this.cargar(0);
+    }
+  }
+
+  private handleSpecialModeEarlyReturn(): boolean {
+    if (this.filtersObject?.specialMode === 'top-contents') {
+      const contents = this.filtersObject?.specialPayload?.contents ?? [];
+      // Intentamos mapear a ContenidoResumenDTO si vienen campos necesarios
+      this.contenido = Array.isArray(contents) ? contents as ContenidoResumenDTO[] : [];
+      this.pagina = 0;
+      this.totalPaginas = this.contenido.length > 0 ? 1 : 0;
+      this.totalElementos = this.contenido.length;
+      this.cargando = false;
+      this.cdr.markForCheck();
+      return true;
+    }
+    return false;
+  }
+
+  private handleResolutionForcing(): void {
+    const resCount = this.filtersObject?.resoluciones?.length || 0;
+    if (resCount > 0 && !this.forcedByResolution) {
+      // guardar el tipo previo y forzar VIDEO
+      this.originalFiltroTipo = this.originalFiltroTipo ?? this.filtroTipo;
+      this.filtroTipo = 'VIDEO';
+      this.forcedByResolution = true;
+    }
+    // Si se han limpiado las resoluciones y nosotros forzamos el tipo, restaurar
+    if (resCount === 0 && this.forcedByResolution) {
+      this.filtroTipo = this.originalFiltroTipo;
+      this.forcedByResolution = false;
     }
   }
 
@@ -367,19 +377,6 @@ export class MultimediaListComponent implements OnInit, OnChanges {
     if (typeof d.resolution === 'string') return d.resolution;
     if (typeof d.resolucion_video === 'string') return d.resolucion_video;
     return undefined;
-  }
-
-  /**
-   * Filtrado simple por tags
-   */
-  private applyFilteringWithTags(items: ContenidoResumenDTO[]): ContenidoResumenDTO[] {
-    if (!Array.isArray(this.tagFilters) || this.tagFilters.length === 0) return items;
-    const selected = this.tagFilters;
-    return items.filter(item => {
-      const tags = (item as any).tags;
-      if (!Array.isArray(tags)) return false;
-      return selected.every((t: string) => tags.includes(t));
-    });
   }
 
   private prefetchSiguiente(): void {
