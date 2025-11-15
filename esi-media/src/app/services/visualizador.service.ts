@@ -27,6 +27,12 @@ export interface RegistroResponse {
   exitoso: boolean;
   mensaje: string;
   visualizador?: any;
+  token?: string;
+}
+
+export interface EstadoActivacionResponse {
+  activated: boolean;
+  token?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -93,5 +99,13 @@ export class VisualizadorService {
         return throwError(() => ({ errors: [{ field: 'general', message: 'Error de conexión con el servidor' }] }));
       })
     );
+  }
+
+  activarCuenta(token: string): Observable<RegistroResponse> {
+    return this.http.post<RegistroResponse>(`${this.apiUrl}/activar`, { token });
+  }
+
+  estadoActivacion(email: string): Observable<EstadoActivacionResponse> {
+    return this.http.get<EstadoActivacionResponse>(`${this.apiUrl}/estado-activacion`, { params: { email } });
   }
 }
