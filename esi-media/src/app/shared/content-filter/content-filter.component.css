@@ -144,6 +144,20 @@
   font-weight: 700;
 }
 
+.panel-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.panel-subtitle {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  font-weight: 500;
+  font-style: italic;
+}
+
 .panel-icon {
   font-size: 24px;
 }
@@ -172,6 +186,55 @@
 .tags-section {
   padding: 24px;
 }
+
+/* Lanes: mejorar contraste y separación para que sean legibles sobre el fondo oscuro */
+.lane {
+  padding: 16px 24px;
+  margin: 8px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02); /* sutilmente más claro que el panel */
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.lane h4 {
+  margin: 0 0 12px 0;
+  color: #dbe9ff; /* encabezados claros */
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.special-lane {
+  padding: 16px 24px;
+  margin: 8px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.special-desc {
+  margin: 6px 0 12px 0;
+  color: rgba(255,255,255,0.8);
+  font-style: italic;
+  font-size: 13px;
+}
+.top-contents-list { list-style: none; padding: 0; margin: 0 0 12px 0; }
+.top-contents-item { display:flex; justify-content:space-between; align-items:center; gap:12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.top-contents-item .title { color: #ffffff; font-weight: 700; font-size: 14px; }
+.top-contents-item .views { color: rgba(255,255,255,0.62); font-size: 12px; font-weight: 600; }
+.muted { color: rgba(255,255,255,0.6); font-size: 12px; margin-left: 6px; }
+
+/* Estilo específico para encabezados dentro de special-results para mantener consistencia */
+.special-results h5 {
+  margin: 0 0 8px 0;
+  color: #dbe9ff;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+}
+
+/* Reservar espacio durante 'Cargando...' para evitar parpadeos de layout */
+.special-results { min-height: 80px; }
+.special-results > div { color: rgba(255,255,255,0.9); }
 
 .tags-grid {
   display: grid;
@@ -210,26 +273,50 @@
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
+/* Ajustes específicos para el subpanel 'Especial' (tags mostrados sin contador) */
+.special-tags-grid .tag-option { padding: 10px 14px; font-weight: 600; }
+
+
 .tag-option.selected:hover {
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
   transform: translateY(-2px);
+}
+
+/* Mensajes / errores del panel especial: contraste y legibilidad mejorados */
+.special-error {
+  background: rgba(255, 69, 58, 0.12);
+  color: #ffdddd;
+  border: 1px solid rgba(255, 69, 58, 0.25);
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin: 8px 0 12px 0;
+  font-weight: 600;
+}
+
+.special-message {
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255,255,255,0.9);
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin: 8px 0 12px 0;
 }
 
 /* Botones usados por Suscripción, Edad y Resolución */
 .option-btn {
   padding: 10px 12px;
   border-radius: 8px;
-  border: 2px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255,255,255,0.02);
-  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255,255,255,0.04);
+  color: #f3f7ff;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.18s ease;
   margin: 6px 6px 0 0;
+  box-shadow: none;
 }
 
-.option-btn:hover { background: rgba(255,255,255,0.04); transform: translateY(-2px); }
+.option-btn:hover { background: rgba(255,255,255,0.06); transform: translateY(-2px); }
 .option-btn.selected { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-color: #667eea; color: #fff; box-shadow: 0 6px 18px rgba(102,126,234,0.25); }
 
 .sus-options, .edad-options, .res-options { display:flex; flex-wrap:wrap; gap:8px; padding: 12px 24px; }
