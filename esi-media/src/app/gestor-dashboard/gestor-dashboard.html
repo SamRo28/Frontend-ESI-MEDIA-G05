@@ -25,6 +25,10 @@
         <button class="btn-upload-header" (click)="navigateToUpload()">
           ⬆️ Subir Contenido
         </button>
+        <!-- Botón de Gestionar Contenidos añadido aquí -->
+        <button type="button" class="btn-gestion-contenidos" (click)="navigateToGestionContenidos()">
+          Gestionar Contenidos
+        </button>
         <button class="btn-listas-header" 
                 (click)="toggleGestionListas()" 
                 [class.active]="mostrarGestionListas">
@@ -73,13 +77,12 @@
           <!-- Información del Dashboard -->
           <div class="dashboard-info">
             <p class="info-text">
-              Utiliza el botón "Subir Contenido" en la barra superior para agregar nuevo contenido {{ gestorType === 'video' ? 'de video' : 'de audio' }}.
+              Utiliza los botones de la parte superior para subir contenido, gestionar todos los contenidos o administrar tus listas.
             </p>
           </div>
         </div>
       </section>
 
-      <!-- Tips y Guías Rápidas -->
       <section class="tips-section">
         <div class="tips-content">
           <h2 class="tips-title">💡 Guía Rápida</h2>
@@ -109,10 +112,9 @@
               <div class="tip-icon">👍</div>
               <h4>Clasifica tu contenido</h4>
               <ul>
-                <li>Conviértete en experto en una especialización</li>
-                <li>Selecciona tags apropiados</li>
-                <li>Define la edad mínima para su reproducción</li>
-                <li>Añade descripciones detalladas</li>
+                <li>Elige bien los tags</li>
+                <li>Define la edad mínima adecuada</li>
+                <li>Añade descripciones claras y precisas</li>
               </ul>
             </div>
           </div>

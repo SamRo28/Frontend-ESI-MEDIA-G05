@@ -66,6 +66,51 @@ export interface BackendError {
   errors?: { [key: string]: string };
 }
 
+// Gestión de contenidos para Gestor
+export interface GestorContenidoResumen {
+  id: string;
+  titulo: string;
+  tipo: 'AUDIO' | 'VIDEO';
+  vip: boolean;
+  resolucion?: string | null;
+}
+
+export interface GestorContenidoPage {
+  content: GestorContenidoResumen[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
+
+export interface GestorContenidoDetalle {
+  id: string;
+  titulo: string;
+  descripcion: string;
+  tipo: 'AUDIO' | 'VIDEO';
+  caratula?: any;
+  vip: boolean;
+  duracion: number;
+  estado: boolean;
+  fechaDisponibleHasta?: string | null;
+  edadVisualizacion: number;
+  nvisualizaciones: number;
+  tags: string[];
+  referenciaReproduccion: string;
+  resolucion?: string | null;
+}
+
+export interface GestorContenidoUpdatePayload {
+  titulo: string;
+  descripcion: string;
+  tags: string[];
+  vip: boolean;
+  estado: boolean;
+  edadVisualizacion: number;
+  fechaDisponibleHasta?: string | null;
+  caratula?: any;
+}
+
 @Injectable({
   providedIn: 'root'
 })
