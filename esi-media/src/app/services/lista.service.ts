@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Lista } from '../model/lista';
+import { environment } from '../../environments/environment';
 
 /**
  * Interfaz para la respuesta del backend al crear/editar listas
@@ -50,7 +51,7 @@ export interface ContenidoResponse {
   providedIn: 'root'
 })
 export class ListaService {
-  private readonly baseUrl = 'http://localhost:8080/listas';
+  private readonly baseUrl = `${environment.apiUrl}/listas`;
 
   constructor(private readonly http: HttpClient) {}
 

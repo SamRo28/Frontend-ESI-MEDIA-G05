@@ -484,8 +484,10 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   }
   // ---- Textos de apoyo para mostrar siempre los campos ----
   edadTexto(): string {
-    const e: any = (this.detalle as any)?.edadvisualizacion;
-    if (typeof e === 'number' && e > 0) return `${e}+`;
+    // Preferimos la propiedad camelCase del backend, con fallback al nombre antiguo
+    const anyDet: any = this.detalle as any;
+    const e: any = (anyDet?.edadVisualizacion);
+    if (typeof e === 'number' && e > 0) return `${e}`;
     return 'Para todos los públicos';
   }
 
@@ -507,7 +509,8 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   }
 
   fechaDisponibleTexto(): string {
-    const d: any = (this.detalle as any)?.fechadisponiblehasta;
+    const anyDet: any = this.detalle as any;
+    const d: any = (anyDet?.fechaDisponibleHasta ?? anyDet?.fechadisponiblehasta);
     if (!d) return 'Sin fecha de caducidad';
     return this.formatFecha(d);
   }

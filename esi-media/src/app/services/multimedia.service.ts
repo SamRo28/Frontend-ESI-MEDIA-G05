@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { shareReplay, take } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface ContenidoResumenDTO {
   id: string;
@@ -9,7 +10,9 @@ export interface ContenidoResumenDTO {
   tipo: 'AUDIO' | 'VIDEO';
   caratula?: any;
   vip: boolean;
-  tags?: string[]; // Añadido para permitir filtrado
+  tags?: string[];
+  edadVisualizacion?: number;
+  resolucion?: string;
 }
 
 export interface ContenidoDetalleDTO {
@@ -21,11 +24,12 @@ export interface ContenidoDetalleDTO {
   vip: boolean;
   duracion?: number; // en segundos
   // Nuevos campos para enriquecer el detalle
-  fechadisponiblehasta?: string | Date; // Spring suele serializar Date como ISO string
-  edadvisualizacion?: number;
+  fechaDisponibleHasta?: string | Date;
+  edadVisualizacion?: number;
   nvisualizaciones?: number;
   tags?: string[];
   referenciaReproduccion: string;
+  resolucion?: string; // Campo que faltaba para videos
 }
 
 export interface PageResponse<T> {
@@ -39,7 +43,7 @@ export interface PageResponse<T> {
 
 @Injectable({ providedIn: 'root' })
 export class MultimediaService {
-  private readonly baseUrl = 'http://localhost:8080/multimedia';
+  private readonly baseUrl = `${environment.apiUrl}/multimedia`;
   private pageCache = new Map<string, Observable<PageResponse<ContenidoResumenDTO>>>();
 
   constructor(private http: HttpClient) {}

@@ -30,48 +30,92 @@
         </button>
       </div>
 
-      <!-- Lista de tags disponibles -->
-      <div class="tags-section">
-        <div class="tags-grid">
-          <button
-            *ngFor="let tag of availableTags"
-            class="tag-option"
-            [class.selected]="isTagSelected(tag.value)"
-            (click)="toggleTag(tag.value)"
-            [attr.aria-pressed]="isTagSelected(tag.value)"
-            type="button">
-            {{ tag.label }}
-          </button>
+      <!-- SWITCH CLARO: botones grandes para seleccionar Vídeo / Audio -->
+      <div class="type-switch" role="tablist" aria-label="Seleccionar tipo de contenido">
+        <button
+          type="button"
+          class="type-btn video"
+          [class.active]="activeContentType === 'video'"
+          (click)="selectContentType('video')"
+          [attr.aria-pressed]="activeContentType === 'video'"
+          [attr.aria-disabled]="contentType !== 'all' ? true : null"
+          [disabled]="contentType !== 'all'">
+          🎬 Vídeo
+        </button>
+        <button
+          type="button"
+          class="type-btn audio"
+          [class.active]="activeContentType === 'audio'"
+          (click)="selectContentType('audio')"
+          [attr.aria-pressed]="activeContentType === 'audio'"
+          [attr.aria-disabled]="contentType !== 'all' ? true : null"
+          [disabled]="contentType !== 'all'">
+          🎵 Audio
+        </button>
+      </div>
+
+      <!-- Primera pantalla: elegir tipo o limpiar/aplicar rápido -->
+      <div *ngIf="initialScreen" class="initial-screen">
+        <div class="type-choices">
+          <button class="type-option" (click)="selectContentType('video')" type="button">🎬 Vídeo</button>
+          <button class="type-option" (click)="selectContentType('audio')" type="button">🎵 Audio</button>
+        </div>
+
+        <div class="initial-actions">
+          <button class="action-button clear-button" (click)="clearFilters()" type="button">🗑️ Limpiar</button>
+          <button class="action-button apply-button" (click)="applyFilters()" [disabled]="!allowApplyFromInitial" type="button">✓ Aplicar</button>
         </div>
       </div>
 
-      <!-- Información de selección actual -->
-      <div class="selection-info" *ngIf="selectedCount > 0">
-        <p class="selection-text">
-          <strong>{{ selectedCount }}</strong> 
-          {{ selectedCount === 1 ? 'categoría seleccionada' : 'categorías seleccionadas' }}
-        </p>
-        <p class="selection-tags">{{ getSelectedTagsText() }}</p>
-      </div>
+      <!-- Pantalla de lanes con opciones avanzadas -->
+      <div *ngIf="!initialScreen" class="lanes-screen">
+        <div class="lane tags-lane">
+          <h4>Tags</h4>
+          <div class="tags-grid">
+            <button
+              *ngFor="let tag of availableTags"
+              class="tag-option"
+              [class.selected]="isTagSelected(tag.value)"
+              (click)="toggleTag(tag.value)"
+              [attr.aria-pressed]="isTagSelected(tag.value)"
+              type="button">
+              {{ tag.label }}
+            </button>
+          </div>
+        </div>
 
-      <!-- Botones de acción -->
-      <div class="panel-actions">
-        <button 
-          class="action-button clear-button" 
-          (click)="clearFilters()"
-          [disabled]="selectedCount === 0"
-          type="button">
-          <span class="button-icon">🗑️</span>
-          Limpiar
-        </button>
-        
-        <button 
-          class="action-button apply-button" 
-          (click)="applyFilters()"
-          type="button">
-          <span class="button-icon">✓</span>
-          Aplicar filtros
-        </button>
+        <div class="lane suscripcion-lane">
+          <h4>Suscripción</h4>
+          <div class="sus-options">
+            <button class="option-btn" (click)="selectedSuscripcion='ANY'" [class.selected]="selectedSuscripcion==='ANY'" type="button">Todos</button>
+            <button class="option-btn" (click)="selectedSuscripcion='VIP'" [class.selected]="selectedSuscripcion==='VIP'" type="button">VIP</button>
+            <button class="option-btn" (click)="selectedSuscripcion='STANDARD'" [class.selected]="selectedSuscripcion==='STANDARD'" type="button">Estándar</button>
+          </div>
+        </div>
+
+        <div class="lane edad-lane">
+          <h4>Edad</h4>
+          <div class="edad-options">
+            <button class="option-btn" (click)="selectedEdad=null" [class.selected]="selectedEdad===null" type="button">Todos</button>
+            <button class="option-btn" (click)="selectedEdad='TP'" [class.selected]="selectedEdad==='TP'" type="button">TP</button>
+            <button class="option-btn" (click)="selectedEdad='18'" [class.selected]="selectedEdad==='18'" type="button">+18</button>
+          </div>
+        </div>
+
+        <div *ngIf="activeContentType==='video'" class="lane resolucion-lane">
+          <h4>Resolución</h4>
+          <div class="res-options">
+            <button class="option-btn" (click)="selectResolution(null)" [class.selected]="selectedResolution===null" type="button">Todos</button>
+            <button class="option-btn" (click)="selectResolution('720p')" [class.selected]="selectedResolution==='720p'" type="button">720p</button>
+            <button class="option-btn" (click)="selectResolution('1080p')" [class.selected]="selectedResolution==='1080p'" type="button">1080p</button>
+            <button class="option-btn" *ngIf="selectedSuscripcion !== 'STANDARD'" (click)="selectResolution('2160p')" [class.selected]="selectedResolution==='2160p'" type="button">4K</button>
+          </div>
+        </div>
+
+        <div class="panel-actions">
+          <button class="action-button clear-button" (click)="clearFilters()" type="button">🗑️ Limpiar</button>
+          <button class="action-button apply-button" (click)="applyFilters()" type="button">✓ Aplicar filtros</button>
+        </div>
       </div>
     </div>
   </div>
