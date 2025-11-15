@@ -123,19 +123,6 @@
   </crear-lista>
 </dialog>
 
-<!-- Modal para configuración de usuario -->
-<div class="modal-backdrop" *ngIf="showConfigModal" (click)="closeConfigUserModal()" (keydown)="$event.key === 'Escape' && closeConfigUserModal()"></div>
-<dialog class="modal-container" [attr.open]="showConfigModal ? true : null">
-  <app-config-user 
-    [modal]="true"
-    (cerrar)="closeConfigUserModal()"
-    (actualizado)="onUserUpdated($event)">
-  </app-config-user>
-</dialog>
-
-
-
-
 <!-- Modal Cuenta (Perfil Visualizador) -->
 <div class="modal-backdrop" *ngIf="showCuentaModal" (click)="closeCuentaModal()" (keydown)="$event.key === 'Escape' && closeCuentaModal()"></div>
 <dialog class="modal-container" [attr.open]="showCuentaModal ? true : null">
