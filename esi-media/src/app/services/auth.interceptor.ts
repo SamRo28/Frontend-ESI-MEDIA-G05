@@ -28,6 +28,11 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
     // Acceder a sessionStorage directamente (ya sabemos que estamos en el navegador)
     try {
       token = sessionStorage.getItem('token') || '';
+      if (!token) {
+        try {
+          token = localStorage.getItem('authToken') || localStorage.getItem('userToken') || localStorage.getItem('currentUserToken') || '';
+        } catch {}
+      }
     } catch (error) {
       console.error('Error accediendo a sessionStorage:', error);
     }
@@ -40,6 +45,7 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
           Authorization: `Bearer ${token}`
         }
       });
+      try { console.debug('[auth.interceptor] Añadido Authorization a', req.url); } catch {}
 
       return next(authReq);
     }
