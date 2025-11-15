@@ -80,6 +80,31 @@
       </section>
 
       <!-- Tips y Guías Rápidas -->
+      <section class="quick-actions">
+        <div class="quick-actions-grid">
+          <button class="quick-action-card" type="button" (click)="navigateToUpload()">
+            <span class="quick-action-title">Subir contenido</span>
+            <span class="quick-action-text">
+              Añade nuevo contenido {{ gestorType === 'video' ? 'de vídeo' : 'de audio' }} a la plataforma.
+            </span>
+          </button>
+
+          <button class="quick-action-card" type="button" (click)="toggleGestionListas()">
+            <span class="quick-action-title">Gestionar listas</span>
+            <span class="quick-action-text">
+              Crea y organiza listas públicas con tus contenidos.
+            </span>
+          </button>
+
+          <button class="quick-action-card" type="button" (click)="navigateToGestionContenidos()">
+            <span class="quick-action-title">Gestionar contenidos</span>
+            <span class="quick-action-text">
+              Accede al listado completo para consultar y editar todos los contenidos.
+            </span>
+          </button>
+        </div>
+      </section>
+
       <section class="tips-section">
         <div class="tips-content">
           <h2 class="tips-title">💡 Guía Rápida</h2>

@@ -1,0 +1,264 @@
+<div class="contenidos-container">
+  <header class="contenidos-header">
+    <div class="contenidos-title-group">
+      <h1 class="contenidos-title">Gestión de contenidos</h1>
+      <p class="contenidos-subtitle">
+        Consulta y edita todos los contenidos multimedia de la plataforma (audio y vídeo).
+      </p>
+    </div>
+    <a routerLink="/gestor-dashboard" class="btn-volver-dashboard">
+      Volver al panel de gestor
+    </a>
+  </header>
+
+  <section class="contenidos-list-section">
+    <div *ngIf="errorMessage" class="alert-error">
+      {{ errorMessage }}
+    </div>
+
+    <div *ngIf="deleteError" class="alert-error mt-2">
+      {{ deleteError }}
+    </div>
+
+    <div *ngIf="loading" class="loading-row">
+      <span class="loading-dot"></span>
+      <span class="loading-dot"></span>
+      <span class="loading-dot"></span>
+      <span>Cargando contenidos...</span>
+    </div>
+
+    <div *ngIf="!loading && !errorMessage" class="contenidos-grid">
+      <div *ngFor="let c of contenidos" class="contenido-card">
+        <div class="contenido-header">
+          <div class="contenido-icon" [class.video]="c.tipo === 'VIDEO'" [class.audio]="c.tipo === 'AUDIO'">
+            <span *ngIf="c.tipo === 'VIDEO'">▶</span>
+            <span *ngIf="c.tipo === 'AUDIO'">♫</span>
+          </div>
+          <div class="contenido-info">
+            <h2 class="contenido-title">{{ c.titulo }}</h2>
+            <div class="contenido-badges">
+              <span class="badge tipo">{{ c.tipo === 'VIDEO' ? 'Vídeo' : 'Audio' }}</span>
+              <span class="badge vip" *ngIf="c.vip">VIP</span>
+              <span class="badge resolucion" *ngIf="c.resolucion">{{ c.resolucion }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="contenido-actions">
+          <button type="button" class="action-btn" title="Ver detalle" (click)="verDetalle(c)">
+            👁
+          </button>
+          <button type="button" class="action-btn" title="Modificar" (click)="editarDesdeLista(c)">
+            ✎
+          </button>
+          <button
+            type="button"
+            class="action-btn action-delete"
+            title="Eliminar"
+            (click)="eliminarDesdeLista(c)"
+            [disabled]="deletingId === c.id">
+            🗑
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="contenidos.length === 0 && !loading" class="empty-state">
+        No hay contenidos registrados todavía.
+      </div>
+    </div>
+  </section>
+
+  <!-- Modal de detalle -->
+  <div class="detalle-backdrop" *ngIf="mostrarDetalle" (click)="cerrarDetalle()"></div>
+  <div class="detalle-modal" *ngIf="mostrarDetalle">
+    <div class="detalle-header">
+      <div class="detalle-title-group">
+        <h2 class="detalle-title">
+          {{ detalleSeleccionado?.titulo || 'Detalle de contenido' }}
+        </h2>
+        <div class="detalle-badges" *ngIf="detalleSeleccionado">
+          <span class="badge tipo">
+            {{ detalleSeleccionado.tipo === 'VIDEO' ? 'Vídeo' : 'Audio' }}
+          </span>
+          <span class="badge vip" *ngIf="detalleSeleccionado.vip">VIP</span>
+          <span class="badge resolucion" *ngIf="detalleSeleccionado.resolucion">
+            {{ detalleSeleccionado.resolucion }}
+          </span>
+          <span class="badge estado" [class.no-visible]="!detalleSeleccionado.estado">
+            {{ detalleSeleccionado.estado ? 'Visible' : 'No visible' }}
+          </span>
+        </div>
+      </div>
+      <button type="button" class="detalle-close-btn" (click)="cerrarDetalle()" aria-label="Cerrar detalle">
+        ✕
+      </button>
+    </div>
+
+    <div *ngIf="detalleLoading" class="detalle-loading">
+      <span class="loading-dot"></span>
+      <span class="loading-dot"></span>
+      <span class="loading-dot"></span>
+      <span>Cargando detalle...</span>
+    </div>
+
+    <div *ngIf="!detalleLoading && detalleError" class="alert-error mt-4">
+      {{ detalleError }}
+    </div>
+
+    <div *ngIf="!detalleLoading && detalleSeleccionado" class="detalle-body">
+      <div class="detalle-main">
+        <p class="detalle-descripcion" *ngIf="detalleSeleccionado.descripcion">
+          {{ detalleSeleccionado.descripcion }}
+        </p>
+
+        <div class="detalle-grid">
+          <div class="detalle-item">
+            <span class="detalle-label">Duración</span>
+            <span class="detalle-value" *ngIf="detalleSeleccionado.duracion > 0; else sinDuracion">
+              {{ (detalleSeleccionado.duracion / 60) | number:'1.0-1' }} min
+            </span>
+            <ng-template #sinDuracion>
+              <span class="detalle-value">No indicada</span>
+            </ng-template>
+          </div>
+          <div class="detalle-item">
+            <span class="detalle-label">Edad mínima</span>
+            <span class="detalle-value">{{ detalleSeleccionado.edadVisualizacion }} años</span>
+          </div>
+          <div class="detalle-item">
+            <span class="detalle-label">Fecha disponibilidad hasta</span>
+            <span class="detalle-value">
+              {{ detalleSeleccionado.fechaDisponibleHasta ? (detalleSeleccionado.fechaDisponibleHasta | date:'shortDate') : 'Sin límite' }}
+            </span>
+          </div>
+          <div class="detalle-item">
+            <span class="detalle-label">Visualizaciones</span>
+            <span class="detalle-value">{{ detalleSeleccionado.nvisualizaciones }}</span>
+          </div>
+        </div>
+
+        <div class="detalle-tags" *ngIf="detalleSeleccionado.tags && detalleSeleccionado.tags.length">
+          <span class="detalle-label">Tags</span>
+          <div class="detalle-tags-list">
+            <span class="tag-pill" *ngFor="let tag of detalleSeleccionado.tags">{{ tag }}</span>
+          </div>
+        </div>
+
+        <div class="detalle-referencia" *ngIf="detalleSeleccionado.referenciaReproduccion">
+          <span class="detalle-label">
+            {{ detalleSeleccionado.tipo === 'VIDEO' ? 'URL de reproducción' : 'Endpoint de audio' }}
+          </span>
+          <a class="detalle-link" [href]="detalleSeleccionado.referenciaReproduccion" target="_blank" rel="noopener noreferrer">
+            {{ detalleSeleccionado.referenciaReproduccion }}
+          </a>
+        </div>
+      </div>
+
+      <!-- Sección de edición -->
+      <div class="detalle-edicion" *ngIf="detalleSeleccionado">
+        <div class="detalle-edicion-header">
+          <h3 class="detalle-subtitle">Editar contenido</h3>
+          <button
+            type="button"
+            class="btn-editar-toggle"
+            (click)="toggleEditMode()">
+            {{ editMode ? 'Cancelar edición' : 'Activar edición' }}
+          </button>
+        </div>
+
+        <form *ngIf="editMode" (ngSubmit)="guardarCambios()" class="detalle-form">
+          <div class="detalle-grid">
+            <div class="detalle-item editable">
+              <label class="detalle-label" for="titulo">Título</label>
+              <input
+                id="titulo"
+                name="titulo"
+                type="text"
+                class="detalle-input"
+                [(ngModel)]="editForm.titulo"
+                required
+                maxlength="100">
+            </div>
+
+            <div class="detalle-item editable">
+              <label class="detalle-label" for="descripcion">Descripción</label>
+              <textarea
+                id="descripcion"
+                name="descripcion"
+                class="detalle-input"
+                rows="3"
+                [(ngModel)]="editForm.descripcion"
+                maxlength="500"></textarea>
+            </div>
+
+            <div class="detalle-item editable">
+              <label class="detalle-label" for="tags">Tags (separados por comas)</label>
+              <input
+                id="tags"
+                name="tagsText"
+                type="text"
+                class="detalle-input"
+                [(ngModel)]="editForm.tagsText">
+            </div>
+
+            <div class="detalle-item editable">
+              <label class="detalle-label">Contenido VIP</label>
+              <label class="toggle-label">
+                <input
+                  type="checkbox"
+                  name="vip"
+                  [(ngModel)]="editForm.vip">
+                <span>Marcar como VIP</span>
+              </label>
+            </div>
+
+            <div class="detalle-item editable">
+              <label class="detalle-label">Estado</label>
+              <label class="toggle-label">
+                <input
+                  type="checkbox"
+                  name="estado"
+                  [(ngModel)]="editForm.estado">
+                <span>{{ editForm.estado ? 'Visible' : 'No visible' }}</span>
+              </label>
+            </div>
+
+            <div class="detalle-item editable">
+              <label class="detalle-label" for="edadVisualizacion">Edad mínima</label>
+              <input
+                id="edadVisualizacion"
+                name="edadVisualizacion"
+                type="number"
+                class="detalle-input"
+                min="0"
+                max="18"
+                [(ngModel)]="editForm.edadVisualizacion">
+            </div>
+
+            <div class="detalle-item editable">
+              <label class="detalle-label" for="fechaDisponibleHasta">Fecha disponible hasta</label>
+              <input
+                id="fechaDisponibleHasta"
+                name="fechaDisponibleHasta"
+                type="date"
+                class="detalle-input"
+                [(ngModel)]="editForm.fechaDisponibleHasta">
+            </div>
+          </div>
+
+          <div class="detalle-actions-row">
+            <button type="submit" class="btn-guardar" [disabled]="saving">
+              {{ saving ? 'Guardando...' : 'Guardar cambios' }}
+            </button>
+          </div>
+
+          <div *ngIf="saveSuccess" class="mensaje-exito">
+            {{ saveSuccess }}
+          </div>
+          <div *ngIf="saveError" class="mensaje-error">
+            {{ saveError }}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
