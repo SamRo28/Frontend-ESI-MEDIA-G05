@@ -22,14 +22,13 @@ export interface ContenidoDetalleDTO {
   tipo: 'AUDIO' | 'VIDEO';
   caratula?: any;
   vip: boolean;
-  duracion?: number; // en segundos
-  // Nuevos campos para enriquecer el detalle
-  fechaDisponibleHasta?: string | Date;
-  edadVisualizacion?: number;
+  duracion?: number;
+  fechadisponiblehasta?: string | Date;
+  edadvisualizacion?: number;
   nvisualizaciones?: number;
   tags?: string[];
   referenciaReproduccion: string;
-  resolucion?: string; // Campo que faltaba para videos
+  resolucion?: string;
 }
 
 export interface PageResponse<T> {

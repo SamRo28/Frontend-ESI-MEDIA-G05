@@ -1,6 +1,5 @@
-import { Component, OnInit, AfterViewInit, inject, PLATFORM_ID } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
-import { Router, NavigationEnd, RouterModule } from '@angular/router';
+import { Component, OnInit, AfterViewInit, OnDestroy, inject, PLATFORM_ID } from '@angular/core';
+import { Router, NavigationEnd, RouterLink, RouterLinkActive, RouterModule } from '@angular/router';
 import { MultimediaService } from '../services/multimedia.service';
 import { GestionListasComponent } from '../gestion-listas/gestion-listas';
 import { MultimediaListComponent } from '../multimedia-list/multimedia-list';
@@ -25,7 +24,7 @@ interface Star {
   templateUrl: './visu-dashboard.html',
   styleUrl: './visu-dashboard.css'
 })
-export class VisuDashboard implements OnInit, AfterViewInit {
+export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
   stars: Star[] = [];
   mostrarListasPrivadas = false;
   mostrarListasPublicas = false;
@@ -321,6 +320,9 @@ export class VisuDashboard implements OnInit, AfterViewInit {
   onDocumentClick(event: Event): void {
     if (!this.isBrowser) return;
     const target = event.target as HTMLElement;
+    // Ignorar clics dentro del panel de filtros para evitar interferir con su comportamiento
+    const insideFilter = target.closest('.filter-panel') || target.closest('.filter-backdrop') || target.closest('.filter-container');
+    if (insideFilter) return;
     
     // Verificar si el clic fue en el área del perfil de usuario o el dropdown
     const userProfile = target.closest('.user-profile');
@@ -403,6 +405,8 @@ export class VisuDashboard implements OnInit, AfterViewInit {
     this.currentFiltersObject = filters;
     // Actualizar tagFilters para la lista
     this.currentTagFilters = Array.isArray(filters.tags) ? [...filters.tags] : [];
+    // Asegurar que Angular evalúe los cambios inmediatamente
+    try { (window as any).requestAnimationFrame(() => {}); } catch(e) {}
   }
 
   /**
