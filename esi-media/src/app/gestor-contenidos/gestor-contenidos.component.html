@@ -176,27 +176,26 @@
         <!-- Contenedor para la carátula y los detalles -->
         <div class="detalle-content-wrapper">
            <!-- Imagen de la carátula -->
-           <div class="detalle-caratula-container">
+           <div class="detalle-caratula-container" *ngIf="detalleSeleccionado.caratula || editMode">
              <!-- Vista previa de la nueva carátula o la actual -->
-             <img [src]="newCoverPreview || detalleSeleccionado.caratula || './assets/images/placeholder.png'"
+             <img *ngIf="newCoverPreview || detalleSeleccionado.caratula"
+                  [src]="newCoverPreview || detalleSeleccionado.caratula || ''"
                   alt="Carátula de {{ detalleSeleccionado.titulo }}"
-                  class="detalle-caratula-img">
-
-             <!-- Botón para cambiar la carátula en modo edición -->
-             <div *ngIf="editMode" class="caratula-edit-overlay">
-               <label for="caratula-input" class="btn-cambiar-caratula">
-                 Cambiar
-               </label>
-               <input id="caratula-input"
-                      type="file"
-                      accept="image/png, image/jpeg, image/webp"
-                      (change)="onCoverFileSelected($event)"
-                      style="display: none;">
-             </div>
+                  class="detalle-caratula-img" />
+ 
+             <!-- Botón para cambiar la carátula (siempre visible en modo edición) -->
+             <label *ngIf="editMode" for="caratula-input" class="btn-cambiar-caratula">
+               {{ detalleSeleccionado.caratula || newCoverPreview ? 'Cambiar' : 'Añadir carátula' }}
+             </label>
+             <input *ngIf="editMode" id="caratula-input"
+                    type="file"
+                    accept="image/png, image/jpeg, image/webp"
+                    (change)="onCoverFileSelected($event)"
+                    style="display: none;">
            </div>
  
            <!-- Contenido principal (descripción, grid, etc.) -->
-           <div class="detalle-main" [class.full-width]="!detalleSeleccionado.caratula">
+           <div class="detalle-main" [class.full-width]="!detalleSeleccionado.caratula && !editMode">
              <div class="detalle-grid">
                <!-- Título -->
                <div class="detalle-item">
