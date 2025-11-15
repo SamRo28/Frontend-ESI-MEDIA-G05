@@ -113,10 +113,10 @@ export class Fa2Qr implements OnInit {
         return;
       }
       else{
-        const wants2fa = window.confirm('Registro completado. ¿Deseas activar la autenticación en 2 pasos (2FA) ahora?');
+        const wants2fa = window.confirm('Registro completado. ¿Deseas activar la autenticación en 3 pasos (3FA) ahora?');
 
           if (wants2fa) {
-            // Redirigir a la página de configuración de 2FA
+            // Redirigir a la verificación 3FA
             this.router.navigate(['/3verification'], { state: { allowFa3Code: true } });
           } else {
               sessionStorage.setItem('token', res);

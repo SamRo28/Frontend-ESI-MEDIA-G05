@@ -400,3 +400,36 @@
   .login-title{ font-size:22px; }
   .thumb{ width:48px; height:48px }
 }
+
+/* Bloque de espera de activación */
+.activation-wait {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.activation-wait .spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid rgba(255,255,255,0.2);
+  border-top-color: #a855f7;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+.activation-wait .text h3 { margin: 0 0 4px; font-size: 15px; }
+.activation-wait .text p { margin: 0; font-size: 13px; color: rgba(255,255,255,0.7); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Aviso inline simple y estético para registro */
+.activation-info {
+  margin-top: 14px;
+  color: rgba(255,255,255,0.92);
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.10) 0%, rgba(236, 72, 153, 0.10) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  border-radius: 12px;
+  padding: 12px 14px;
+}

@@ -154,12 +154,14 @@ export class MultimediaListComponent implements OnInit, OnChanges {
         // Determinar qué campos requiere el filtrado actual
         const needTags = Array.isArray(this.tagFilters) && this.tagFilters.length > 0 ||
              (this.filtersObject && Array.isArray(this.filtersObject.tags) && this.filtersObject.tags.length > 0);
-        const needEdad = !!(this.filtersObject?.edad);
+        // Siempre necesitamos la edad para poder mostrar el badge "+18" de forma consistente
+        const needEdad = true;
         const needRes = !!(this.filtersObject?.resoluciones?.length);
 
         const itemsWithoutRequired = items.filter(i => {
           if (needTags && !Array.isArray((i as any).tags)) return true;
-          if (needEdad && typeof (i as any).edadvisualizacion !== 'number') return true;
+          const edad = (i as any).edadVisualizacion;
+          if (needEdad && typeof edad !== 'number') return true;
           if (needRes && typeof (i as any).resolucion !== 'string') return true;
           return false;
         });
@@ -349,7 +351,10 @@ export class MultimediaListComponent implements OnInit, OnChanges {
       (match as any).tags = tagsFromDetail ?? (match as any).tags ?? [];
 
       const edadFromDetail = this.extractEdadFromDetail(d);
-      if (typeof edadFromDetail === 'number') (match as any).edadvisualizacion = edadFromDetail;
+      if (typeof edadFromDetail === 'number') {
+        (match as any).edadvisualizacion = edadFromDetail;
+        (match as any).edadVisualizacion = edadFromDetail;
+      }
 
       const resolFromDetail = this.extractResolucionFromDetail(d);
       if (resolFromDetail) {

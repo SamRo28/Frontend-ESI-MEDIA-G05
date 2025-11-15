@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -11,7 +11,7 @@ import { VisualizadorService } from '../services/visualizador.service';
   templateUrl: './registro-visualizador.component.html',
   styleUrl: './registro-visualizador.component.css'
 })
-export class RegistroVisualizadorComponent implements OnInit {
+export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
   // Rutas de avatares predefinidos
   preloadedImages: string[] = [
     'perfil1.png',
@@ -47,6 +47,14 @@ export class RegistroVisualizadorComponent implements OnInit {
   formSubmitted = false; // usado para mostrar inline hints como el de fecha solo tras submit
   serverErrors: Record<string, string[]> = {};
   emailErrorAdded = false; // Control para evitar duplicación de mensajes de error de email
+
+  // Estado de activación
+  waitingActivation = false;
+  private pollId: any = null;
+  private emailForPolling: string | null = null;
+  private activationFinalized = false; // evita repetir confirm tras manejar activación
+  private pendingShow2FA = false; // activación detectada con pestaña oculta
+  private lastActivationToken: string | null = null;
 
   constructor(private fb: FormBuilder, private router: Router, private svc: VisualizadorService) {
     
@@ -102,6 +110,12 @@ export class RegistroVisualizadorComponent implements OnInit {
     this.form.get('password')?.valueChanges.subscribe(value => {
       this.validatePassword(value);
     });
+
+    // Escuchar foco/visibilidad para comprobar activación al volver a la app
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', this.onVisibilityOrFocus);
+      window.addEventListener('focus', this.onVisibilityOrFocus);
+    }
   }
 
   // Validador personalizado: comprobar que la fecha sea anterior a hoy y que la edad >= minYears
@@ -379,35 +393,162 @@ export class RegistroVisualizadorComponent implements OnInit {
       foto: this.selectedAvatar >= 0 ? this.preloadedImages[this.selectedAvatar] : null // Incluir avatar seleccionado
     };
 
+    // Mostrar el mensaje de espera inmediatamente y memorizar email para polling
+    this.waitingActivation = true;
+    this.emailForPolling = val.email;
+
     // Llamar al servicio con el objeto JSON
     this.svc.register(payload).subscribe({
       next: (response) => {
         console.log('Registro exitoso:', response);
-        sessionStorage.setItem('email', val.email);
-        // Preguntar al usuario si desea activar 2FA
-        // Usamos el diálogo nativo confirm por simplicidad; si el proyecto tiene
-        // un modal o servicio de notificaciones, se puede reemplazar por eso.
-        const wants2fa = window.confirm('Registro completado. ¿Deseas activar la autenticación en 2 pasos (2FA) ahora?');
-
-        if (wants2fa) {
-          // Redirigir a la página de configuración de 2FA
-          // El guard Fa2Guard comprueba allowFa2 en navigation.extras.state o history.state,
-          // por eso enviamos allowFa2: true aquí (coincide con login y con la expectativa del guard).
-          this.router.navigate(['/2fa'], { state: { allowFa2: true } });
-        } else {
-          // Si el usuario no quiere 2FA, redirigir a la página principal o login
-          // Ajusta la ruta según la estructura de rutas de la aplicación
-          this.router.navigate(['/dashboard']);
-        }
+        // Replicar inicialización de sesión del login: email + tipo + user
+        try {
+          sessionStorage.setItem('email', val.email);
+          sessionStorage.setItem('currentUserClass', 'Visualizador');
+          const minimalUser = {
+            email: val.email,
+            nombre: val.nombre || 'Usuario',
+            username: val.alias || val.nombre || 'usuario',
+            vip: !!val.vip
+          };
+          sessionStorage.setItem('user', JSON.stringify(minimalUser));
+        } catch {}
+        // Empezar a escuchar la activación
+        this.startPollingActivation(val.email);
       },
       error: (err) => {
         console.error('Error en registro:', err);
         console.log('Detalles completos del error:', JSON.stringify(err, null, 2));
         
+        // Ocultar aviso de espera si falló y reactivar el formulario
+        this.waitingActivation = false;
         this.processRegistrationError(err);
       }
     });
   }
+
+  private startPollingActivation(email: string) {
+    this.stopPollingActivation();
+    this.pollId = setInterval(() => {
+      this.svc.estadoActivacion(email).subscribe({
+        next: (res) => {
+          if (res?.activated) {
+            this.stopPollingActivation();
+            if (res?.token) {
+              try {
+                sessionStorage.setItem('token', res.token);
+                // Duplicado defensivo por si algún punto lee de localStorage
+                localStorage.setItem('authToken', res.token);
+                localStorage.setItem('userToken', res.token);
+                localStorage.setItem('currentUserToken', res.token);
+              } catch {}
+              this.lastActivationToken = res.token;
+            }
+            // Marcar clase de usuario para coherencia de servicios y vistas
+            try {
+              sessionStorage.setItem('currentUserClass', 'Visualizador');
+              // Asegurar que email y user existan como en login
+              if (this.form && this.form.value) {
+                const v = this.form.value;
+                if (v?.email) sessionStorage.setItem('email', v.email);
+                const minimalUser = {
+                  email: v?.email || '',
+                  nombre: v?.nombre || 'Usuario',
+                  username: v?.alias || v?.nombre || 'usuario',
+                  vip: !!v?.vip
+                };
+                sessionStorage.setItem('user', JSON.stringify(minimalUser));
+              }
+            } catch {}
+            if (!this.activationFinalized) {
+              console.debug('[Registro] Activación detectada por polling, mostrando confirm 2FA');
+              this.activationFinalized = true;
+              const wants2fa = window.confirm('Cuenta activada. ¿Deseas activar 2FA ahora?');
+              if (wants2fa) {
+                this.router.navigate(['/2fa'], { state: { allowFa2: true } });
+              } else {
+                try { window.location.assign('/dashboard'); } catch { this.router.navigate(['/dashboard']); }
+              }
+            }
+          }
+        }
+      });
+    }, 3000);
+  }
+
+  private stopPollingActivation() {
+    if (this.pollId) {
+      clearInterval(this.pollId);
+      this.pollId = null;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.stopPollingActivation();
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.onVisibilityOrFocus);
+      window.removeEventListener('focus', this.onVisibilityOrFocus);
+    }
+  }
+
+  // Al volver a la pestaña, forzar una comprobación inmediata para no esperar al próximo interval
+  private onVisibilityOrFocus = () => {
+    // Si vuelve el foco y ya tenemos token pendiente, redirigir
+    if (this.pendingShow2FA && !this.activationFinalized) {
+      this.activationFinalized = true;
+      this.waitingActivation = false;
+      this.pendingShow2FA = false;
+      this.router.navigate(['/dashboard']);
+      return;
+    }
+    if (this.waitingActivation && this.emailForPolling) {
+      this.svc.estadoActivacion(this.emailForPolling).subscribe({
+        next: (res) => {
+          if (res?.activated && !this.activationFinalized) {
+            this.stopPollingActivation();
+            if (res?.token) {
+              try {
+                sessionStorage.setItem('token', res.token);
+                localStorage.setItem('authToken', res.token);
+                localStorage.setItem('userToken', res.token);
+                localStorage.setItem('currentUserToken', res.token);
+              } catch {}
+              this.lastActivationToken = res.token;
+            }
+            try {
+              sessionStorage.setItem('currentUserClass', 'Visualizador');
+              // Asegurar que email y user existan como en login
+              if (this.form && this.form.value) {
+                const v = this.form.value;
+                if (v?.email) sessionStorage.setItem('email', v.email);
+                const minimalUser = {
+                  email: v?.email || '',
+                  nombre: v?.nombre || 'Usuario',
+                  username: v?.alias || v?.nombre || 'usuario',
+                  vip: !!v?.vip
+                };
+                sessionStorage.setItem('user', JSON.stringify(minimalUser));
+              }
+            } catch {}
+            if (!this.activationFinalized) {
+              console.debug('[Registro] Activación detectada por focus/visibility, mostrando confirm 2FA');
+              this.activationFinalized = true;
+              const wants2fa = window.confirm('Cuenta activada. ¿Deseas activar 2FA ahora?');
+              if (wants2fa) {
+                this.router.navigate(['/2fa'], { state: { allowFa2: true } });
+              } else {
+                try { window.location.assign('/dashboard'); } catch { this.router.navigate(['/dashboard']); }
+              }
+            }
+          }
+        }
+      });
+    }
+  };
+
+  // Eliminado flujo modal: se usa window.confirm directamente al detectar activación.
+
+  
   
   // Mapeo de nombres de campo del backend a nombres de campo del formulario
   private mapFieldName(backendField: string): string {

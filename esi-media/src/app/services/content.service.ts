@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, from } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 
 export interface AudioUploadData {
@@ -69,7 +70,7 @@ export interface BackendError {
   providedIn: 'root'
 })
 export class ContentService {
-  private readonly baseUrl = 'http://localhost:8080/gestor';
+  private readonly baseUrl = `${environment.apiUrl}/gestor`;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -198,7 +199,7 @@ export class ContentService {
     console.log('Realizando búsqueda en backend:', query.trim());
 
     // El interceptor se encarga del Authorization header automáticamente
-    return this.http.get<any>(`http://localhost:8080/multimedia?${params}`).pipe(
+    return this.http.get<any>(`${environment.apiUrl}/multimedia?${params}`).pipe(
       catchError(error => {
         console.error('Error en búsqueda de contenidos:', error);
         

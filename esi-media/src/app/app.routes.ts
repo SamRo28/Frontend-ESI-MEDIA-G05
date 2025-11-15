@@ -20,8 +20,10 @@ import { MultimediaGuard } from './guards/multimedia.guard';
 import { GestionListasComponent } from './gestion-listas/gestion-listas';
 import { CrearListaComponent } from './crear-lista/crear-lista';
 import { ListaDetailComponent } from './lista-detail/lista-detail';
+import { PerfilVisualizadorComponent } from './perfil-visualizador/perfil-visualizador';
 import { ForgotPasswordComponent } from './forgot-password/forgot-password';
 import { ResetPasswordComponent } from './reset-password/reset-password';
+import { ConfirmarActivacionComponent } from './confirmar-activacion/confirmar-activacion';
 
 export const routes: Routes = [
   {
@@ -56,6 +58,10 @@ export const routes: Routes = [
   {
     path: 'register',
     component: RegistroVisualizadorComponent
+  },
+  {
+    path: 'confirmar-activacion',
+    component: ConfirmarActivacionComponent
   },
   {
     path: 'login',
@@ -95,6 +101,10 @@ export const routes: Routes = [
     path: 'dashboard/listas/:id',
     component: ListaDetailComponent,
     canActivate: [MultimediaGuard]
+  },
+  {
+    path: 'perfil',
+    component: PerfilVisualizadorComponent
   },
   {
     path: 'gestor-dashboard',

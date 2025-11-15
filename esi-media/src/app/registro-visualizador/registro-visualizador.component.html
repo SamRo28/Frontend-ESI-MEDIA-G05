@@ -150,6 +150,12 @@
       </div>
 
     </form>
+
+    <!-- Aviso inline tras registro: esperando activación por correo -->
+    <div *ngIf="waitingActivation" class="activation-info">
+      Te hemos enviado un correo para activar tu cuenta. Esta pantalla lo detectará en cuanto pulses "Confirmar cuenta" en el email.
+    </div>
+
   </div>
 </div>
 

@@ -10,7 +10,15 @@ export class MultimediaGuard implements CanActivate {
     const hasWindow = typeof window !== 'undefined';
     const hasSessionStorage = hasWindow && typeof sessionStorage !== 'undefined';
 
-    const token = hasSessionStorage ? (sessionStorage.getItem('token') || '') : '';
+    let token = hasSessionStorage ? (sessionStorage.getItem('token') || '') : '';
+    // Fallbacks por si el token se guardó en localStorage con otra clave
+    if (!token && hasWindow) {
+      try {
+        token = localStorage.getItem('authToken') || localStorage.getItem('userToken') || localStorage.getItem('currentUserToken') || '';
+      } catch {}
+    }
+
+    try { console.debug('[MultimediaGuard] token presente?', !!token, token ? token.slice(0,8)+'...' : ''); } catch {}
 
     if (token && token.trim().length > 0) {
       return true;
