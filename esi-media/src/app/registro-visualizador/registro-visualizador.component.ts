@@ -12,6 +12,8 @@ import { VisualizadorService } from '../services/visualizador.service';
   styleUrl: './registro-visualizador.component.css'
 })
 export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
+  private static readonly ACT_POLL_INTERVAL = 3000;
+  private static readonly CONFIRM_2FA_MESSAGE = 'Cuenta activada. ¿Deseas activar 2FA ahora?';
   // Rutas de avatares predefinidos
   preloadedImages: string[] = [
     'perfil1.png',
@@ -355,21 +357,7 @@ export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
     this.emailErrorAdded = false;
     
     // Restablecer los errores previos de los controles
-    Object.keys(this.form.controls).forEach(key => {
-      const control = this.form.get(key);
-      if (control && control.hasError('server') || control?.hasError('duplicate')) {
-        // Mantener otros errores pero eliminar los del servidor
-        const currentErrors = {...control.errors};
-        delete currentErrors['server'];
-        delete currentErrors['duplicate'];
-        
-        if (Object.keys(currentErrors).length > 0) {
-          control.setErrors(currentErrors);
-        } else {
-          control.setErrors(null);
-        }
-      }
-    });
+    this.clearServerAndDuplicateControlErrors();
     
     if (this.form.invalid) {
       // No necesitamos marcar todos los controles como tocados, ya que ahora
@@ -401,26 +389,13 @@ export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
     this.svc.register(payload).subscribe({
       next: (response) => {
         console.log('Registro exitoso:', response);
-        // Replicar inicialización de sesión del login: email + tipo + user
-        try {
-          sessionStorage.setItem('email', val.email);
-          sessionStorage.setItem('currentUserClass', 'Visualizador');
-          const minimalUser = {
-            email: val.email,
-            nombre: val.nombre || 'Usuario',
-            username: val.alias || val.nombre || 'usuario',
-            vip: !!val.vip
-          };
-          sessionStorage.setItem('user', JSON.stringify(minimalUser));
-        } catch {}
+        this.ensureSessionUserFromForm();
         // Empezar a escuchar la activación
         this.startPollingActivation(val.email);
       },
       error: (err) => {
         console.error('Error en registro:', err);
         console.log('Detalles completos del error:', JSON.stringify(err, null, 2));
-        
-        // Ocultar aviso de espera si falló y reactivar el formulario
         this.waitingActivation = false;
         this.processRegistrationError(err);
       }
@@ -431,49 +406,9 @@ export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
     this.stopPollingActivation();
     this.pollId = setInterval(() => {
       this.svc.estadoActivacion(email).subscribe({
-        next: (res) => {
-          if (res?.activated) {
-            this.stopPollingActivation();
-            if (res?.token) {
-              try {
-                sessionStorage.setItem('token', res.token);
-                // Duplicado defensivo por si algún punto lee de localStorage
-                localStorage.setItem('authToken', res.token);
-                localStorage.setItem('userToken', res.token);
-                localStorage.setItem('currentUserToken', res.token);
-              } catch {}
-              this.lastActivationToken = res.token;
-            }
-            // Marcar clase de usuario para coherencia de servicios y vistas
-            try {
-              sessionStorage.setItem('currentUserClass', 'Visualizador');
-              // Asegurar que email y user existan como en login
-              if (this.form && this.form.value) {
-                const v = this.form.value;
-                if (v?.email) sessionStorage.setItem('email', v.email);
-                const minimalUser = {
-                  email: v?.email || '',
-                  nombre: v?.nombre || 'Usuario',
-                  username: v?.alias || v?.nombre || 'usuario',
-                  vip: !!v?.vip
-                };
-                sessionStorage.setItem('user', JSON.stringify(minimalUser));
-              }
-            } catch {}
-            if (!this.activationFinalized) {
-              console.debug('[Registro] Activación detectada por polling, mostrando confirm 2FA');
-              this.activationFinalized = true;
-              const wants2fa = window.confirm('Cuenta activada. ¿Deseas activar 2FA ahora?');
-              if (wants2fa) {
-                this.router.navigate(['/2fa'], { state: { allowFa2: true } });
-              } else {
-                try { window.location.assign('/dashboard'); } catch { this.router.navigate(['/dashboard']); }
-              }
-            }
-          }
-        }
+        next: (res) => this.handleActivationResponse(res, 'polling')
       });
-    }, 3000);
+    }, RegistroVisualizadorComponent.ACT_POLL_INTERVAL);
   }
 
   private stopPollingActivation() {
@@ -498,50 +433,13 @@ export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
       this.activationFinalized = true;
       this.waitingActivation = false;
       this.pendingShow2FA = false;
-      this.router.navigate(['/dashboard']);
+      // Restaurar comportamiento original: mostrar confirm de 2FA al recuperar foco
+      this.prompt2FAAndNavigate();
       return;
     }
     if (this.waitingActivation && this.emailForPolling) {
       this.svc.estadoActivacion(this.emailForPolling).subscribe({
-        next: (res) => {
-          if (res?.activated && !this.activationFinalized) {
-            this.stopPollingActivation();
-            if (res?.token) {
-              try {
-                sessionStorage.setItem('token', res.token);
-                localStorage.setItem('authToken', res.token);
-                localStorage.setItem('userToken', res.token);
-                localStorage.setItem('currentUserToken', res.token);
-              } catch {}
-              this.lastActivationToken = res.token;
-            }
-            try {
-              sessionStorage.setItem('currentUserClass', 'Visualizador');
-              // Asegurar que email y user existan como en login
-              if (this.form && this.form.value) {
-                const v = this.form.value;
-                if (v?.email) sessionStorage.setItem('email', v.email);
-                const minimalUser = {
-                  email: v?.email || '',
-                  nombre: v?.nombre || 'Usuario',
-                  username: v?.alias || v?.nombre || 'usuario',
-                  vip: !!v?.vip
-                };
-                sessionStorage.setItem('user', JSON.stringify(minimalUser));
-              }
-            } catch {}
-            if (!this.activationFinalized) {
-              console.debug('[Registro] Activación detectada por focus/visibility, mostrando confirm 2FA');
-              this.activationFinalized = true;
-              const wants2fa = window.confirm('Cuenta activada. ¿Deseas activar 2FA ahora?');
-              if (wants2fa) {
-                this.router.navigate(['/2fa'], { state: { allowFa2: true } });
-              } else {
-                try { window.location.assign('/dashboard'); } catch { this.router.navigate(['/dashboard']); }
-              }
-            }
-          }
-        }
+        next: (res) => this.handleActivationResponse(res, 'focus')
       });
     }
   };
@@ -715,5 +613,78 @@ export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
       msg => !(msg.toLowerCase().includes('email') || msg.toLowerCase().includes('correo')) || 
       msg === 'Este correo ya está registrado en el sistema'
     ) || [];
+  }
+
+  // Helpers para reducir duplicación y complejidad
+  private clearServerAndDuplicateControlErrors(): void {
+    Object.keys(this.form.controls).forEach(key => {
+      const control = this.form.get(key);
+      if (!control || !control.errors) return;
+      if (control.hasError('server') || control.hasError('duplicate')) {
+        const currentErrors = { ...control.errors } as Record<string, boolean>;
+        delete currentErrors['server'];
+        delete currentErrors['duplicate'];
+        if (Object.keys(currentErrors).length > 0) {
+          control.setErrors(currentErrors);
+        } else {
+          control.setErrors(null);
+        }
+      }
+    });
+  }
+
+  private ensureSessionUserFromForm(): void {
+    try {
+      const v = this.form?.value || {};
+      if (v?.email) sessionStorage.setItem('email', v.email);
+      sessionStorage.setItem('currentUserClass', 'Visualizador');
+      const minimalUser = {
+        email: v?.email || '',
+        nombre: v?.nombre || 'Usuario',
+        username: v?.alias || v?.nombre || 'usuario',
+        vip: !!v?.vip
+      };
+      sessionStorage.setItem('user', JSON.stringify(minimalUser));
+    } catch {}
+  }
+
+  private persistToken(token: string): void {
+    try {
+      sessionStorage.setItem('token', token);
+      // Duplicado defensivo por si algún punto lee de localStorage
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('userToken', token);
+      localStorage.setItem('currentUserToken', token);
+    } catch {}
+    this.lastActivationToken = token;
+  }
+
+  private prompt2FAAndNavigate(): void {
+    const wants2fa = window.confirm(RegistroVisualizadorComponent.CONFIRM_2FA_MESSAGE);
+    if (wants2fa) {
+      this.router.navigate(['/2fa'], { state: { allowFa2: true } });
+    } else {
+      try { window.location.assign('/dashboard'); } catch { this.router.navigate(['/dashboard']); }
+    }
+  }
+
+  private handleActivationResponse(res: any, source: 'polling' | 'focus'): void {
+    if (!res?.activated || this.activationFinalized) return;
+    this.stopPollingActivation();
+    if (res?.token) {
+      this.persistToken(res.token);
+    }
+    this.ensureSessionUserFromForm();
+    // Si la pestaña está oculta, posponer el diálogo hasta focus/visibility
+    if (typeof document !== 'undefined' && document.hidden) {
+      this.pendingShow2FA = true;
+      this.waitingActivation = false;
+      console.debug(`[Registro] Activación detectada en segundo plano (${source}), se mostrará confirm al volver el foco`);
+      return;
+    }
+    console.debug(`[Registro] Activación detectada por ${source}, mostrando confirm 2FA`);
+    this.activationFinalized = true;
+    this.waitingActivation = false;
+    this.prompt2FAAndNavigate();
   }
 }
