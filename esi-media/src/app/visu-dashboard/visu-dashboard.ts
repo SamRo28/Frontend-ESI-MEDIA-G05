@@ -7,7 +7,6 @@ import { MultimediaListComponent } from '../multimedia-list/multimedia-list';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ListasPrivadas } from '../listas-privadas/listas-privadas';
 import { CrearListaComponent } from '../crear-lista/crear-lista';
-import { ConfigUserComponent, ConfigUserDTO } from '../config-user/config-user';
 import { PerfilVisualizadorComponent } from '../perfil-visualizador/perfil-visualizador';
 import { ContentFilterComponent } from '../shared/content-filter/content-filter.component';
 
@@ -21,7 +20,7 @@ interface Star {
   selector: 'app-visu-dashboard',
   standalone: true,
 
-  imports: [CommonModule, RouterLink, RouterLinkActive, RouterModule, ListasPrivadas, CrearListaComponent, GestionListasComponent, MultimediaListComponent, ConfigUserComponent, ContentFilterComponent, PerfilVisualizadorComponent],
+  imports: [CommonModule, RouterLink, RouterLinkActive, RouterModule, ListasPrivadas, CrearListaComponent, GestionListasComponent, MultimediaListComponent, ContentFilterComponent, PerfilVisualizadorComponent],
 
   templateUrl: './visu-dashboard.html',
   styleUrl: './visu-dashboard.css'
@@ -39,7 +38,6 @@ export class VisuDashboard implements OnInit, AfterViewInit {
   forceReloadListas: number = 0;
   forceReloadListasPublicas: number = 0;
   showCrearModal: boolean = false;
-  showConfigModal: boolean = false;
   showCuentaModal: boolean = false;
   
   // Variables para el sistema de filtrado
@@ -343,8 +341,6 @@ export class VisuDashboard implements OnInit, AfterViewInit {
   onEscapeKey(): void {
     if (this.showCrearModal) {
       this.closeCrearListaModal();
-    } else if (this.showConfigModal) {
-      this.closeConfigUserModal();
     } else if (this.showCuentaModal) {
       this.closeCuentaModal();
     } else if (this.mostrarListasPrivadas) {
@@ -354,32 +350,7 @@ export class VisuDashboard implements OnInit, AfterViewInit {
     }
   }
 
-  /**
-   * Abre/cierra el modal de configuración de usuario
-   */
-  toggleConfigUser(): void {
-    this.showConfigModal = !this.showConfigModal;
-    this.closeUserMenu();
-    
-    if (this.isBrowser) {
-      if (this.showConfigModal) {
-        document.body.classList.add('no-scroll');
-      } else {
-        document.body.classList.remove('no-scroll');
-      }
-    }
-  }
 
-  /**
-   * Cierra el modal de configuración de usuario
-   */
-  closeConfigUserModal(): void {
-    this.showConfigModal = false;
-    
-    if (this.isBrowser) {
-      document.body.classList.remove('no-scroll');
-    }
-  }
 
   /** Abre la ventana de Cuenta (modal) */
   openCuentaModal(): void {
@@ -398,23 +369,7 @@ export class VisuDashboard implements OnInit, AfterViewInit {
     }
   }
 
-  /**
-   * Maneja la actualización de datos del usuario
-   */
-  onUserUpdated(updatedUser: ConfigUserDTO): void {
-    console.log('Usuario actualizado:', updatedUser);
-    
-    // Actualizar los datos locales del usuario
-    if (this.currentUser) {
-      Object.assign(this.currentUser, updatedUser);
-    }
-    
-    // Actualizar los datos de visualización
-    this.updateUserDisplayData();
-    
-    // Mostrar notificación de éxito (opcional)
-    this.showToast('Perfil actualizado correctamente');
-  }
+
 
   /**
    * Cierra la sesión del usuario, limpia sessionStorage y navega al login
