@@ -27,8 +27,25 @@ interface ContenidoDetalleGestor {
   nvisualizaciones: number;
   tags: string[];
   referenciaReproduccion: string;
+  fechaCreacion: string;
   resolucion?: string | null;
+  creadorNombre?: string | null;
+  creadorApellidos?: string | null;
 }
+
+// Listas de tags predefinidas según el tipo de contenido
+const AUDIO_TAGS: string[] = [
+  'pop', 'jazz', 'reggaeton', 'blues', 'audiolibro', 'rock', 'clasica',
+  'indie', 'metal', 'instrumental', 'rap/hip-hop', 'electronica', 'folk',
+  'podcast', 'acustico'
+];
+
+const VIDEO_TAGS: string[] = [
+  'cocina', 'musica', 'entretenimiento', 'arte y diseño', 'comedia',
+  'programacion', 'educativo', 'deportes', 'viajes', 'documentales',
+  'videojuegos', 'tutorial tecnologia', 'salud y fitness', 'noticias'
+];
+
 
 @Component({
   selector: 'app-gestor-contenidos',
@@ -48,23 +65,28 @@ export class GestorContenidosComponent implements OnInit {
   detalleError = '';
   detalleSeleccionado: ContenidoDetalleGestor | null = null;
 
-  // Estado de edición dentro del modal
+  // --- INICIO: Propiedades para edición restauradas ---
   editMode = false;
   saving = false;
   saveSuccess = '';
   saveError = '';
-  deletingId: string | null = null;
-  deleteError = '';
-
   editForm = {
     titulo: '',
     descripcion: '',
-    tagsText: '',
+    tags: [] as string[], // Cambiado para manejar un array de tags
     vip: false,
     estado: true,
     edadVisualizacion: 0,
     fechaDisponibleHasta: ''
   };
+  // --- FIN: Propiedades para edición restauradas ---
+  deletingId: string | null = null;
+  deleteError = '';
+  allTags: string[] = []; // Para almacenar todos los tags de la plataforma
+
+  // --- INICIO: Propiedades para la edición de la carátula ---
+  newCoverFile: File | null = null;
+  newCoverPreview: string | null = null;
 
   constructor(
     private readonly http: HttpClient,
@@ -104,23 +126,31 @@ export class GestorContenidosComponent implements OnInit {
       });
   }
 
-  verDetalle(contenido: ContenidoResumenGestor): void {
-    console.log('[GestorContenidos] verDetalle click', contenido);
+  // Ahora acepta un parámetro opcional para controlar el modo de edición
+  verDetalle(contenido: ContenidoResumenGestor, startInEditMode: boolean = false): void {
+    console.log(`[GestorContenidos] Abriendo detalle para ${contenido.id}. Modo edición: ${startInEditMode}`);
 
     this.mostrarDetalle = true;
     this.detalleLoading = true;
     this.detalleError = '';
+    this.editMode = startInEditMode; // Establece el modo de edición
     this.detalleSeleccionado = null;
     this.cdr.detectChanges();
 
+    // Para obtener el detalle reutilizamos el endpoint general de multimedia,
+    // que ya construye la referencia de reproducción y aplica validaciones.
     this.http
-      .get<ContenidoDetalleGestor>(`${environment.apiUrl}/gestor/contenidos/${contenido.id}`)
+      .get<ContenidoDetalleGestor>(`${environment.apiUrl}/multimedia/${contenido.id}`)
       .subscribe({
         next: (detalle) => {
           console.log('[GestorContenidos] detalle OK', detalle);
           this.detalleSeleccionado = detalle;
+          this.initEditFormFromDetalle(detalle); // Prepara el formulario de edición
           this.detalleLoading = false;
-          this.initEditFormFromDetalle(detalle);
+          // Si estamos en modo edición, cargamos todos los tags
+          if (startInEditMode) {
+            this.cargarTodosLosTags();
+          }
           this.cdr.detectChanges();
         },
         error: (error) => {
@@ -137,25 +167,27 @@ export class GestorContenidosComponent implements OnInit {
     this.detalleSeleccionado = null;
     this.detalleError = '';
     this.detalleLoading = false;
-    this.editMode = false;
+    this.editMode = false; // Resetea el modo edición al cerrar
     this.saveError = '';
     this.saveSuccess = '';
+    this.newCoverFile = null;
+    this.newCoverPreview = null;
     this.cdr.detectChanges();
   }
 
-  toggleEditMode(): void {
-    console.log('[GestorContenidos] toggleEditMode', this.editMode);
-    this.editMode = !this.editMode;
-    this.saveError = '';
-    this.saveSuccess = '';
-    this.cdr.detectChanges();
+  // --- INICIO: Métodos de edición restaurados y ajustados ---
+
+  // Este método llama a verDetalle con el modo edición activado.
+  editarDesdeLista(contenido: ContenidoResumenGestor): void {
+    console.log('[GestorContenidos] editarDesdeLista click', contenido);
+    this.verDetalle(contenido, true); // Llama a verDetalle en modo edición
   }
 
   private initEditFormFromDetalle(det: ContenidoDetalleGestor): void {
     this.editForm = {
       titulo: det.titulo,
       descripcion: det.descripcion,
-      tagsText: det.tags ? det.tags.join(', ') : '',
+      tags: det.tags ? [...det.tags] : [],
       vip: det.vip,
       estado: det.estado,
       edadVisualizacion: det.edadVisualizacion,
@@ -163,6 +195,21 @@ export class GestorContenidosComponent implements OnInit {
         ? det.fechaDisponibleHasta.substring(0, 10)
         : ''
     };
+  }
+
+  private cargarTodosLosTags(): void {
+    if (!this.detalleSeleccionado) {
+      return;
+    }
+
+    // Seleccionamos la lista de tags predefinida según el tipo de contenido
+    const predefinedTags = this.detalleSeleccionado.tipo === 'AUDIO' ? AUDIO_TAGS : VIDEO_TAGS;
+
+    // Unimos los tags predefinidos con los que ya tiene el contenido (por si hay alguno antiguo)
+    // y eliminamos duplicados para tener una lista única.
+    const tagSet = new Set([...predefinedTags, ...this.editForm.tags]);
+    this.allTags = Array.from(tagSet).sort();
+    this.cdr.detectChanges();
   }
 
   guardarCambios(): void {
@@ -179,15 +226,10 @@ export class GestorContenidosComponent implements OnInit {
     this.saveError = '';
     this.saveSuccess = '';
 
-    const tags = this.editForm.tagsText
-      .split(',')
-      .map(t => t.trim())
-      .filter(t => t.length > 0);
-
     const payload: any = {
       titulo: this.editForm.titulo.trim(),
       descripcion: this.editForm.descripcion?.trim() ?? '',
-      tags,
+      tags: this.editForm.tags, // Usamos directamente el array de tags
       vip: this.editForm.vip,
       estado: this.editForm.estado,
       edadVisualizacion: this.editForm.edadVisualizacion,
@@ -204,27 +246,10 @@ export class GestorContenidosComponent implements OnInit {
       )
       .subscribe({
         next: (actualizado) => {
-          console.log('[GestorContenidos] contenido actualizado', actualizado);
-          this.detalleSeleccionado = actualizado;
-          this.initEditFormFromDetalle(actualizado);
-
-          // Actualizar resumen en la lista principal
-          this.contenidos = this.contenidos.map(c =>
-            c.id === actualizado.id
-              ? {
-                  id: actualizado.id,
-                  titulo: actualizado.titulo,
-                  tipo: actualizado.tipo,
-                  vip: actualizado.vip,
-                  resolucion: actualizado.resolucion ?? null
-                }
-              : c
-          );
-
           this.saveSuccess = 'Contenido actualizado correctamente.';
           this.saving = false;
-          this.editMode = false;
-          this.cdr.detectChanges();
+          this.cargarContenidos(); // Recargamos la lista para ver los cambios
+          this.cerrarDetalle(); // Cerramos el modal tras guardar
         },
         error: (error) => {
           console.error('[GestorContenidos] error al actualizar contenido', error);
@@ -235,12 +260,33 @@ export class GestorContenidosComponent implements OnInit {
       });
   }
 
-  editarDesdeLista(contenido: ContenidoResumenGestor): void {
-    console.log('[GestorContenidos] editarDesdeLista click', contenido);
-    this.saveError = '';
-    this.saveSuccess = '';
-    this.editMode = true;
-    this.verDetalle(contenido);
+  // Gestiona la selección/deselección de tags
+  onTagChange(tag: string, isChecked: boolean): void {
+    if (isChecked) {
+      this.editForm.tags.push(tag);
+    } else {
+      const index = this.editForm.tags.indexOf(tag);
+      if (index > -1) {
+        this.editForm.tags.splice(index, 1);
+      }
+    }
+  }
+
+  // Gestiona la selección de un nuevo archivo de carátula
+  onCoverFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      this.newCoverFile = file;
+
+      // Crear una URL para la vista previa
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.newCoverPreview = reader.result as string;
+        this.cdr.detectChanges();
+      };
+      reader.readAsDataURL(file);
+    }
   }
 
   eliminarDesdeLista(contenido: ContenidoResumenGestor): void {
@@ -277,4 +323,3 @@ export class GestorContenidosComponent implements OnInit {
       });
   }
 }
-
