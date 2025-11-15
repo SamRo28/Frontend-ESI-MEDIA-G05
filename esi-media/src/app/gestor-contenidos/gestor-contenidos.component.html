@@ -28,7 +28,7 @@
       <span>Cargando contenidos...</span>
     </div>
 
-    <div *ngIf="!loading && !errorMessage" class="contenidos-grid">
+    <div *ngIf="!loading" class="contenidos-grid">
       <div *ngFor="let c of contenidos" class="contenido-card">
         <div class="contenido-header">
           <div class="contenido-icon" [class.video]="c.tipo === 'VIDEO'" [class.audio]="c.tipo === 'AUDIO'">
@@ -102,6 +102,23 @@
     </div>
   </section>
 
+  <!-- Capa de confirmación de eliminación (movida fuera del modal de detalle) -->
+  <div class="detalle-backdrop" *ngIf="showDeleteConfirmation"></div>
+  <div class="confirmation-modal" *ngIf="showDeleteConfirmation">
+    <div class="confirmation-box">
+      <p>¿Seguro que deseas eliminar "{{ deletingContent?.titulo }}"?</p>
+      <p class="confirmation-subtitle">Esta acción no se puede deshacer.</p>
+      <div class="confirmation-actions">
+        <button type="button" class="btn-cancelar" (click)="showDeleteConfirmation = false; deletingContent = null">
+          Cancelar
+        </button>
+        <button type="button" class="btn-confirmar-delete" (click)="proceedWithDelete()">
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal de detalle -->
   <div class="detalle-backdrop" *ngIf="mostrarDetalle" (click)="cerrarDetalle()"></div>
   <div class="detalle-modal" *ngIf="mostrarDetalle">
@@ -140,6 +157,21 @@
     </div>
 
     <div *ngIf="!detalleLoading && detalleSeleccionado" class="detalle-body">
+      <!-- Capa de confirmación de guardado -->
+      <div *ngIf="showSaveConfirmation" class="confirmation-overlay">
+        <div class="confirmation-box">
+          <p>¿Estás seguro de que deseas guardar los cambios?</p>
+          <div class="confirmation-actions">
+            <button type="button" class="btn-cancelar" (click)="showSaveConfirmation = false">
+              Cancelar
+            </button>
+            <button type="button" class="btn-confirmar" (click)="proceedWithSave()">
+              Confirmar
+            </button>
+          </div>
+        </div>
+      </div>
+
       <form (ngSubmit)="guardarCambios()" class="detalle-form">
         <!-- Contenedor para la carátula y los detalles -->
         <div class="detalle-content-wrapper">
@@ -269,7 +301,7 @@
              </div>
  
              <div class="detalle-actions-row" *ngIf="editMode">
-               <button type="submit" class="btn-guardar" [disabled]="saving">
+               <button type="button" (click)="guardarCambios()" class="btn-guardar" [disabled]="saving">
                  {{ saving ? 'Guardando...' : 'Guardar cambios' }}
                </button>
              </div>

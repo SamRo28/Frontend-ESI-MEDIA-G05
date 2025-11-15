@@ -87,6 +87,10 @@ export class GestorContenidosComponent implements OnInit {
   // --- INICIO: Propiedades para la edición de la carátula ---
   newCoverFile: File | null = null;
   newCoverPreview: string | null = null;
+  showDeleteConfirmation = false;
+  deletingContent: ContenidoResumenGestor | null = null;
+  showSaveConfirmation = false;
+  gestorTipoContenido: 'AUDIO' | 'VIDEO' | null = null;
 
   constructor(
     private readonly http: HttpClient,
@@ -96,6 +100,7 @@ export class GestorContenidosComponent implements OnInit {
   ngOnInit(): void {
     console.log('[GestorContenidos] ngOnInit');
     this.cargarContenidos();
+    this.cargarInfoGestor();
   }
 
   cargarContenidos(): void {
@@ -172,7 +177,25 @@ export class GestorContenidosComponent implements OnInit {
     this.saveSuccess = '';
     this.newCoverFile = null;
     this.newCoverPreview = null;
+    this.showDeleteConfirmation = false;
+    this.deletingContent = null;
+    this.showSaveConfirmation = false;
     this.cdr.detectChanges();
+  }
+
+  private cargarInfoGestor(): void {
+    try {
+      const userJson = sessionStorage.getItem('user');
+      if (userJson) {
+        const user = JSON.parse(userJson);
+        const tipo = user.tipocontenidovideooaudio?.toUpperCase();
+        if (tipo === 'AUDIO' || tipo === 'VIDEO') {
+          this.gestorTipoContenido = tipo;
+        }
+      }
+    } catch (e) {
+      console.error('Error al cargar la información del gestor desde sessionStorage', e);
+    }
   }
 
   // --- INICIO: Métodos de edición restaurados y ajustados ---
@@ -180,7 +203,19 @@ export class GestorContenidosComponent implements OnInit {
   // Este método llama a verDetalle con el modo edición activado.
   editarDesdeLista(contenido: ContenidoResumenGestor): void {
     console.log('[GestorContenidos] editarDesdeLista click', contenido);
-    this.verDetalle(contenido, true); // Llama a verDetalle en modo edición
+
+    // Validación de permisos por tipo de contenido
+    if (this.gestorTipoContenido && this.gestorTipoContenido !== contenido.tipo) {
+      this.errorMessage = 'No tienes permisos para editar este tipo de contenido.';
+      // Ocultar el mensaje después de 5 segundos
+      setTimeout(() => {
+        this.errorMessage = '';
+        this.cdr.detectChanges();
+      }, 5000);
+      return;
+    }
+
+    this.verDetalle(contenido, true);
   }
 
   private initEditFormFromDetalle(det: ContenidoDetalleGestor): void {
@@ -217,39 +252,84 @@ export class GestorContenidosComponent implements OnInit {
       return;
     }
 
-    const confirmar = confirm('¿Deseas guardar los cambios del contenido?');
-    if (!confirmar) {
+    // En lugar de confirm(), mostramos la vista de confirmación
+    this.showSaveConfirmation = true;
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Procede con el guardado después de la confirmación del usuario.
+   */
+  proceedWithSave(): void {
+    // Añadimos una guarda para asegurar a TypeScript que el objeto no es nulo.
+    if (!this.detalleSeleccionado) {
       return;
     }
 
     this.saving = true;
+    this.showSaveConfirmation = false;
     this.saveError = '';
     this.saveSuccess = '';
 
+    // Si hay una nueva carátula, la convertimos a base64 primero
+    if (this.newCoverFile) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64String = reader.result as string;
+        this.sendUpdatePayload(base64String);
+      };
+      reader.onerror = () => {
+        this.saveError = 'Error al procesar la nueva carátula.';
+        this.saving = false;
+        this.cdr.detectChanges();
+      };
+      reader.readAsDataURL(this.newCoverFile);
+    } else {
+      // Si no hay nueva carátula, enviamos la actualización con la carátula existente
+      this.sendUpdatePayload(this.detalleSeleccionado.caratula ?? null);
+    }
+  }
+
+  private sendUpdatePayload(caratulaPayload: string | null): void {
+    if (!this.detalleSeleccionado) return;
+
+    // --- INICIO: Validación en cliente (como propusiste) ---
+    if (!this.editForm.titulo || this.editForm.titulo.trim().length < 2) {
+      this.saveError = 'El título debe tener al menos 2 caracteres.';
+      this.saving = false;
+      this.cdr.detectChanges();
+      return;
+    }
+    if (!this.editForm.tags || this.editForm.tags.length === 0) {
+      this.saveError = 'Debes seleccionar al menos un tag.';
+      this.saving = false;
+      this.cdr.detectChanges();
+      return;
+    }
+    // --- FIN: Validación en cliente ---
+
+    const descripcionTrim = this.editForm.descripcion?.trim() ?? null;
+
     const payload: any = {
       titulo: this.editForm.titulo.trim(),
-      descripcion: this.editForm.descripcion?.trim() ?? '',
-      tags: this.editForm.tags, // Usamos directamente el array de tags
+      // Si la descripción queda vacía, mandamos null para que pase la validación del backend
+      descripcion: descripcionTrim === '' ? null : descripcionTrim,
+      tags: this.editForm.tags,
       vip: this.editForm.vip,
       estado: this.editForm.estado,
       edadVisualizacion: this.editForm.edadVisualizacion,
-      fechaDisponibleHasta: this.editForm.fechaDisponibleHasta
-        ? new Date(this.editForm.fechaDisponibleHasta)
-        : null,
-      caratula: this.detalleSeleccionado.caratula ?? null
+      fechaDisponibleHasta: this.editForm.fechaDisponibleHasta ? new Date(this.editForm.fechaDisponibleHasta) : null,
+      caratula: caratulaPayload
     };
 
     this.http
-      .put<ContenidoDetalleGestor>(
-        `${environment.apiUrl}/gestor/contenidos/${this.detalleSeleccionado.id}`,
-        payload
-      )
+      .put<ContenidoDetalleGestor>(`${environment.apiUrl}/gestor/contenidos/${this.detalleSeleccionado.id}`, payload)
       .subscribe({
-        next: (actualizado) => {
+        next: () => {
           this.saveSuccess = 'Contenido actualizado correctamente.';
           this.saving = false;
-          this.cargarContenidos(); // Recargamos la lista para ver los cambios
-          this.cerrarDetalle(); // Cerramos el modal tras guardar
+          this.cargarContenidos();
+          this.cerrarDetalle();
         },
         error: (error) => {
           console.error('[GestorContenidos] error al actualizar contenido', error);
@@ -292,10 +372,33 @@ export class GestorContenidosComponent implements OnInit {
   eliminarDesdeLista(contenido: ContenidoResumenGestor): void {
     console.log('[GestorContenidos] eliminarDesdeLista click', contenido);
 
-    const confirmar = confirm('¿Seguro que deseas eliminar este contenido? Esta acción no se puede deshacer.');
-    if (!confirmar) {
+    // Validación de permisos por tipo de contenido
+    if (this.gestorTipoContenido && this.gestorTipoContenido !== contenido.tipo) {
+      this.errorMessage = 'No tienes permisos para eliminar este tipo de contenido.';
+      // Ocultar el mensaje después de 5 segundos
+      setTimeout(() => {
+        this.errorMessage = '';
+        this.cdr.detectChanges();
+      }, 5000);
       return;
     }
+
+    // Mostramos el modal de confirmación en lugar del confirm() del navegador
+    this.deletingContent = contenido;
+    this.showDeleteConfirmation = true;
+    this.cdr.detectChanges();
+  }
+
+  /**
+   * Procede con la eliminación después de la confirmación del usuario.
+   */
+  proceedWithDelete(): void {
+    if (!this.deletingContent) return;
+
+    const contenido = this.deletingContent;
+
+    this.showDeleteConfirmation = false;
+    this.deletingContent = null;
 
     this.deletingId = contenido.id;
     this.deleteError = '';

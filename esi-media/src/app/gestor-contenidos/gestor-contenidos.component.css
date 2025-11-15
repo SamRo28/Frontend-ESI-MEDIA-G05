@@ -569,6 +569,80 @@
   color: #fecaca;
 }
 
+/* Modal de confirmación genérico */
+.confirmation-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2001;
+}
+
+/* Estilos para la confirmación de guardado */
+.confirmation-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.9);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 24px;
+}
+
+.confirmation-box {
+  background: rgba(30, 24, 54, 0.95);
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  text-align: center;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.9);
+}
+
+.confirmation-box p {
+  margin: 0 0 16px 0;
+  font-size: 15px;
+}
+
+.confirmation-subtitle {
+  font-size: 13px;
+  color: rgba(209, 213, 219, 0.8);
+}
+
+.confirmation-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-cancelar, .btn-confirmar {
+  padding: 8px 16px;
+  border-radius: 9999px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: transparent;
+  color: #e5e7eb;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-confirmar {
+  background: #a855f7;
+  border-color: #a855f7;
+}
+
+.btn-confirmar-delete {
+  padding: 8px 16px;
+  border-radius: 9999px;
+  background: #ef4444;
+  border: 1px solid #ef4444;
+  color: #f9fafb;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
 @media (max-width: 768px) {
   .contenidos-container {
     padding-top: 100px;
