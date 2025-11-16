@@ -3,8 +3,8 @@
   <div class="header-content">
     <div class="logo-section">
       <div class="logo">
-          <img src="/EsiMedia icono sin fondo.png" alt="ESIMedia Logo" class="w-8 h-8">
-          <span class="logo-text">EsiMedia</span>
+        <img src="/EsiMedia icono sin fondo.png" alt="ESIMedia Logo" class="w-8 h-8">
+        <span class="logo-text">EsiMedia</span>
       </div>
     </div>
 
@@ -39,6 +39,16 @@
       <!-- Botón Reproducir alineado con la barra de acciones -->
       <div class="play-action">
         <button class="btn-play" [disabled]="playDisabled" (click)="onReproducir()">Reproducir</button>
+      </div>
+      <!-- Inline rating next to play button -->
+      <div class="rating-inline" *ngIf="detalle">
+        <app-valoracion
+          [average]="averageRating"
+          [ratingsCount]="ratingsCount"
+          [valoracionInstance]="valoracionInstance"
+          [contenidoId]="detalle.id"
+          (updated)="onValoracionUpdated()">
+        </app-valoracion>
       </div>
       <div class="dropdown-listas" *ngIf="listasPrivadas.length > 0">
         <button class="btn-dropdown-listas" (click)="toggleDropdownListas()">

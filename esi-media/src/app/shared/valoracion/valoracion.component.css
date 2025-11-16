@@ -1,0 +1,31 @@
+.valoracion-widget { padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.02); display:flex; align-items:center; gap:12px }
+.average-row { display:flex; align-items:center; gap:8px; }
+.stars-outer { width:80px; height:18px; background:linear-gradient(90deg,#ddd 0,#ddd 100%); position:relative; overflow:hidden; border-radius:4px; }
+.stars-inner { height:100%; background:linear-gradient(90deg,#f6c358 0,#f59e0b 100%); width:0%; }
+.average-text { font-size:13px; color:var(--text-color,#fff); }
+.star-icon { width:18px; height:18px; color:#f6c358; margin-left:6px; margin-right:6px; flex-shrink:0 }
+.muted { color: #c7c7c7; margin-left:6px; font-weight:400; }
+.actions-row { margin-top:0; display:flex; gap:8px; align-items:center }
+.btn { padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); background:transparent; color:inherit; cursor:pointer; font-size:13px }
+.btn.primary { background: linear-gradient(90deg,#7c3aed,#ec4899); color:white; border:none }
+.rating-input { margin-top:10px; display:flex; flex-direction:column; gap:8px }
+.rating-actions { display:flex; gap:8px }
+.error { color:#fca5a5; }
+
+/* Dark select styling to avoid white-on-white default */
+.rating-select {
+	background: rgba(255,255,255,0.03);
+	color: var(--text-color, #fff);
+	border: 1px solid rgba(255,255,255,0.06);
+	padding: 6px 8px;
+	border-radius: 6px;
+}
+.rating-select option {
+	background: rgba(0,0,0,0.8);
+	color: #fff;
+}
+
+.rating-input { background: rgba(255,255,255,0.02); padding:8px; border-radius:8px }
+
+/* Tweak buttons spacing and look */
+.actions-row .btn { min-width: 140px }
