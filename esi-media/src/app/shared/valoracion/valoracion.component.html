@@ -1,0 +1,29 @@
+<div class="valoracion-widget">
+  <div class="average-row">
+    <div class="stars-outer">
+      <div class="stars-inner" [style.width.%]="starPercent()"></div>
+    </div>
+    <svg class="star-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+    <div class="average-text">
+      <strong>{{ average != null ? (average | number:'1.1-1') : '—' }}</strong>
+      <span class="muted">/5 ({{ ratingsCount || 0 }} valoraciones)</span>
+    </div>
+  </div>
+
+  <div class="actions-row">
+    <button *ngIf="!(valoracionInstance && valoracionInstance.valoracionFinal != null)" class="btn" (click)="openRating()">Realizar valoración</button>
+    <button *ngIf="valoracionInstance && valoracionInstance.valoracionFinal != null" class="btn" (click)="showMyRating()">Ver mi valoración</button>
+  </div>
+
+  <div class="rating-input" *ngIf="showRatingInput">
+    <label for="rating-select">Selecciona puntuación</label>
+    <select id="rating-select" class="rating-select" [(ngModel)]="selectedValue" aria-label="Selecciona puntuación">
+      <option *ngFor="let v of [1,1.5,2,2.5,3,3.5,4,4.5,5]" [ngValue]="v">{{ v }}</option>
+    </select>
+    <div class="rating-actions">
+      <button class="btn primary" (click)="sendRating()" [disabled]="submitting">Enviar</button>
+      <button class="btn" (click)="cancelRating()" [disabled]="submitting">Cancelar</button>
+    </div>
+    <div class="error" *ngIf="error">{{ error }}</div>
+  </div>
+</div>
