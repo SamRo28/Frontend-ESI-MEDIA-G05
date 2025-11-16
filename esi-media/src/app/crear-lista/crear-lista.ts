@@ -109,47 +109,29 @@ export class CrearListaComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Solo ejecutar en el navegador, no durante SSR
     if (!isPlatformBrowser(this.platformId)) {
-      console.log('CrearListaComponent - SSR detectado, saltando inicialización');
       return;
     }
 
-    // Cargar el usuario desde sessionStorage
-    const userJson = sessionStorage.getItem('user');
-    if (!userJson) {
-      // Si no existe el usuario, redirigir al login
-      this.router.navigate(['/login']);
-      return;
-    }
-
-    try {
-      const user = JSON.parse(userJson);
-      this.userId = user.id;
-    } catch (error) {
-      console.error('Error parsing user from sessionStorage:', error);
-      this.router.navigate(['/login']);
-      return;
-    }
-
-    // Determinar el rol del usuario desde sessionStorage
-    const currentUserClass = sessionStorage.getItem('currentUserClass');
-    if (currentUserClass === 'GestordeContenido') {
-      this.modo = 'gestor';
-    } else {
-      this.modo = 'visualizador';
-    }
-
-    // Configurar formulario según el rol del usuario
+    this.inicializarUsuario();
     this.configurarFormularioSegunRol();
-    
-    // Configurar búsqueda en tiempo real
     this.configurarBusquedaContenidos();
 
-    // Si hay lista para editar, cargar sus datos
     if (this.listaParaEditar) {
       this.cargarDatosLista();
     }
+  }
+
+  private inicializarUsuario(): void {
+    const userJson = sessionStorage.getItem('user');
+    if (!userJson) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    const user = JSON.parse(userJson);
+    this.userId = user.id;
+    this.modo = sessionStorage.getItem('currentUserClass') === 'GestordeContenido' ? 'gestor' : 'visualizador';
   }
 
   private parseTags(tagsInput: string): string[] {
@@ -164,49 +146,30 @@ export class CrearListaComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (!this.validarFormulario()) {
-      return;
-    }
-
-    const contenidosUnicos = this.procesarContenidos();
-    if (!this.validarContenidos(contenidosUnicos)) {
-      return;
-    }
-
-    this.iniciarProcesamiento();
-    const datosLista = this.construirDatosLista(contenidosUnicos);
-    
-    if (!this.validarDatosLista(datosLista)) {
-      return;
-    }
-
-    this.procesarLista(datosLista);
-  }
-
-  private validarFormulario(): boolean {
     if (this.listaForm.invalid) {
       this.listaForm.markAllAsTouched();
-      return false;
+      return;
     }
-    return true;
-  }
 
-  private procesarContenidos(): string[] {
-    return [...new Set(this.contenidosIds)];
-  }
-
-  private validarContenidos(contenidosUnicos: string[]): boolean {
+    const contenidosUnicos = [...new Set(this.contenidosIds)];
     if (contenidosUnicos.length === 0) {
       this.mostrarErrorContenido = true;
-      return false;
+      return;
     }
-    return true;
-  }
 
-  private iniciarProcesamiento(): void {
     this.guardando = true;
     this.mensajeErrorNombre = '';
     this.mensajeExito = '';
+
+    const datosLista = this.construirDatosLista(contenidosUnicos);
+    const observable = this.listaParaEditar ? 
+      this.listaService.editarLista(this.listaParaEditar.id, datosLista) :
+      this.listaService.crearLista(datosLista);
+    
+    observable.subscribe({
+      next: (res: any) => this.manejarExitoLista(res),
+      error: (err: any) => this.manejarErrorLista(err)
+    });
   }
 
   private construirDatosLista(contenidosUnicos: string[]) {
@@ -222,51 +185,19 @@ export class CrearListaComponent implements OnInit {
     };
   }
 
-  private validarDatosLista(datosLista: any): boolean {
-    const validacion = this.listaService.validarDatosLista(datosLista);
-    if (!validacion.esValida) {
-      this.guardando = false;
-      this.mensajeErrorNombre = validacion.mensaje || 'Datos de la lista no válidos';
-      return false;
-    }
-    return true;
-  }
-
-  private procesarLista(datosLista: any): void {
-    const observable = this.obtenerObservableLista(datosLista);
-    
-    observable.subscribe({
-      next: (res: any) => this.manejarExitoLista(res),
-      error: (err: any) => this.manejarErrorLista(err)
-    });
-  }
-
-  private obtenerObservableLista(datosLista: any) {
-    return this.listaParaEditar ? 
-      this.listaService.editarLista(this.listaParaEditar.id, datosLista) :
-      this.listaService.crearLista(datosLista);
-  }
-
   private manejarExitoLista(res: any): void {
     this.guardando = false;
     if (res?.success) {
       this.handleSuccessfulListOperation(res);
     } else {
-      this.handleUnexpectedResponse(res);
+      this.mensajeErrorNombre = res?.mensaje || 'No se pudo procesar la lista';
     }
   }
 
   private manejarErrorLista(err: any): void {
     this.guardando = false;
-    console.error('Error procesando lista:', err);
-    this.mensajeErrorNombre = this.obtenerMensajeError(err);
-  }
-
-  private obtenerMensajeError(err: any): string {
-    if (err.status === 400 && err.error?.mensaje) {
-      return err.error.mensaje;
-    }
-    return 'Error al procesar la lista. Inténtalo de nuevo.';
+    this.mensajeErrorNombre = (err.status === 400 && err.error?.mensaje) ? 
+      err.error.mensaje : 'Error al procesar la lista. Inténtalo de nuevo.';
   }
 
   onCancelar(): void {
@@ -284,82 +215,29 @@ export class CrearListaComponent implements OnInit {
     this.searchSubject.pipe(
       debounceTime(300),
       distinctUntilChanged(),
-      switchMap(query => this.procesarQueryBusqueda(query))
+      switchMap(query => {
+        if (!query || query.trim().length < 2) {
+          this.buscandoContenidos = false;
+          return of({ success: false, contenidos: [], total: 0, query: '', mensaje: '' });
+        }
+        
+        this.buscandoContenidos = true;
+        return this.contentService.buscarContenidos(query.trim(), 8).pipe(
+          catchError(() => of({ success: false, contenidos: [], total: 0, query: query.trim(), mensaje: 'Error al buscar contenidos' }))
+        );
+      })
     ).subscribe({
-      next: (response) => this.procesarRespuestaBusqueda(response),
-      error: (error) => this.manejarErrorBusqueda(error)
+      next: (response) => {
+        this.buscandoContenidos = false;
+        if (response?.success) {
+          this.contenidosEncontrados = response.contenidos || [];
+          this.mostrarSugerencias = this.contenidosEncontrados.length > 0;
+        } else {
+          this.contenidosEncontrados = [];
+          this.mostrarSugerencias = false;
+        }
+      }
     });
-  }
-
-  private procesarQueryBusqueda(query: string) {
-    if (!this.esQueryValidoBusqueda(query)) {
-      this.buscandoContenidos = false;
-      return of(this.crearRespuestaVaciaBusqueda());
-    }
-    
-    console.log('Buscando contenidos para:', query.trim());
-    this.buscandoContenidos = true;
-    
-    return this.contentService.buscarContenidos(query.trim(), 8).pipe(
-      catchError(error => this.manejarErrorHttpBusqueda(error, query))
-    );
-  }
-
-  private esQueryValidoBusqueda(query: string): boolean {
-    return !!(query && query.trim().length >= 2);
-  }
-
-  private crearRespuestaVaciaBusqueda() {
-    return { success: false, contenidos: [], total: 0, query: '', mensaje: '' };
-  }
-
-  private manejarErrorHttpBusqueda(error: any, query: string) {
-    console.error('Error HTTP en búsqueda:', error);
-    return of({ 
-      success: false, 
-      contenidos: [], 
-      total: 0, 
-      query: query.trim(), 
-      mensaje: 'Error al buscar contenidos' 
-    });
-  }
-
-  private procesarRespuestaBusqueda(response: any): void {
-    console.log('Procesando respuesta:', response);
-    this.buscandoContenidos = false;
-    
-    if (response?.success) {
-      this.actualizarResultadosBusqueda(response);
-    } else {
-      this.limpiarResultadosBusqueda();
-      console.log('Búsqueda sin resultados o error:', response?.mensaje);
-    }
-  }
-
-  private actualizarResultadosBusqueda(response: any): void {
-    this.contenidosEncontrados = response.contenidos || [];
-    this.mostrarSugerencias = this.contenidosEncontrados.length > 0;
-    console.log('Contenidos encontrados:', this.contenidosEncontrados.length);
-  }
-
-  private limpiarResultadosBusqueda(): void {
-    this.contenidosEncontrados = [];
-    this.mostrarSugerencias = false;
-  }
-
-  private manejarErrorBusqueda(error: any): void {
-    console.error('Error en búsqueda de contenidos:', error);
-    this.buscandoContenidos = false;
-    this.limpiarResultadosBusqueda();
-    this.procesarMensajeErrorBusqueda(error);
-  }
-
-  private procesarMensajeErrorBusqueda(error: any): void {
-    if (error.status === 401) {
-      console.warn('Token de autorización inválido o expirado');
-    } else if (error.status === 0) {
-      console.warn('No se puede conectar al servidor backend');
-    }
   }
 
   /**
@@ -428,25 +306,13 @@ export class CrearListaComponent implements OnInit {
    * Selecciona un contenido de las sugerencias
    */
   seleccionarContenido(contenido: ContenidoSearchResult): void {
-    if (this.esContenidoDuplicado(contenido.id)) {
+    if (this.contenidosIds.includes(contenido.id)) {
       alert('Este contenido ya está en la lista');
       return;
     }
 
-    this.agregarContenidoALista(contenido);
-    this.limpiarFormularioBusqueda();
-  }
-
-  private esContenidoDuplicado(contenidoId: string): boolean {
-    return this.contenidosIds.includes(contenidoId);
-  }
-
-  private agregarContenidoALista(contenido: ContenidoSearchResult): void {
     this.contenidosSeleccionados.set(contenido.id, contenido);
     this.contenidosIds.push(contenido.id);
-  }
-
-  private limpiarFormularioBusqueda(): void {
     this.nuevoContenido = '';
     this.mostrarSugerencias = false;
     this.contenidosEncontrados = [];
@@ -466,72 +332,41 @@ export class CrearListaComponent implements OnInit {
    * Obtiene el nombre del contenido por su ID (para mostrar en la lista)
    */
   obtenerNombreContenido(id: string): string {
-    const contenidoCacheado = this.buscarEnCacheContenidos(id);
+    const contenidoCacheado = this.contenidosSeleccionados.get(id);
     if (contenidoCacheado) {
-      return this.formatearNombreContenido(contenidoCacheado.titulo, contenidoCacheado.tipo);
+      return `${contenidoCacheado.titulo} (${contenidoCacheado.tipo})`;
     }
     
-    const contenidoEncontrado = this.buscarEnContenidosEncontrados(id);
+    const contenidoEncontrado = this.contenidosEncontrados.find(c => c.id === id);
     if (contenidoEncontrado) {
-      return this.formatearNombreContenido(contenidoEncontrado.titulo, contenidoEncontrado.tipo);
+      return `${contenidoEncontrado.titulo} (${contenidoEncontrado.tipo})`;
     }
     
     return `Contenido ID: ${id}`;
-  }
-
-  private buscarEnCacheContenidos(id: string): ContenidoSearchResult | undefined {
-    return this.contenidosSeleccionados.get(id);
-  }
-
-  private buscarEnContenidosEncontrados(id: string): ContenidoSearchResult | undefined {
-    return this.contenidosEncontrados.find(c => c.id === id);
-  }
-
-  private formatearNombreContenido(titulo: string, tipo: string): string {
-    return `${titulo} (${tipo})`;
   }
 
   /**
    * Añade un nuevo contenido a la lista (método legacy mantenido para compatibilidad)
    */
   agregarContenido(): void {
-    const contenidoTrimmed = this.obtenerContenidoTrimmed();
-    
-    if (!contenidoTrimmed) {
-      return;
-    }
+    const contenidoTrimmed = this.nuevoContenido?.trim();
+    if (!contenidoTrimmed) return;
 
-    const contenidoEncontrado = this.buscarContenidoExacto(contenidoTrimmed);
+    const contenidoEncontrado = this.contenidosEncontrados.find(c => 
+      c.titulo.toLowerCase() === contenidoTrimmed.toLowerCase()
+    );
     
     if (contenidoEncontrado) {
       this.seleccionarContenido(contenidoEncontrado);
       return;
     }
     
-    this.agregarContenidoPorId(contenidoTrimmed);
-  }
-
-  private obtenerContenidoTrimmed(): string {
-    return this.nuevoContenido?.trim() || '';
-  }
-
-  private buscarContenidoExacto(contenido: string): ContenidoSearchResult | undefined {
-    return this.contenidosEncontrados.find(c => 
-      c.titulo.toLowerCase() === contenido.toLowerCase()
-    );
-  }
-
-  private agregarContenidoPorId(contenidoId: string): void {
-    if (this.esContenidoDuplicado(contenidoId)) {
+    if (this.contenidosIds.includes(contenidoTrimmed)) {
       alert('Este contenido ya está en la lista');
       return;
     }
 
-    this.contenidosIds.push(contenidoId);
-    this.limpiarCamposBusqueda();
-  }
-
-  private limpiarCamposBusqueda(): void {
+    this.contenidosIds.push(contenidoTrimmed);
     this.nuevoContenido = '';
     this.mostrarErrorContenido = false;
     this.mostrarSugerencias = false;
@@ -541,19 +376,11 @@ export class CrearListaComponent implements OnInit {
    * Quita un contenido de la lista
    */
   quitarContenido(index: number): void {
-    if (!this.puedeEliminarContenido()) {
-      this.mostrarAdvertenciaUltimoContenido();
+    if (this.contenidosIds.length <= 1) {
+      alert('⚠️ Una lista debe tener al menos un contenido. No puedes eliminar el último elemento.');
       return;
     }
 
-    this.eliminarContenidoPorIndice(index);
-  }
-
-  private mostrarAdvertenciaUltimoContenido(): void {
-    alert('⚠️ Una lista debe tener al menos un contenido. No puedes eliminar el último elemento.');
-  }
-
-  private eliminarContenidoPorIndice(index: number): void {
     const contenidoEliminado = this.contenidosIds[index];
     this.contenidosIds.splice(index, 1);
     this.contenidosSeleccionados.delete(contenidoEliminado);
@@ -598,19 +425,10 @@ export class CrearListaComponent implements OnInit {
   private cargarDatosLista(): void {
     if (!this.listaParaEditar) return;
 
-    this.cargarTagsSeleccionados();
-    this.cargarDatosFormulario();
-    this.cargarContenidosIds();
-    this.cargarContenidosCache();
-  }
-
-  private cargarTagsSeleccionados(): void {
     if (this.listaParaEditar.tags?.length > 0) {
       this.selectedTags = [...this.listaParaEditar.tags];
     }
-  }
 
-  private cargarDatosFormulario(): void {
     this.listaForm.patchValue({
       nombre: this.listaParaEditar.nombre || '',
       descripcion: this.listaParaEditar.descripcion || '',
@@ -618,29 +436,21 @@ export class CrearListaComponent implements OnInit {
       visible: this.listaParaEditar.visible || false,
       tagsInput: this.selectedTags.join(', ')
     });
-  }
 
-  private cargarContenidosIds(): void {
     if (this.listaParaEditar.contenidosIds?.length > 0) {
       this.contenidosIds = [...this.listaParaEditar.contenidosIds];
     }
-  }
 
-  private cargarContenidosCache(): void {
     if (this.listaParaEditar.contenidos?.length > 0) {
       this.listaParaEditar.contenidos.forEach((contenido: any) => {
-        this.agregarContenidoAlCache(contenido);
+        this.contenidosSeleccionados.set(contenido.id, {
+          id: contenido.id,
+          titulo: contenido.titulo || contenido.nombre,
+          tipo: contenido.tipo,
+          duracion: contenido.duracion
+        });
       });
     }
-  }
-
-  private agregarContenidoAlCache(contenido: any): void {
-    this.contenidosSeleccionados.set(contenido.id, {
-      id: contenido.id,
-      titulo: contenido.titulo || contenido.nombre,
-      tipo: contenido.tipo,
-      duracion: contenido.duracion
-    });
   }
 
   /**
@@ -705,50 +515,19 @@ export class CrearListaComponent implements OnInit {
    * Maneja el caso de operación exitosa (crear/editar lista)
    */
   private handleSuccessfulListOperation(res: any): void {
-    // Mostrar mensaje de éxito
     const accion = this.listaParaEditar ? 'actualizada' : 'creada';
     this.mensajeExito = `✅ Lista ${accion} correctamente`;
     
     if (this.modal) {
-      this.handleModalSuccess(res);
+      if (this.listaParaEditar) {
+        this.editada.emit(res.lista);
+      } else {
+        this.creada.emit(res.lista);
+      }
+      setTimeout(() => this.resetearFormulario(), 500);
     } else {
-      this.handleNormalModeSuccess();
-    }
-  }
-
-  /**
-   * Maneja el éxito en modo modal
-   */
-  private handleModalSuccess(res: any): void {
-    // En modo modal, emitir evento correspondiente y cerrar
-    if (this.listaParaEditar) {
-      this.editada.emit(res.lista);
-    } else {
-      this.creada.emit(res.lista);
-    }
-    setTimeout(() => {
+      setTimeout(() => this.router.navigate(['/dashboard/listas']), 2000);
       this.resetearFormulario();
-    }, 500);
-  }
-
-  /**
-   * Maneja el éxito en modo normal (no modal)
-   */
-  private handleNormalModeSuccess(): void {
-    // En modo normal, navegar después de 2 segundos
-    setTimeout(() => this.router.navigate(['/dashboard/listas']), 2000);
-    this.resetearFormulario();
-  }
-
-  /**
-   * Maneja respuesta inesperada del servidor
-   */
-  private handleUnexpectedResponse(res: any): void {
-    console.error('Respuesta inesperada:', res);
-    if (res?.mensaje && (res.mensaje.includes('nombre') && res.mensaje.includes('existe'))) {
-      this.mensajeErrorNombre = res.mensaje;
-    } else {
-      this.mensajeErrorNombre = res?.mensaje || 'No se pudo procesar la lista';
     }
   }
 }
