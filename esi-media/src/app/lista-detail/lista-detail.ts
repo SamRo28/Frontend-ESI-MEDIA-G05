@@ -100,107 +100,102 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
-    // Debug: Mostrar información del usuario
+    const observables = this.crearObservablesLista(listaId);
+    
+    forkJoin(observables).subscribe({
+      next: (responses) => this.procesarRespuestasLista(responses),
+      error: (error) => this.manejarErrorCarga(error)
+    });
+  }
+
+  private crearObservablesLista(listaId: string) {
     const tipoUsuario = this.obtenerTipoUsuario();
     console.log('🔍 DEBUG - Tipo de usuario:', tipoUsuario);
-    console.log('🔍 DEBUG - Es visualizador?:', this.esVisualizador());
-    console.log('🔍 DEBUG - currentUserClass:', sessionStorage.getItem('currentUserClass'));
-    
-    // Determinar qué método usar según el tipo de usuario
-    let listaObservable, contenidosObservable;
-    
+
     if (this.esVisualizador()) {
-      console.log('🔍 Cargando como visualizador - intentando lista pública primero');
-      // Los visualizadores intentan acceder como lista pública primero
-      listaObservable = this.listaService.obtenerListaPublicaPorId(listaId).pipe(
-        catchError(error => {
-          console.log('❌ Error con lista pública:', error.status, '- intentando lista privada');
-          // Si falla, intentar como lista propia
-          if (error.status === 404 || error.status === 403) {
-            return this.listaService.obtenerListaPorId(listaId);
-          }
-          throw error;
-        })
-      );
-      
-      // Para contenidos, también intentar primero el endpoint público
-      contenidosObservable = this.listaService.obtenerContenidosListaPublica(listaId).pipe(
-        catchError(error => {
-          console.log('❌ Error con contenidos públicos:', error.status, '- intentando contenidos privados');
-          if (error.status === 404 || error.status === 403) {
-            return this.listaService.obtenerContenidosLista(listaId);
-          }
-          throw error;
-        })
-      );
-    } else {
-      console.log('🔍 Cargando como gestor - usando endpoints estándar');
-      // Gestores usan los métodos estándar
-      listaObservable = this.listaService.obtenerListaPorId(listaId);
-      contenidosObservable = this.listaService.obtenerContenidosLista(listaId);
+      return {
+        lista: this.crearObservableListaVisualizador(listaId),
+        contenidos: this.crearObservableContenidosVisualizador(listaId)
+      };
     }
 
-    // Cargar datos de la lista y sus contenidos en paralelo
-    forkJoin({
-      lista: listaObservable,
-      contenidos: contenidosObservable
-    }).subscribe({
-      next: (responses) => {
-        // Procesar respuesta de la lista
-        if (responses.lista?.success) {
-          this.lista = responses.lista.lista;
-          
-          // Verificar permisos de acceso después de cargar
-          if (!this.puedeVerLista()) {
-            this.error = 'No tienes permisos para acceder a esta lista';
-            this.ngZone.run(() => {
-              this.loading = false;
-              this.cdr.detectChanges();
-            });
-            return;
-          }
-        } else {
-          this.error = responses.lista?.mensaje || 'No se pudo cargar la lista';
-        }
+    return {
+      lista: this.listaService.obtenerListaPorId(listaId),
+      contenidos: this.listaService.obtenerContenidosLista(listaId)
+    };
+  }
 
-        // Procesar respuesta de los contenidos solo si tiene acceso
-        if (responses.contenidos?.success && this.puedeVerLista()) {
-          this.contenidos = responses.contenidos.contenidos || [];
-          console.log('Contenidos cargados:', this.contenidos.length, this.contenidos);
-        } else {
-          // No es error crítico si no hay contenidos
-          this.contenidos = [];
-          console.log('No se encontraron contenidos o respuesta sin éxito');
-        }
+  private crearObservableListaVisualizador(listaId: string) {
+    return this.listaService.obtenerListaPublicaPorId(listaId).pipe(
+      catchError(error => {
+        console.log('❌ Error con lista pública:', error.status, '- intentando lista privada');
+        return (error.status === 404 || error.status === 403) 
+          ? this.listaService.obtenerListaPorId(listaId)
+          : of(error);
+      })
+    );
+  }
 
-        // Actualizar estado dentro de NgZone
-        this.ngZone.run(() => {
-          this.loading = false;
-          // Forzar detección de cambios
-          this.cdr.detectChanges();
-        });
-      },
-      error: (error) => {
-        console.error('Error cargando datos de la lista:', error);
-        
-        if (error.status === 404) {
-          this.error = 'Lista no encontrada';
-        } else if (error.status === 403) {
-          this.error = 'No tienes permisos para acceder a esta lista privada';
-        } else if (error.status === 401) {
-          this.error = 'Debes iniciar sesión para acceder a las listas';
-        } else {
-          this.error = 'Error al cargar la lista. Intenta de nuevo más tarde.';
-        }
-        
-        // Actualizar estado dentro de NgZone
-        this.ngZone.run(() => {
-          this.loading = false;
-          // Forzar detección de cambios
-          this.cdr.detectChanges();
-        });
+  private crearObservableContenidosVisualizador(listaId: string) {
+    return this.listaService.obtenerContenidosListaPublica(listaId).pipe(
+      catchError(error => {
+        console.log('❌ Error con contenidos públicos:', error.status, '- intentando contenidos privados');
+        return (error.status === 404 || error.status === 403)
+          ? this.listaService.obtenerContenidosLista(listaId)
+          : of(error);
+      })
+    );
+  }
+
+  private procesarRespuestasLista(responses: any): void {
+    this.procesarRespuestaLista(responses.lista);
+    this.procesarRespuestaContenidos(responses.contenidos);
+    this.finalizarCarga();
+  }
+
+  private procesarRespuestaLista(respuestaLista: any): void {
+    if (respuestaLista?.success) {
+      this.lista = respuestaLista.lista;
+      
+      if (!this.puedeVerLista()) {
+        this.error = 'No tienes permisos para acceder a esta lista';
+        return;
       }
+    } else {
+      this.error = respuestaLista?.mensaje || 'No se pudo cargar la lista';
+    }
+  }
+
+  private procesarRespuestaContenidos(respuestaContenidos: any): void {
+    if (respuestaContenidos?.success && this.puedeVerLista()) {
+      this.contenidos = respuestaContenidos.contenidos || [];
+      console.log('Contenidos cargados:', this.contenidos.length, this.contenidos);
+    } else {
+      this.contenidos = [];
+      console.log('No se encontraron contenidos o respuesta sin éxito');
+    }
+  }
+
+  private finalizarCarga(): void {
+    this.ngZone.run(() => {
+      this.loading = false;
+      this.cdr.detectChanges();
     });
+  }
+
+  private manejarErrorCarga(error: any): void {
+    console.error('Error cargando datos de la lista:', error);
+    this.error = this.obtenerMensajeError(error);
+    this.finalizarCarga();
+  }
+
+  private obtenerMensajeError(error: any): string {
+    switch (error.status) {
+      case 404: return 'Lista no encontrada';
+      case 403: return 'No tienes permisos para acceder a esta lista privada';
+      case 401: return 'Debes iniciar sesión para acceder a las listas';
+      default: return 'Error al cargar la lista. Intenta de nuevo más tarde.';
+    }
   }
 
   /**
@@ -298,45 +293,65 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
     this.searchSubject.pipe(
       debounceTime(300),
       distinctUntilChanged(),
-      switchMap(query => {
-        if (!query || query.trim().length < 2) {
-          this.buscandoContenidos = false;
-          return of({ success: false, contenidos: [], total: 0, query: '', mensaje: '' });
-        }
-        
-        this.buscandoContenidos = true;
-        return this.contentService.buscarContenidos(query.trim(), 8).pipe(
-          catchError(error => {
-            console.error('Error HTTP en búsqueda:', error);
-            return of({ 
-              success: false, 
-              contenidos: [], 
-              total: 0, 
-              query: query.trim(), 
-              mensaje: 'Error al buscar contenidos' 
-            });
-          })
-        );
-      }),
+      switchMap(query => this.procesarQueryBusqueda(query)),
       takeUntil(this.destroy$)
     ).subscribe({
-      next: (response) => {
-        this.buscandoContenidos = false;
-        if (response && response.success) {
-          this.contenidosEncontrados = response.contenidos || [];
-          this.mostrarSugerencias = this.contenidosEncontrados.length > 0;
-        } else {
-          this.contenidosEncontrados = [];
-          this.mostrarSugerencias = false;
-        }
-      },
-      error: (error) => {
-        console.error('Error en búsqueda de contenidos:', error);
-        this.buscandoContenidos = false;
-        this.contenidosEncontrados = [];
-        this.mostrarSugerencias = false;
-      }
+      next: (response) => this.procesarResultadoBusqueda(response),
+      error: (error) => this.manejarErrorBusqueda(error)
     });
+  }
+
+  private procesarQueryBusqueda(query: string) {
+    if (!this.esQueryValido(query)) {
+      this.buscandoContenidos = false;
+      return of(this.crearRespuestaVacia());
+    }
+    
+    this.buscandoContenidos = true;
+    return this.contentService.buscarContenidos(query.trim(), 8).pipe(
+      catchError(error => this.manejarErrorHttpBusqueda(error, query))
+    );
+  }
+
+  private esQueryValido(query: string): boolean {
+    return !!(query && query.trim().length >= 2);
+  }
+
+  private crearRespuestaVacia() {
+    return { success: false, contenidos: [], total: 0, query: '', mensaje: '' };
+  }
+
+  private manejarErrorHttpBusqueda(error: any, query: string) {
+    console.error('Error HTTP en búsqueda:', error);
+    return of({ 
+      success: false, 
+      contenidos: [], 
+      total: 0, 
+      query: query.trim(), 
+      mensaje: 'Error al buscar contenidos' 
+    });
+  }
+
+  private procesarResultadoBusqueda(response: any): void {
+    this.buscandoContenidos = false;
+    
+    if (response?.success) {
+      this.contenidosEncontrados = response.contenidos || [];
+      this.mostrarSugerencias = this.contenidosEncontrados.length > 0;
+    } else {
+      this.limpiarResultadosBusqueda();
+    }
+  }
+
+  private limpiarResultadosBusqueda(): void {
+    this.contenidosEncontrados = [];
+    this.mostrarSugerencias = false;
+  }
+
+  private manejarErrorBusqueda(error: any): void {
+    console.error('Error en búsqueda de contenidos:', error);
+    this.buscandoContenidos = false;
+    this.limpiarResultadosBusqueda();
   }
 
   /**
@@ -415,45 +430,55 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
     }
 
     this.guardandoEdicion = true;
+    const datosLista = this.construirDatosLista();
 
-    const datosLista = {
+    this.listaService.editarLista(this.lista.id, datosLista).subscribe({
+      next: (response) => this.procesarRespuestaGuardado(response),
+      error: (error) => this.manejarErrorGuardado(error)
+    });
+  }
+
+  private construirDatosLista() {
+    return {
       nombre: this.datosEdicion.nombre.trim(),
       descripcion: this.datosEdicion.descripcion.trim(),
       tags: this.parseTags(this.datosEdicion.tagsInput),
       visible: this.esGestorDeContenido() ? this.datosEdicion.visible : false,
       creadorId: this.userId,
       especializacionGestor: this.lista.especializacionGestor,
-      contenidosIds: [...new Set(this.contenidosEditables)] // Eliminar duplicados
+      contenidosIds: [...new Set(this.contenidosEditables)]
     };
+  }
 
-    this.listaService.editarLista(this.lista.id, datosLista).subscribe({
-      next: (response) => {
-        this.guardandoEdicion = false;
-        if (response && response.success) {
-          // Actualizar datos locales
-          this.lista = { ...this.lista, ...datosLista };
-          
-          // Recargar contenidos para mostrar los cambios
-          this.cargarContenidosLista();
-          
-          // Salir del modo edición y limpiar datos
-          this.ngZone.run(() => {
-            this.modoEdicion = false;
-            this.limpiarDatosEdicion();
-            this.cdr.detectChanges();
-          });
-          
-          alert('✅ Lista actualizada correctamente');
-        } else {
-          alert(response?.mensaje || 'Error al actualizar la lista');
-        }
-      },
-      error: (error) => {
-        this.guardandoEdicion = false;
-        console.error('Error actualizando lista:', error);
-        alert('Error al actualizar la lista');
-      }
+  private procesarRespuestaGuardado(response: any): void {
+    this.guardandoEdicion = false;
+    
+    if (response?.success) {
+      this.actualizarDatosLocales(response);
+      this.finalizarEdicion();
+      alert('✅ Lista actualizada correctamente');
+    } else {
+      alert(response?.mensaje || 'Error al actualizar la lista');
+    }
+  }
+
+  private actualizarDatosLocales(response: any): void {
+    this.lista = { ...this.lista, ...this.construirDatosLista() };
+    this.cargarContenidosLista();
+  }
+
+  private finalizarEdicion(): void {
+    this.ngZone.run(() => {
+      this.modoEdicion = false;
+      this.limpiarDatosEdicion();
+      this.cdr.detectChanges();
     });
+  }
+
+  private manejarErrorGuardado(error: any): void {
+    this.guardandoEdicion = false;
+    console.error('Error actualizando lista:', error);
+    alert('Error al actualizar la lista');
   }
 
   /**
@@ -520,38 +545,31 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
   private cargarContenidosLista(): void {
     console.log('Recargando contenidos para lista:', this.lista.id);
     
-    // Usar el endpoint correcto según el tipo de usuario
-    let contenidosObservable;
-    if (this.esVisualizador()) {
-      contenidosObservable = this.listaService.obtenerContenidosListaPublica(this.lista.id).pipe(
-        catchError(error => {
-          if (error.status === 404 || error.status === 403) {
-            return this.listaService.obtenerContenidosLista(this.lista.id);
-          }
-          throw error;
-        })
-      );
-    } else {
-      contenidosObservable = this.listaService.obtenerContenidosLista(this.lista.id);
-    }
+    const contenidosObservable = this.crearObservableContenidos();
     
     contenidosObservable.subscribe({
-      next: (response) => {
-        console.log('Respuesta de recarga de contenidos:', response);
-        if (response?.success) {
-          this.contenidos = response.contenidos || [];
-          console.log('Contenidos actualizados después de edición:', this.contenidos.length, this.contenidos);
-          
-          // Forzar detección de cambios dentro de NgZone
-          this.ngZone.run(() => {
-            this.cdr.detectChanges();
-          });
-        }
-      },
-      error: (error) => {
-        console.error('Error recargando contenidos:', error);
-      }
+      next: (response) => this.procesarRespuestaRecargaContenidos(response),
+      error: (error) => console.error('Error recargando contenidos:', error)
     });
+  }
+
+  private crearObservableContenidos() {
+    return this.esVisualizador() 
+      ? this.crearObservableContenidosVisualizador(this.lista.id)
+      : this.listaService.obtenerContenidosLista(this.lista.id);
+  }
+
+  private procesarRespuestaRecargaContenidos(response: any): void {
+    console.log('Respuesta de recarga de contenidos:', response);
+    
+    if (response?.success) {
+      this.contenidos = response.contenidos || [];
+      console.log('Contenidos actualizados después de edición:', this.contenidos.length, this.contenidos);
+      
+      this.ngZone.run(() => {
+        this.cdr.detectChanges();
+      });
+    }
   }
 
   /**
@@ -565,17 +583,25 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
    * Selecciona un contenido de las sugerencias
    */
   seleccionarContenido(contenido: ContenidoSearchResult): void {
-    // Verificar que no esté duplicado
-    if (this.contenidosEditables.includes(contenido.id)) {
+    if (this.esContenidoDuplicado(contenido.id)) {
       alert('Este contenido ya está en la lista');
       return;
     }
 
-    // Guardar en caché y agregar a la lista
+    this.agregarContenidoALista(contenido);
+    this.limpiarFormularioBusqueda();
+  }
+
+  private esContenidoDuplicado(contenidoId: string): boolean {
+    return this.contenidosEditables.includes(contenidoId);
+  }
+
+  private agregarContenidoALista(contenido: ContenidoSearchResult): void {
     this.contenidosSeleccionados.set(contenido.id, contenido);
     this.contenidosEditables.push(contenido.id);
-    
-    // Limpiar búsqueda
+  }
+
+  private limpiarFormularioBusqueda(): void {
     this.nuevoContenido = '';
     this.mostrarSugerencias = false;
     this.contenidosEncontrados = [];
@@ -594,32 +620,36 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
    * Agrega un contenido (método legacy)
    */
   agregarContenido(): void {
-    if (!this.nuevoContenido || !this.nuevoContenido.trim()) {
+    const contenidoTrimmed = this.nuevoContenido?.trim();
+    
+    if (!contenidoTrimmed) {
       return;
     }
 
-    const contenido = this.nuevoContenido.trim();
-    
-    // Si hay sugerencias y coincide exactamente, seleccionar
-    const contenidoEncontrado = this.contenidosEncontrados.find(c => 
-      c.titulo.toLowerCase() === contenido.toLowerCase()
-    );
+    const contenidoEncontrado = this.buscarContenidoExacto(contenidoTrimmed);
     
     if (contenidoEncontrado) {
       this.seleccionarContenido(contenidoEncontrado);
       return;
     }
     
-    // Verificar duplicados
-    if (this.contenidosEditables.includes(contenido)) {
+    this.agregarContenidoPorId(contenidoTrimmed);
+  }
+
+  private buscarContenidoExacto(contenido: string): ContenidoSearchResult | undefined {
+    return this.contenidosEncontrados.find(c => 
+      c.titulo.toLowerCase() === contenido.toLowerCase()
+    );
+  }
+
+  private agregarContenidoPorId(contenidoId: string): void {
+    if (this.esContenidoDuplicado(contenidoId)) {
       alert('Este contenido ya está en la lista');
       return;
     }
 
-    // Agregar como ID directo
-    this.contenidosEditables.push(contenido);
-    this.nuevoContenido = '';
-    this.mostrarSugerencias = false;
+    this.contenidosEditables.push(contenidoId);
+    this.limpiarFormularioBusqueda();
   }
 
   /**
@@ -639,19 +669,29 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
    * Obtiene el nombre de un contenido por su ID
    */
   obtenerNombreContenido(id: string): string {
-    // Buscar en caché
-    const contenidoCacheado = this.contenidosSeleccionados.get(id);
+    const contenidoCacheado = this.buscarEnCache(id);
     if (contenidoCacheado) {
-      return `${contenidoCacheado.titulo} (${contenidoCacheado.tipo})`;
+      return this.formatearNombreContenido(contenidoCacheado.titulo, contenidoCacheado.tipo);
     }
     
-    // Buscar en contenidos actuales
-    const contenidoActual = this.contenidos.find(c => c.id === id);
+    const contenidoActual = this.buscarEnContenidosActuales(id);
     if (contenidoActual) {
-      return `${contenidoActual.titulo} (${contenidoActual.tipo})`;
+      return this.formatearNombreContenido(contenidoActual.titulo, contenidoActual.tipo);
     }
     
     return `Contenido ID: ${id}`;
+  }
+
+  private buscarEnCache(id: string): ContenidoSearchResult | undefined {
+    return this.contenidosSeleccionados.get(id);
+  }
+
+  private buscarEnContenidosActuales(id: string): ContenidoResumenDTO | undefined {
+    return this.contenidos.find(c => c.id === id);
+  }
+
+  private formatearNombreContenido(titulo: string, tipo: string): string {
+    return `${titulo} (${tipo})`;
   }
 
   /**
