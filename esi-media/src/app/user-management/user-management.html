@@ -291,8 +291,9 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Nombre -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+            <label for="edit-nombre" class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
             <input 
+              id="edit-nombre"
               type="text"
               [(ngModel)]="editForm.nombre"
               name="nombre"
@@ -302,8 +303,9 @@
 
           <!-- Apellidos -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Apellidos</label>
+            <label for="edit-apellidos" class="block text-sm font-medium text-gray-700 mb-2">Apellidos</label>
             <input 
+              id="edit-apellidos"
               type="text"
               [(ngModel)]="editForm.apellidos"
               name="apellidos"
@@ -314,8 +316,9 @@
 
         <!-- Email (solo lectura) -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+          <label for="edit-email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
           <input 
+            id="edit-email"
             type="email"
             [value]="editForm.email"
             readonly
@@ -326,8 +329,9 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Departamento -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Departamento</label>
+            <label for="edit-departamento" class="block text-sm font-medium text-gray-700 mb-2">Departamento</label>
             <input 
+              id="edit-departamento"
               type="text"
               [(ngModel)]="editForm.departamento"
               name="departamento"
@@ -337,8 +341,9 @@
 
           <!-- Apodo (si aplica) -->
           <div *ngIf="activeTab !== 'administradores'">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Apodo</label>
+            <label for="edit-apodo" class="block text-sm font-medium text-gray-700 mb-2">Apodo</label>
             <input 
+              id="edit-apodo"
               type="text"
               [(ngModel)]="editForm.apodo"
               name="apodo"

@@ -12,7 +12,10 @@
       <button class="card-content" 
               (click)="verListaCompleta(l)"
               [attr.aria-label]="'Ver lista completa: ' + l.nombre">
-        <div class="thumb"></div>
+        <div class="thumb" 
+             [style.background-image]="obtenerCaratulaPrimerContenido(l) ? 'url(' + obtenerCaratulaPrimerContenido(l) + ')' : 'none'"
+             [class.thumb-placeholder]="!obtenerCaratulaPrimerContenido(l)">
+        </div>
         <h3 class="title">{{ l.nombre }}</h3>
         <p class="meta">Lista de reproducción</p>
         <p class="description" *ngIf="l.descripcion">{{ l.descripcion }}</p>

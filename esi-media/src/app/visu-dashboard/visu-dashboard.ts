@@ -1,13 +1,12 @@
-import { Component, OnInit, AfterViewInit, inject, PLATFORM_ID } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
-import { Router, NavigationEnd, RouterModule } from '@angular/router';
+import { Component, OnInit, AfterViewInit, OnDestroy, inject, PLATFORM_ID } from '@angular/core';
+import { Router, NavigationEnd, RouterLink, RouterLinkActive, RouterModule } from '@angular/router';
 import { MultimediaService } from '../services/multimedia.service';
 import { GestionListasComponent } from '../gestion-listas/gestion-listas';
 import { MultimediaListComponent } from '../multimedia-list/multimedia-list';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ListasPrivadas } from '../listas-privadas/listas-privadas';
 import { CrearListaComponent } from '../crear-lista/crear-lista';
-import { ConfigUserComponent, ConfigUserDTO } from '../config-user/config-user';
+import { PerfilVisualizadorComponent } from '../perfil-visualizador/perfil-visualizador';
 import { ContentFilterComponent } from '../shared/content-filter/content-filter.component';
 
 interface Star {
@@ -20,12 +19,12 @@ interface Star {
   selector: 'app-visu-dashboard',
   standalone: true,
 
-  imports: [CommonModule, RouterLink, RouterLinkActive, RouterModule, ListasPrivadas, CrearListaComponent, GestionListasComponent, MultimediaListComponent, ConfigUserComponent, ContentFilterComponent],
+  imports: [CommonModule, RouterLink, RouterLinkActive, RouterModule, ListasPrivadas, CrearListaComponent, GestionListasComponent, MultimediaListComponent, ContentFilterComponent, PerfilVisualizadorComponent],
 
   templateUrl: './visu-dashboard.html',
   styleUrl: './visu-dashboard.css'
 })
-export class VisuDashboard implements OnInit, AfterViewInit {
+export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
   stars: Star[] = [];
   mostrarListasPrivadas = false;
   mostrarListasPublicas = false;
@@ -38,10 +37,11 @@ export class VisuDashboard implements OnInit, AfterViewInit {
   forceReloadListas: number = 0;
   forceReloadListasPublicas: number = 0;
   showCrearModal: boolean = false;
-  showConfigModal: boolean = false;
+  showCuentaModal: boolean = false;
   
   // Variables para el sistema de filtrado
   currentTagFilters: string[] = [];
+  currentFiltersObject: any = null;
 
   private isBrowser: boolean;
   private documentClickHandler = (event: Event) => this.onDocumentClick(event);
@@ -320,6 +320,9 @@ export class VisuDashboard implements OnInit, AfterViewInit {
   onDocumentClick(event: Event): void {
     if (!this.isBrowser) return;
     const target = event.target as HTMLElement;
+    // Ignorar clics dentro del panel de filtros para evitar interferir con su comportamiento
+    const insideFilter = target.closest('.filter-panel') || target.closest('.filter-backdrop') || target.closest('.filter-container');
+    if (insideFilter) return;
     
     // Verificar si el clic fue en el área del perfil de usuario o el dropdown
     const userProfile = target.closest('.user-profile');
@@ -340,8 +343,8 @@ export class VisuDashboard implements OnInit, AfterViewInit {
   onEscapeKey(): void {
     if (this.showCrearModal) {
       this.closeCrearListaModal();
-    } else if (this.showConfigModal) {
-      this.closeConfigUserModal();
+    } else if (this.showCuentaModal) {
+      this.closeCuentaModal();
     } else if (this.mostrarListasPrivadas) {
       this.toggleListasPrivadas();
     } else if (this.showUserMenu) {
@@ -349,50 +352,26 @@ export class VisuDashboard implements OnInit, AfterViewInit {
     }
   }
 
-  /**
-   * Abre/cierra el modal de configuración de usuario
-   */
-  toggleConfigUser(): void {
-    this.showConfigModal = !this.showConfigModal;
+
+
+  /** Abre la ventana de Cuenta (modal) */
+  openCuentaModal(): void {
+    this.showCuentaModal = true;
     this.closeUserMenu();
-    
     if (this.isBrowser) {
-      if (this.showConfigModal) {
-        document.body.classList.add('no-scroll');
-      } else {
-        document.body.classList.remove('no-scroll');
-      }
+      document.body.classList.add('no-scroll');
     }
   }
 
-  /**
-   * Cierra el modal de configuración de usuario
-   */
-  closeConfigUserModal(): void {
-    this.showConfigModal = false;
-    
+  /** Cierra la ventana de Cuenta */
+  closeCuentaModal(): void {
+    this.showCuentaModal = false;
     if (this.isBrowser) {
       document.body.classList.remove('no-scroll');
     }
   }
 
-  /**
-   * Maneja la actualización de datos del usuario
-   */
-  onUserUpdated(updatedUser: ConfigUserDTO): void {
-    console.log('Usuario actualizado:', updatedUser);
-    
-    // Actualizar los datos locales del usuario
-    if (this.currentUser) {
-      Object.assign(this.currentUser, updatedUser);
-    }
-    
-    // Actualizar los datos de visualización
-    this.updateUserDisplayData();
-    
-    // Mostrar notificación de éxito (opcional)
-    this.showToast('Perfil actualizado correctamente');
-  }
+
 
   /**
    * Cierra la sesión del usuario, limpia sessionStorage y navega al login
@@ -413,7 +392,21 @@ export class VisuDashboard implements OnInit, AfterViewInit {
    * Maneja la aplicación de filtros de tags desde el componente de filtro
    */
   onFiltersApplied(selectedTags: string[]): void {
-    this.currentTagFilters = [...selectedTags];
+    // El componente de filtro emite string[] con tags
+    this.currentTagFilters = Array.isArray(selectedTags) ? [...selectedTags] : [];
+  }
+
+  /**
+   * Maneja el objeto completo de filtros emitido por el componente de filtro
+   */
+  onFiltersChanged(filters: any): void {
+    if (!filters) return;
+    // Guardar objeto completo para futuras integraciones
+    this.currentFiltersObject = filters;
+    // Actualizar tagFilters para la lista
+    this.currentTagFilters = Array.isArray(filters.tags) ? [...filters.tags] : [];
+    // Asegurar que Angular evalúe los cambios inmediatamente
+    try { (window as any).requestAnimationFrame(() => {}); } catch(e) {}
   }
 
   /**

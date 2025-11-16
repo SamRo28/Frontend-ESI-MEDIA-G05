@@ -222,6 +222,34 @@
   box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
 }
 
+.btn-gestion-contenidos {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 25px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+}
+
+.btn-gestion-contenidos {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 25px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+}
+
 .btn-provisional {
   background: linear-gradient(135deg, #ec4899 0%, #f97316 100%);
   color: white;
@@ -397,8 +425,6 @@
   color: rgba(255, 255, 255, 0.6);
   margin: 0;
 }
-
-
 
 /* Tips Section */
 .tips-section {

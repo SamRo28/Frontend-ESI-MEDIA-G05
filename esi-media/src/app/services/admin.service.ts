@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, throwError, timeout } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface Usuario {
   id?: string;
@@ -39,7 +40,7 @@ export interface PerfilDetalle {
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
-  private readonly apiUrl = 'http://localhost:8080';
+  private readonly apiUrl = environment.apiUrl;
 
   constructor(private readonly http: HttpClient) {}
 

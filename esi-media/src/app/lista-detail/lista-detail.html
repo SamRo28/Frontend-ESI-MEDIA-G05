@@ -158,14 +158,6 @@
                 placeholder="Escribe para buscar contenidos..."
                 class="content-input"
                 autocomplete="off">
-              <button 
-                type="button" 
-                class="btn btn-add-content"
-                (click)="agregarContenido()"
-                [disabled]="!nuevoContenido.trim()">
-                <span class="icon" *ngIf="!buscandoContenidos">➕</span>
-                <span class="icon spinner" *ngIf="buscandoContenidos">🔄</span>
-              </button>
             </div>
             
             <!-- Sugerencias -->

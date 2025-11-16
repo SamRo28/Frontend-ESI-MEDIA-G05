@@ -36,6 +36,7 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   // Cache estable para evitar recarga continua del iframe YouTube
   isYoutube = false;
   youtubeSafeUrl: SafeResourceUrl | null = null;
+  private youtubeVideoId: string | null = null;
   // Token para uso en query (evitar sessionStorage directo en plantilla)
   token: string = '';
   // Datos para el header unificado
@@ -133,6 +134,7 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
             const watchMatch = url.match(/[?&]v=([^&#]+)/);
             const shortMatch = url.match(/youtu\.be\/([^?&#]+)/);
             const id = (watchMatch && watchMatch[1]) || (shortMatch && shortMatch[1]) || null;
+            this.youtubeVideoId = id;
             this.youtubeSafeUrl = id ? this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.youtube.com/embed/${id}`) : null;
           } else {
             this.youtubeSafeUrl = null;
@@ -154,6 +156,59 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
         if (this.detalleTimeout) { clearTimeout(this.detalleTimeout); this.detalleTimeout = null; }
       }
     });
+  }
+
+  // --- Botón Reproducir ---
+  playDisabled = false;
+
+  onReproducir(): void {
+    if (!this.detalle || this.playDisabled) return;
+    // Bloquear inmediatamente para evitar dobles clics mientras esperamos respuesta
+    this.playDisabled = true;
+    const id = this.detalle.id;
+    // 1) Registrar reproducción en backend
+    this.multimedia.reproducir(id).subscribe({
+      next: (res) => {
+        // Actualizar contador en UI y bloquear botón
+        if (this.detalle) {
+          (this.detalle as any).nvisualizaciones = res?.nvisualizaciones ?? (this.detalle as any).nvisualizaciones;
+        }
+        // Forzar refresco de la vista para reflejar el nuevo contador
+        this.cdr.markForCheck();
+        // 2) Iniciar reproducción según tipo
+        setTimeout(() => this.iniciarPlayback(), 0);
+      },
+      error: (err) => {
+        console.error('[MultimediaDetail] Error registrando reproducción', err);
+        this.mostrarNotificacion('No se pudo registrar la reproducción', 'error');
+        // Rehabilitar el botón para permitir reintentar si falló la petición
+        this.playDisabled = false;
+      }
+    });
+  }
+
+  private iniciarPlayback(): void {
+    if (!this.detalle) return;
+    if (this.detalle.tipo === 'AUDIO') {
+      const el = document.querySelector('audio');
+      if (el) {
+        try { (el as HTMLAudioElement).play(); } catch {}
+      }
+      return;
+    }
+    if (this.detalle.tipo === 'VIDEO') {
+      if (this.isYoutube && this.youtubeVideoId) {
+        // Forzar autoplay reconstruyendo la URL del iframe
+        const url = `https://www.youtube.com/embed/${this.youtubeVideoId}?autoplay=1`;
+        this.youtubeSafeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+        this.cdr.markForCheck();
+      } else {
+        const v = document.querySelector('video');
+        if (v) {
+          try { (v as HTMLVideoElement).play(); } catch {}
+        }
+      }
+    }
   }
 
   descargarAudio(): void {
@@ -429,8 +484,10 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   }
   // ---- Textos de apoyo para mostrar siempre los campos ----
   edadTexto(): string {
-    const e: any = (this.detalle as any)?.edadvisualizacion;
-    if (typeof e === 'number' && e > 0) return `${e}+`;
+    // Preferimos la propiedad camelCase del backend, con fallback al nombre antiguo
+    const anyDet: any = this.detalle as any;
+    const e: any = (anyDet?.edadVisualizacion);
+    if (typeof e === 'number' && e > 0) return `${e}`;
     return 'Para todos los públicos';
   }
 
@@ -452,7 +509,8 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   }
 
   fechaDisponibleTexto(): string {
-    const d: any = (this.detalle as any)?.fechadisponiblehasta;
+    const anyDet: any = this.detalle as any;
+    const d: any = (anyDet?.fechaDisponibleHasta ?? anyDet?.fechadisponiblehasta);
     if (!d) return 'Sin fecha de caducidad';
     return this.formatFecha(d);
   }

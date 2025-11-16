@@ -20,13 +20,10 @@
         <!-- Botón de filtro -->
         <app-content-filter 
           [contentType]="contentFilterType"
-          (filtersApplied)="onFiltersApplied($event)">
+          (filtersApplied)="onFiltersApplied($event)"
+          (filtersChanged)="onFiltersChanged($event)">
         </app-content-filter>
         
-        <button class="notification-btn">
-          <span class="notification-icon">🔔</span>
-          <span class="notification-badge">3</span>
-        </button>
         <button class="user-profile" 
                 (click)="toggleUserMenu()" 
                 (keydown)="onUserProfileKeydown($event)" 
@@ -42,9 +39,9 @@
         
         <!-- Menú desplegable del usuario -->
         <div class="user-dropdown" *ngIf="showUserMenu" role="menu">
-          <button class="dropdown-item" (click)="toggleConfigUser()" role="menuitem">
-            <span class="dropdown-text">Configuración de perfil</span>
-          </button>
+          <a routerLink="/perfil" class="dropdown-item" role="menuitem">
+            <span class="dropdown-text">Cuenta</span>
+          </a>
           <button class="dropdown-item" (click)="toggleListasPrivadas()" role="menuitem">
             <span class="dropdown-text">Ver mis listas privadas</span>
             <span class="dropdown-badge" *ngIf="mostrarListasPrivadas">●</span>
@@ -81,7 +78,8 @@
           [showHeader]="false" 
           [showTitle]="false" 
           [tipoForzado]="filtroTipo"
-          [tagFilters]="currentTagFilters">
+          [tagFilters]="currentTagFilters"
+          [filtersObject]="currentFiltersObject">
         </app-multimedia-list>
       </div>
     <!-- Panel lateral de listas privadas -->
@@ -98,50 +96,6 @@
       </app-listas-privadas>
     </aside>
     </section>
-
-    <div class="coming-soon-section">
-      <div class="stars-background">
-        <div class="star" *ngFor="let star of stars" [style.left.%]="star.left" [style.top.%]="star.top" [style.animation-delay.s]="star.delay"></div>
-      </div>
-
-      <div class="coming-soon-content">
-        <div class="icon-container">
-          <div class="rotating-icon">🚀</div>
-        </div>
-
-        <h1 class="coming-soon-title">
-          Próximamente
-        </h1>
-
-        <p class="coming-soon-subtitle">
-          Estamos trabajando en algo increíble para ti
-        </p>
-
-        <div class="features-preview">
-          <div class="feature-card">
-            <div class="feature-icon">🎵</div>
-            <h3 class="feature-title">Millones de canciones</h3>
-            <p class="feature-description">Acceso ilimitado a tu música favorita</p>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon">🎬</div>
-            <h3 class="feature-title">Películas y series</h3>
-            <p class="feature-description">El mejor catálogo de entretenimiento</p>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon">🎙️</div>
-            <h3 class="feature-title">Podcasts exclusivos</h3>
-            <p class="feature-description">Historias que te inspirarán</p>
-          </div>
-        </div>
-
-        <div class="info-message">
-          <p class="info-text">Estamos preparando una experiencia única para ti</p>
-        </div>
-      </div>
-    </div>
   </main>
 
   <!-- Footer -->
@@ -167,14 +121,4 @@
     (cerrar)="closeCrearListaModal()"
     (creada)="closeCrearListaModal(true)">
   </crear-lista>
-</dialog>
-
-<!-- Modal para configuración de usuario -->
-<div class="modal-backdrop" *ngIf="showConfigModal" (click)="closeConfigUserModal()" (keydown)="$event.key === 'Escape' && closeConfigUserModal()"></div>
-<dialog class="modal-container" [attr.open]="showConfigModal ? true : null">
-  <app-config-user 
-    [modal]="true"
-    (cerrar)="closeConfigUserModal()"
-    (actualizado)="onUserUpdated($event)">
-  </app-config-user>
 </dialog>
