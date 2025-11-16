@@ -163,7 +163,7 @@ export class PerfilVisualizadorComponent implements OnInit {
 
   verifyCurrentPassword(): void {
     if (!this.email || !this.form.currentPassword) {
-      this.passwordCheckError = 'Introduce tu contrasena actual';
+      this.passwordCheckError = 'Introduce tu contraseña actual';
       this.passwordCheckOk = '';
       return;
     }
@@ -187,12 +187,12 @@ export class PerfilVisualizadorComponent implements OnInit {
       .subscribe({
         next: () => {
           this.passwordVerified = true;
-          this.passwordCheckOk = 'Contrasena verificada';
+          this.passwordCheckOk = 'Contraseña verificada';
           this.cdr.detectChanges();
         },
         error: () => {
           this.passwordVerified = false;
-          this.passwordCheckError = 'La contrasena actual no es correcta. Vuelve a intentarlo.';
+          this.passwordCheckError = 'La contraseña actual no es correcta. Vuelve a intentarlo.';
           this.cdr.detectChanges();
         }
       });
