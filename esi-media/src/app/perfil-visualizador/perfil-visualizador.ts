@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, PLATFORM_ID, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -11,7 +11,7 @@ import { timeout, finalize } from 'rxjs';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './perfil-visualizador.html',
-  styleUrls: ['./perfil-visualizador.css']
+  styleUrls: ['./perfil-visualizador.css'] // Asegúrate que esta línea esté presente
 })
 export class PerfilVisualizadorComponent implements OnInit {
   loading = false;
@@ -82,8 +82,6 @@ export class PerfilVisualizadorComponent implements OnInit {
     private readonly cdr: ChangeDetectorRef
   ) { }
 
-  @Output() close = new EventEmitter<void>();
-
   private getAuthContext(): void {
     // Prioriza localStorage(authToken + currentUser) y luego sessionStorage(token + user)
     try {
@@ -137,11 +135,13 @@ export class PerfilVisualizadorComponent implements OnInit {
           }
           this.form.foto = typeof u?.foto === 'string' ? u.foto : '';
           this.form.vip = !!u?.vip;
-          const since = (u?.fechacambiosuscripcion || u?.fechaAlta || u?.createdAt || null);
-          this.subscriberSince = since ? new Date(since).toISOString() : null;
+          // Para "Suscriptor desde", usamos la fecha de registro original.
+          const registrationDate = (u?.fechaRegistro || u?.fechaAlta || u?.createdAt || null);
+          this.subscriberSince = registrationDate ? new Date(registrationDate).toISOString() : null;
           this.captureOriginal();
           this.loading = false;
           this.loadSubscription();
+          this.cdr.detectChanges(); // <-- Forzar detección de cambios
         },
         error: () => {
           this.loading = false;
@@ -224,21 +224,70 @@ export class PerfilVisualizadorComponent implements OnInit {
   }
 
   attemptPasswordChange(): void {
+    // Este método ahora se encarga de todo el flujo de cambio de contraseña
     this.passwordChangeError = '';
-    this.errorMessage = ''; // Limpiamos el error general también
+    this.successMessage = '';
+    this.errorMessage = '';
 
-    this.onPasswordInput(); // Asegura que las reglas están actualizadas
-    const passwordRulesValid = this.passwordRules.minLength && this.passwordRules.upper && this.passwordRules.lower &&
-      this.passwordRules.number && this.passwordRules.special && this.passwordRules.match && this.passwordRules.noPersonal && this.passwordRules.notCurrent;
+    this.onPasswordInput(); // Re-evaluar reglas
 
+    const passwordRulesValid =
+      this.passwordRules.minLength && this.passwordRules.upper && this.passwordRules.lower &&
+      this.passwordRules.number && this.passwordRules.special && this.passwordRules.match &&
+      this.passwordRules.noPersonal && this.passwordRules.notCurrent;
+
+    // Validar que la contraseña actual fue verificada
+    if (!this.passwordVerified) {
+      this.passwordChangeError = 'Debes verificar tu contraseña actual primero.';
+      return;
+    }
+
+    // Validar que la nueva contraseña cumple las reglas
     if (!passwordRulesValid) {
-      // Mostramos el error específico de la contraseña
       this.passwordChangeError = 'La nueva contraseña no cumple con todos los requisitos de seguridad. Por favor, revísala.';
       return;
     }
 
-    // Si la contraseña es válida, procedemos a guardar
-    this.openConfirm();
+    // Si todo es válido, procedemos a llamar a la API
+    this.loading = true;
+    this.cdr.detectChanges();
+
+    const payload = { contrasenia: this.form.newPassword };
+
+    this.adminService.updateUser(this.userId!, payload, 'Visualizador').subscribe({
+      next: () => {
+        this.handlePasswordChangeSuccess();
+      },
+      error: (err) => {
+        this.handlePasswordChangeError(err);
+      }
+    });
+  }
+
+  private handlePasswordChangeSuccess(): void {
+    this.loading = false;
+    this.successMessage = 'Contraseña actualizada correctamente.';
+    this.passwordChangeError = '';
+
+    // Limpiar campos y resetear estado
+    setTimeout(() => {
+      this.successMessage = '';
+      this.form.currentPassword = '';
+      this.form.newPassword = '';
+      this.form.repeatPassword = '';
+      this.passwordVerified = false;
+      this.passwordCheckOk = '';
+      this.cdr.detectChanges();
+    }, 2500);
+  }
+
+  private handlePasswordChangeError(err: any): void {
+    this.loading = false;
+    const backendMsg = (err?.error?.mensaje || err?.error?.message) || 'Error desconocido.';
+    this.passwordChangeError = backendMsg !== 'Error interno del servidor'
+      ? backendMsg
+      : 'La nueva contraseña no cumple con las políticas de seguridad.';
+    this.cdr.detectChanges();
   }
 
   onPasswordInput(): void {
@@ -248,8 +297,8 @@ export class PerfilVisualizadorComponent implements OnInit {
     this.passwordRules.lower = /[a-z]/.test(p);
     this.passwordRules.number = /\d/.test(p);
     this.passwordRules.special = /[^A-Za-z0-9]/.test(p);
-    this.passwordRules.match = this.form.newPassword === this.form.repeatPassword;
-    this.passwordRules.notCurrent = this.form.newPassword !== this.form.currentPassword;
+    this.passwordRules.match = !!p && this.form.newPassword === this.form.repeatPassword;
+    this.passwordRules.notCurrent = !!p && this.form.newPassword !== this.form.currentPassword; // La lógica se mantiene, pero el mensaje en el HTML será genérico
     const normalize = (s?: string) => (s || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
     const pwd = normalize(this.form.newPassword);
     const tokens = [normalize(this.form.nombre), normalize(this.form.apellidos), normalize(this.form.alias), normalize((this.email || '').split('@')[0])].filter(t => t && t.length >= 3) as string[];
@@ -260,11 +309,16 @@ export class PerfilVisualizadorComponent implements OnInit {
   openConfirm(): void {
     this.errorMessage = '';
     this.successMessage = '';
+    // Si se está intentando cambiar la contraseña, no abrir este modal.
+    // El flujo de contraseña es independiente.
+    if (this.form.newPassword) {
+      this.errorMessage = 'Usa la sección de "Contraseña" para cambiar tu contraseña.';
+      return;
+    }
     if (!this.userId) { this.errorMessage = 'No se pudo identificar al usuario'; return; }
     this.showConfirm = true;
   }
   cancelConfirm(): void { this.showConfirm = false; }
-  onCloseRequested(): void { this.restoreOriginal(); this.close.emit(); }
 
   save(): void {
   if (!this.userId || this.loading) return;
@@ -283,82 +337,28 @@ export class PerfilVisualizadorComponent implements OnInit {
     vip: !!this.form.vip
   };
 
-  const hasNewPassword = !!this.form.newPassword;
-
-  // Si hay una nueva contraseña, validarla y añadirla al payload
-  if (hasNewPassword) {
-    this.onPasswordInput();
-    const passwordRulesValid =
-      this.passwordRules.minLength &&
-      this.passwordRules.upper &&
-      this.passwordRules.lower &&
-      this.passwordRules.number &&
-      this.passwordRules.special &&
-      this.passwordRules.match &&
-      this.passwordRules.noPersonal &&
-      this.passwordRules.notCurrent;
-
-    if (!this.passwordVerified) {
-      this.loading = false;
-      this.errorMessage = 'Verifica tu contraseña actual antes de cambiarla.';
-      return;
-    }
-
-    if (!passwordRulesValid) {
-      this.loading = false;
-      this.errorMessage = 'La nueva contraseña no cumple con los requisitos. Revísala en la sección de seguridad.';
-      return;
-    }
-
-    userData.contrasenia = this.form.newPassword;
-  }
-
   // Realizar la llamada a la API
   this.adminService.updateUser(this.userId!, userData, 'Visualizador').subscribe({
     next: () => {
       this.loading = false;
-      this.successMessage = hasNewPassword
-        ? 'Contraseña actualizada correctamente.'
-        : 'Perfil actualizado correctamente.';
+      this.successMessage = 'Perfil actualizado correctamente.';
 
       this.captureOriginal();
       this.cdr.detectChanges();
 
-      if (hasNewPassword) {
-        setTimeout(() => {
-          this.form.currentPassword = '';
-          this.form.newPassword = '';
-          this.form.repeatPassword = '';
-          this.passwordVerified = false;
-          this.passwordCheckOk = '';
-          this.passwordChangeError = '';
-          this.passwordCheckError = '';
-          this.cdr.detectChanges();
-        }, 2500);
-      }
+      // Limpiamos el mensaje de éxito después de un tiempo
+      setTimeout(() => { this.successMessage = ''; this.cdr.detectChanges(); }, 3000);
     },
     error: (err: any) => {
       this.loading = false;
       const backendMsg: string = (err?.error && (err.error.mensaje || err.error.message)) || err?.message || '';
 
       // Mensajes de fallback por si el backend devuelve un error genérico
-      const fallbackPwdMsg = 'La nueva contraseña no cumple con las políticas de seguridad.';
       const fallbackProfileMsg = 'No se pudo actualizar el perfil. Inténtalo de nuevo más tarde.';
-
-      if (hasNewPassword) {
-        // Si el error es por la contraseña, lo mostramos en su sección específica.
-        // Usamos el mensaje del backend si es específico, o el de fallback si es genérico.
-        this.passwordChangeError =
-          backendMsg && backendMsg !== 'Error interno del servidor'
-            ? backendMsg
-            : fallbackPwdMsg;
-      } else {
-        // Para otros errores, usamos el mensaje genérico superior.
-        this.errorMessage =
+      this.errorMessage =
           backendMsg && backendMsg !== 'Error interno del servidor'
             ? backendMsg
             : fallbackProfileMsg;
-      }
       this.cdr.detectChanges();
     }
   });
@@ -413,23 +413,46 @@ export class PerfilVisualizadorComponent implements OnInit {
     this.abrirCambioSuscripcion(targetVip);
   }
   confirmarCambioSuscripcion(): void {
-    console.debug('[Suscripcion] confirm: id=', this.userId, ' token=', (this.authToken || '').slice(-6));
-    if (!this.userId || this.pendingVip === null || this.subLoading) return;
-    this.subLoading = true;
-    let url = `http://localhost:8080/users/${this.userId}/subscription`;
-    const tok = this.getRawToken();
-    if (tok) url += (url.includes('?') ? '&' : '?') + 'auth=' + encodeURIComponent(tok);
-    this.http.put<{ vip: boolean; fechaCambio?: string }>(url, { vip: this.pendingVip }, this.buildOptions()).subscribe({
+  console.debug('[Suscripcion] confirm: id=', this.userId, ' token=', (this.authToken || '').slice(-6));
+  if (!this.userId || this.pendingVip === null || this.subLoading) return;
+
+  this.subError = '';
+  this.subSuccess = '';
+  this.subLoading = true;
+
+  let url = `http://localhost:8080/users/${this.userId}/subscription`;
+  const tok = this.getRawToken();
+  if (tok) {
+    url += (url.includes('?') ? '&' : '?') + 'auth=' + encodeURIComponent(tok);
+  }
+
+  this.http.put<{ vip: boolean; fechaCambio?: string }>(url, { vip: this.pendingVip }, this.buildOptions()).pipe(
+    timeout(10000),
+    finalize(() => {
+      // Esto se ejecutará siempre, al completar o al dar error.
+      this.subLoading = false;
+      this.cdr.detectChanges(); // Asegura que la UI se actualice
+    })
+  ).subscribe({
       next: (res) => {
-        this.subLoading = false;
+        // La operación tuvo éxito, ahora cerramos el modal y actualizamos datos.
         this.showSubConfirm = false;
         this.form.vip = !!res?.vip;
         this.lastSubscriptionChange = res?.fechaCambio || new Date().toISOString();
         if (this.originalForm) this.originalForm.vip = this.form.vip;
         this.subSuccess = 'Suscripcion actualizada correctamente';
+
+        // Ocultar el mensaje de éxito después de unos segundos
+        setTimeout(() => {
+          this.subSuccess = '';
+          this.cdr.detectChanges();
+        }, 3000);
+
+        // Forzamos la recarga de los datos de suscripción y la detección de cambios
+        this.loadSubscription();
+        this.cdr.detectChanges();
       },
       error: () => {
-        this.subLoading = false;
         this.subError = 'No se pudo actualizar la suscripcion';
       }
     });
