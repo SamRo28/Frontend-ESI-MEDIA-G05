@@ -32,6 +32,29 @@
 .btn-primary:hover { filter: brightness(1.05); }
 .btn-row { display:flex; justify-content:flex-end; gap:12px; }
 
+/* Estilos para el icono del ojo */
+.input-group.with-icon {
+  position: relative;
+}
+
+.input-group.with-icon .input,
+.input-group.with-icon .pw-input {
+  padding-right: 40px; /* Espacio para el icono */
+}
+
+.icon-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 0;
+}
+.icon-btn .icon { width: 20px; height: 20px; }
+
 /* Password section */
 .pw-section { margin-top:.5rem; }
 .pw-input { background: rgba(255,255,255,0.06); }
