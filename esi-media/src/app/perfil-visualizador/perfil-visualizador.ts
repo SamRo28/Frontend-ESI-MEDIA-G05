@@ -137,8 +137,9 @@ export class PerfilVisualizadorComponent implements OnInit {
           }
           this.form.foto = typeof u?.foto === 'string' ? u.foto : '';
           this.form.vip = !!u?.vip;
-          const since = (u?.fechacambiosuscripcion || u?.fechaAlta || u?.createdAt || null);
-          this.subscriberSince = since ? new Date(since).toISOString() : null;
+          // Para "Suscriptor desde", usamos la fecha de registro original.
+          const registrationDate = (u?.fechaRegistro || u?.fechaAlta || u?.createdAt || null);
+          this.subscriberSince = registrationDate ? new Date(registrationDate).toISOString() : null;
           this.captureOriginal();
           this.loading = false;
           this.loadSubscription();
@@ -413,23 +414,40 @@ export class PerfilVisualizadorComponent implements OnInit {
     this.abrirCambioSuscripcion(targetVip);
   }
   confirmarCambioSuscripcion(): void {
-    console.debug('[Suscripcion] confirm: id=', this.userId, ' token=', (this.authToken || '').slice(-6));
-    if (!this.userId || this.pendingVip === null || this.subLoading) return;
-    this.subLoading = true;
-    let url = `http://localhost:8080/users/${this.userId}/subscription`;
-    const tok = this.getRawToken();
-    if (tok) url += (url.includes('?') ? '&' : '?') + 'auth=' + encodeURIComponent(tok);
-    this.http.put<{ vip: boolean; fechaCambio?: string }>(url, { vip: this.pendingVip }, this.buildOptions()).subscribe({
-      next: (res) => {
+  console.debug('[Suscripcion] confirm: id=', this.userId, ' token=', (this.authToken || '').slice(-6));
+  if (!this.userId || this.pendingVip === null || this.subLoading) return;
+
+  this.subError = '';
+  this.subSuccess = '';
+  this.subLoading = true;
+
+  let url = `http://localhost:8080/users/${this.userId}/subscription`;
+  const tok = this.getRawToken();
+  if (tok) {
+    url += (url.includes('?') ? '&' : '?') + 'auth=' + encodeURIComponent(tok);
+  }
+
+  this.http
+    .put<{ vip: boolean; fechaCambio?: string }>(url, { vip: this.pendingVip }, this.buildOptions())
+    .pipe(
+      timeout(10000),
+      finalize(() => {
         this.subLoading = false;
+        this.cdr.detectChanges();
+      })
+    )
+    .subscribe({
+      next: (res) => {
         this.showSubConfirm = false;
         this.form.vip = !!res?.vip;
         this.lastSubscriptionChange = res?.fechaCambio || new Date().toISOString();
         if (this.originalForm) this.originalForm.vip = this.form.vip;
         this.subSuccess = 'Suscripcion actualizada correctamente';
+        // Forzamos la recarga de los datos de suscripción y la detección de cambios
+        this.loadSubscription();
+        this.cdr.detectChanges();
       },
       error: () => {
-        this.subLoading = false;
         this.subError = 'No se pudo actualizar la suscripcion';
       }
     });

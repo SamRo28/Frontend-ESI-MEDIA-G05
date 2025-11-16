@@ -197,7 +197,7 @@
       <!-- Suscripción -->
       <div *ngIf="activeSection=='suscripcion'" class="sub-stack">
         <div class="card sub-summary">
-          <div class="summary-tag">Suscriptor/a desde {{ (subscriberSince || lastSubscriptionChange) | date:'MMMM y' }}</div>
+          <div class="summary-tag">Suscriptor/a desde {{ subscriberSince | date:'MMMM y' }}</div>
           <div class="summary-row">
             <div class="summary-title">Plan {{ form.vip ? 'VIP' : 'Est�ndar' }}</div>
             <div class="summary-desc">{{ form.vip ? vipDesc : stdDesc }}</div>
@@ -272,7 +272,7 @@
       </div>
       <div class="confirm-actions">
         <button class="btn" (click)="cancelarCambioSuscripcion()">Cancelar</button>
-        <button class="btn-primary" (click)="confirmarCambioSuscripcion()">Confirmar</button>
+        <button class="btn-primary" [disabled]="subLoading" (click)="confirmarCambioSuscripcion()">{{ subLoading ? 'Confirmando...' : 'Confirmar' }}</button>
       </div>
     </div>
   </div>
