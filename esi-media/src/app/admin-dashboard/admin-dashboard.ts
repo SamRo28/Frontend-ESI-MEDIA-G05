@@ -1252,6 +1252,18 @@ export class AdminDashboardComponent implements OnInit {
     this.confirmBloqueoStep = 1;
   }
 
+  /**
+   * Cierra el modal de bloqueo
+   */
+  cerrarModalBloqueo() {
+    this.showBloqueoModal = false;
+    this.usuarioABloquear = null;
+    this.loadingBloqueo = false;
+    this.errorBloqueo = '';
+    this.confirmBloqueoStep = 1; // Resetear el paso de confirmación
+  }
+
+
    openEditUserModal(usuario: Usuario) {
     this.editingUser = usuario;
     
@@ -1299,10 +1311,10 @@ export class AdminDashboardComponent implements OnInit {
   /**
    * Confirma y ejecuta la acción de bloquear/desbloquear
    */
-  confirmarBloqueo() {
+  confirmarBloqueo(): void {
     if (!this.usuarioABloquear) return;
 
-    // Primera pulsación: mostrar aviso y pedir confirmación con un segundo clic
+    // Primer clic: solo pasar al paso 2 (doble confirmación)
     if (this.confirmBloqueoStep === 1) {
       this.confirmBloqueoStep = 2;
       return;
@@ -1314,55 +1326,60 @@ export class AdminDashboardComponent implements OnInit {
       return;
     }
 
+    // Evitar autobloqueo y mostrar mensaje
+    if (this.accionBloqueo === 'bloquear' && this.usuarioABloquear.id === adminId) {
+      this.cerrarModalBloqueo();
+      this.confirmBloqueoStep = 1;
+      this.errorMessage = 'No puedes bloquear tu propia cuenta de administrador.';
+      this.successMessage = '';
+      this.cdr.detectChanges();
+      // Añadimos un temporizador para limpiar el mensaje, igual que en la función de eliminar
+      setTimeout(() => {
+        this.errorMessage = '';
+      }, 5000);
+      return;
+    }
+
+    // Si no es autobloqueo, seguir con la llamada al backend
     this.loadingBloqueo = true;
     this.errorBloqueo = '';
 
     const accion$ = this.accionBloqueo === 'bloquear'
-      ? this.adminService.bloquearUsuario(this.usuarioABloquear!.id!, adminId)
-      : this.adminService.desbloquearUsuario(this.usuarioABloquear!.id!, adminId);
+      ? this.adminService.bloquearUsuario(this.usuarioABloquear.id!, adminId)
+      : this.adminService.desbloquearUsuario(this.usuarioABloquear.id!, adminId);
 
-    // Fallback por si algo deja el loading en true más de 7s
     const backup = setTimeout(() => {
       if (this.loadingBloqueo) {
         this.loadingBloqueo = false;
-        this.errorBloqueo = 'La operación tardó más de lo esperado. Refresca la lista para ver el estado.';
+        this.errorBloqueo = 'La operacion tardo mas de lo esperado. Refresca la lista para ver el estado.';
         this.cdr.detectChanges();
       }
     }, 7000);
 
     accion$.subscribe({
-      next: (response) => {
-      console.log('✅ Usuario', this.accionBloqueo === 'bloquear' ? 'bloqueado' : 'desbloqueado');
-      
-      // Actualizar el estado local INMEDIATAMENTE (usuarios y filtrados)
-      const nuevoEstado = this.accionBloqueo === 'bloquear';
-      const idObjetivo = this.usuarioABloquear?.id;
-      if (idObjetivo) {
-        // Actualizar referencia directa (objeto seleccionado)
-        this.usuarioABloquear!.bloqueado = nuevoEstado;
-
-        // Actualizar lista principal
-        this.usuarios = this.usuarios.map(u => u.id === idObjetivo ? { ...u, bloqueado: nuevoEstado } : u);
-
-        // Sincronizar con servidor tras un pequeño delay para evitar sobrescribir con datos obsoletos
-        setTimeout(() => this.loadUsuarios(), 600);
-      }
-      
-      // Cerrar modal
-      this.cerrarModalBloqueo();
-      this.loadingBloqueo = false;
-      clearTimeout(backup);
-      this.cdr.detectChanges();
+      next: () => {
+        console.log('Usuario', this.accionBloqueo === 'bloquear' ? 'bloqueado' : 'desbloqueado');
+        const nuevoEstado = this.accionBloqueo === 'bloquear';
+        const idObjetivo = this.usuarioABloquear?.id;
+        if (idObjetivo) {
+          this.usuarios = this.usuarios.map(u => u.id === idObjetivo ? { ...u, bloqueado: nuevoEstado } : u);
+          this.usuariosFiltrados = this.usuariosFiltrados.map(u => u.id === idObjetivo ? { ...u, bloqueado: nuevoEstado } : u);
+        }
+        this.loadingBloqueo = false;
+        clearTimeout(backup);
+        this.cerrarModalBloqueo();
+        this.cdr.detectChanges();
       },
       error: (error) => {
-      console.error('🛑 Error:', error);
-      this.errorBloqueo = error.message || `Error al ${this.accionBloqueo} usuario`;
-      this.loadingBloqueo = false;
-      clearTimeout(backup);
-      this.cdr.detectChanges();
+        console.error('Error:', error);
+        this.errorBloqueo = error.message || `Error al ${this.accionBloqueo} usuario`;
+        this.loadingBloqueo = false;
+        clearTimeout(backup);
+        this.cdr.detectChanges();
       }
     });
   }
+
 
   // Validador para la fecha de nacimiento en el admin-dashboard
   validateBirthDateForAdmin(dateStr: string, minYears: number): string | null {
@@ -1450,16 +1467,6 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
   */
-
-  /**
-   * Cierra el modal de bloqueo
-   */
-  cerrarModalBloqueo() {
-    this.showBloqueoModal = false;
-    this.usuarioABloquear = null;
-    this.loadingBloqueo = false;
-    this.errorBloqueo = '';
-  }
 
   /**
    * Obtiene el ID del administrador actual
@@ -1881,4 +1888,3 @@ export class AdminDashboardComponent implements OnInit {
   }
 
 }
-

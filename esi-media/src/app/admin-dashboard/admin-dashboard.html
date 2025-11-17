@@ -1,4 +1,4 @@
-﻿<div class="min-h-screen bg-gray-50">
+﻿﻿<div class="min-h-screen bg-gray-50">
   <!-- Header -->
   <header class="dashboard-header shadow-md">
     <div class="flex h-16 items-center justify-between px-6 max-w-7xl mx-auto">
@@ -420,15 +420,12 @@
                       </span>
                     </td>
                     <td class="px-4 py-3">
-                      <button type="button" 
-                        (click)="abrirModalBloqueo(usuario)"
-                        class="inline-flex items-center px-2 py-1 text-xs font-medium rounded cursor-pointer transition-all hover:opacity-80 hover:shadow-sm"
+                      <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded"
                         [ngClass]="usuario.bloqueado ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'"
-                        [title]="usuario.bloqueado ? 'Click para desbloquear' : 'Click para bloquear'">
-                        <span class="w-1.5 h-1.5 rounded-full mr-1" 
-                          [ngClass]="usuario.bloqueado ? 'bg-red-500' : 'bg-green-500'"></span>
+                        [title]="usuario.bloqueado ? 'Usuario bloqueado' : 'Usuario activo'">
+                        <span class="w-1.5 h-1.5 rounded-full mr-1" [ngClass]="usuario.bloqueado ? 'bg-red-500' : 'bg-green-500'"></span>
                         {{ usuario.bloqueado ? 'Bloqueado' : 'Activo' }}
-                      </button>
+                      </span>
                     </td>
                     <td class="px-4 py-3">
                       <div class="flex gap-1">
@@ -441,6 +438,25 @@
                         <button type="button" (click)="openEditUserModal(usuario)" class="p-1 hover:bg-gray-100 rounded" title="Editar">
                           <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                          </svg>
+                        </button>
+                        <button type="button"
+                                (click)="abrirModalBloqueo(usuario)"
+                                class="p-1 hover:bg-gray-100 rounded"
+                                [title]="usuario.bloqueado ? 'Desbloquear usuario' : 'Bloquear usuario'">
+                          <!-- Bloqueado: candado CERRADO en rojo -->
+                          <svg *ngIf="usuario.bloqueado"
+                               class="w-4 h-4 text-red-600"
+                               fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                          </svg>
+                          <!-- Desbloqueado: candado ABIERTO en verde -->
+                          <svg *ngIf="!usuario.bloqueado"
+                               class="w-4 h-4 text-green-600"
+                               fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
                           </svg>
                         </button>
                         <button class="p-1 hover:bg-gray-100 rounded" title="Eliminar" (click)="openDeleteModal(usuario)">
@@ -2416,4 +2432,3 @@
       </div>
     </div>
   </div>
-
