@@ -72,6 +72,20 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     private valoracionSvc: ValoracionService
   ) {}
 
+  // Utilidades de uso interno para reducir complejidad
+  private schedule(fn: () => void): void { setTimeout(fn, 0); }
+  private clearDetalleTimeoutSafely(): void {
+    if (this.detalleTimeout) { clearTimeout(this.detalleTimeout); this.detalleTimeout = null; }
+  }
+  private isYoutubeUrl(url: string): boolean {
+    return /youtube\.com\/watch\?v=|youtu\.be\//i.test(url);
+  }
+  private extractYoutubeId(url: string): string | null {
+    const watchMatch = url.match(/[?&]v=([^&#]+)/);
+    const shortMatch = url.match(/youtu\.be\/([^?&#]+)/);
+    return (watchMatch && watchMatch[1]) || (shortMatch && shortMatch[1]) || null;
+  }
+
   ngOnInit(): void {
     // Evitar peticiones en SSR
     if (!isPlatformBrowser(this.platformId)) {
@@ -135,10 +149,8 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   cargar(): void {
     this.cargando = true;
     this.error = null;
-    
-    if (this.detalleTimeout) {
-      clearTimeout(this.detalleTimeout);
-    }
+    console.log('[MultimediaDetail] Iniciando carga detalle id=', this.id);
+    this.clearDetalleTimeoutSafely();
     // Fallback de seguridad: si en 8s no llega respuesta, apagamos loader y mostramos error genérico
     this.detalleTimeout = setTimeout(() => {
       if (this.cargando) {
@@ -160,16 +172,10 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
           
           this.cdr.markForCheck();
           const url = d.referenciaReproduccion || '';
-          this.isYoutube = /youtube\.com\/watch\?v=|youtu\.be\//i.test(url);
-          if (this.isYoutube) {
-            const watchMatch = url.match(/[?&]v=([^&#]+)/);
-            const shortMatch = url.match(/youtu\.be\/([^?&#]+)/);
-            const id = (watchMatch && watchMatch[1]) || (shortMatch && shortMatch[1]) || null;
-            this.youtubeVideoId = id;
-            this.youtubeSafeUrl = id ? this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.youtube.com/embed/${id}`) : null;
-          } else {
-            this.youtubeSafeUrl = null;
-          }
+          this.isYoutube = this.isYoutubeUrl(url);
+          const id = this.isYoutube ? this.extractYoutubeId(url) : null;
+          this.youtubeVideoId = id;
+          this.youtubeSafeUrl = id ? this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.youtube.com/embed/${id}`) : null;
         }
         // Para AUDIO mantenemos cargando sólo hasta el botón (descarga diferida), así que apagamos también
         if (d.tipo === 'AUDIO') {
@@ -177,7 +183,7 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
           
           this.cdr.markForCheck();
         }
-        if (this.detalleTimeout) { clearTimeout(this.detalleTimeout); this.detalleTimeout = null; }
+        this.clearDetalleTimeoutSafely();
         // Tras cargar detalle, obtener promedio y estado de mi valoración (si existe)
         try {
           // Average (siempre público)
@@ -221,7 +227,7 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
         this.error = (err?.error?.mensaje) || 'No se pudo cargar el detalle';
         this.cargando = false;
         this.cdr.markForCheck();
-        if (this.detalleTimeout) { clearTimeout(this.detalleTimeout); this.detalleTimeout = null; }
+        this.clearDetalleTimeoutSafely();
       }
     });
   }
@@ -337,9 +343,9 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     if (!c) return null;
     if (typeof c === 'string') return c;
     if (typeof c === 'object') {
-      if (typeof c.url === 'string') return c.url;
-      if (typeof c.src === 'string') return c.src;
-      if (typeof c.data === 'string') return c.data;
+      for (const k of ['url','src','data']) {
+        if (typeof (c as any)[k] === 'string') return (c as any)[k];
+      }
     }
     return null;
   }
@@ -360,12 +366,8 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
 
   // --- Eventos del reproductor de VIDEO ---
   onIframeLoaded(): void {
-    
-    setTimeout(() => {
-      this.playerReady = true;
-      this.buffering = false;
-      this.cdr.markForCheck();
-    }, 0);
+    console.log('[MultimediaDetail] iframe load');
+    this.schedule(() => { this.playerReady = true; this.buffering = false; this.cdr.markForCheck(); });
   }
 
   // Formatea Date|string ISO a fecha corta local
@@ -380,35 +382,20 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   }
   onVideoLoaded(): void {
     // loadedmetadata: ya tenemos duración, podemos mostrar el player
-    
-    setTimeout(() => {
-      this.playerReady = true;
-      this.cdr.markForCheck();
-    }, 0);
+    console.log('[MultimediaDetail] video loadedmetadata');
+    this.schedule(() => { this.playerReady = true; this.cdr.markForCheck(); });
   }
   onVideoCanPlay(): void {
-    
-    setTimeout(() => {
-      this.playerReady = true;
-      this.buffering = false;
-      this.cdr.markForCheck();
-    }, 0);
+    console.log('[MultimediaDetail] video canplay');
+    this.schedule(() => { this.playerReady = true; this.buffering = false; this.cdr.markForCheck(); });
   }
   onVideoWaiting(): void {
-    
-    setTimeout(() => {
-      if (this.playerReady) {
-        this.buffering = true;
-        this.cdr.markForCheck();
-      }
-    }, 0);
+    console.log('[MultimediaDetail] video waiting');
+    this.schedule(() => { if (this.playerReady) { this.buffering = true; this.cdr.markForCheck(); } });
   }
   onVideoPlaying(): void {
-    
-    setTimeout(() => {
-      this.buffering = false;
-      this.cdr.markForCheck();
-    }, 0);
+    console.log('[MultimediaDetail] video playing');
+    this.schedule(() => { this.buffering = false; this.cdr.markForCheck(); });
   }
 
   // --- Métodos para manejo de listas privadas ---
