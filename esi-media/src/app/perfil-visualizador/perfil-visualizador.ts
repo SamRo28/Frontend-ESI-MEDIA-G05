@@ -3,6 +3,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AdminService } from '../services/admin.service';
+import { environment } from '../../environments/environment';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { timeout, finalize } from 'rxjs';
 
@@ -173,7 +174,7 @@ export class PerfilVisualizadorComponent implements OnInit {
     this.verifyingPassword = true;
 
     this.http
-      .post('http://localhost:8080/users/login', {
+      .post(`${environment.apiUrl}/users/login`, {
         email: this.email,
         password: this.form.currentPassword
       })
@@ -377,7 +378,7 @@ export class PerfilVisualizadorComponent implements OnInit {
   }
   loadSubscription(): void {
     if (!this.userId) return;
-    let url = `http://localhost:8080/users/${this.userId}/subscription`;
+    let url = `${environment.apiUrl}/users/${this.userId}/subscription`;
     const tok = this.getRawToken();
     if (tok) url += (url.includes('?') ? '&' : '?') + 'auth=' + encodeURIComponent(tok);
     this.http.get<{ vip: boolean; fechaCambio?: string }>(url, this.buildOptions()).subscribe({
@@ -420,7 +421,7 @@ export class PerfilVisualizadorComponent implements OnInit {
   this.subSuccess = '';
   this.subLoading = true;
 
-  let url = `http://localhost:8080/users/${this.userId}/subscription`;
+  let url = `${environment.apiUrl}/users/${this.userId}/subscription`;
   const tok = this.getRawToken();
   if (tok) {
     url += (url.includes('?') ? '&' : '?') + 'auth=' + encodeURIComponent(tok);
