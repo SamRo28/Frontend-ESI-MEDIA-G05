@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, SimpleChanges, OnInit, OnChanges, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 export interface TagOption { value: string; label: string; }
 
@@ -198,7 +199,7 @@ export class ContentFilterComponent implements OnInit, OnChanges {
 
   private fetchTopTags(limit = 5): void {
     this.loadingSpecial = true;
-    this.http.get<any[]>(`/api/filtradoContenidosAvanzado/top-tags?limit=${limit}`).subscribe({
+    this.http.get<any[]>(`${environment.apiUrl}/api/filtradoContenidosAvanzado/top-tags?limit=${limit}`).subscribe({
       next: (res) => {
         this.topTagsResults = res.map(r => ({ tag: r.tag, label: r.label || r.tag, views: r.views }));
         this.specialSelectedTags = [];
@@ -213,7 +214,7 @@ export class ContentFilterComponent implements OnInit, OnChanges {
 
   private fetchTopContents(limit = 5): void {
     this.loadingSpecial = true;
-    this.http.get<any[]>(`/api/filtradoContenidosAvanzado/top-contents?limit=${limit}`).subscribe({
+    this.http.get<any[]>(`${environment.apiUrl}/api/filtradoContenidosAvanzado/top-contents?limit=${limit}`).subscribe({
       next: (res) => {
         this.topContentsResults = res;
         this.finishLoadingSpecial();
@@ -227,7 +228,7 @@ export class ContentFilterComponent implements OnInit, OnChanges {
 
   private fetchTopRatedContents(limit = 5): void {
   this.loadingSpecial = true;
-  this.http.get<any[]>(`/api/filtradoContenidosAvanzado/top-rated-contents?limit=${limit}`).subscribe({
+  this.http.get<any[]>(`${environment.apiUrl}/api/filtradoContenidosAvanzado/top-rated-contents?limit=${limit}`).subscribe({
     next: (res) => {
       this.topContentsResults = res;
       this.finishLoadingSpecial();
