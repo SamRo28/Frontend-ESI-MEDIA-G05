@@ -160,14 +160,6 @@
               class="content-input"
               autocomplete="off"
               aria-label="Buscar contenidos para añadir a la lista">
-            <button 
-              type="button" 
-              class="btn btn-add-content"
-              (click)="agregarContenido()"
-              [disabled]="!nuevoContenido.trim()">
-              <span class="icon" *ngIf="!buscandoContenidos">➕</span>
-              <span class="icon spinner" *ngIf="buscandoContenidos">🔄</span>
-            </button>
           </div>
           
           <!-- Sugerencias de contenidos -->

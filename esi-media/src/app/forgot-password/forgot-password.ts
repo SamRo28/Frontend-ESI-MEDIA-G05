@@ -32,7 +32,7 @@ export class ForgotPasswordComponent {
       next: () => {
         this.loading = false;
         this.submitted = true;
-        this.message = 'Hemos enviado un correo electronico. Sigue las instrucciones para obtener una nueva contrasena.';
+        this.message = 'Hemos enviado un correo electronico. Sigue las instrucciones para obtener una nueva contraseña.';
         this.cdr.detectChanges();
       },
       error: () => {

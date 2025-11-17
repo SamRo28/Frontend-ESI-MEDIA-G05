@@ -1,0 +1,51 @@
+trigger:
+  - main
+
+variables:
+ -⁠ group: 'SonarSecrets'
+
+pool:
+  name: 'Default'
+
+steps:
+# Instalar Node.js
+- task: NodeTool@0
+  inputs:
+    versionSpec: '20.x'
+  displayName: 'Instalar Node.js'
+
+# Instalar Firebase CLI
+- script: |
+    npm install -g firebase-tools
+  displayName: 'Instalar Firebase CLI'
+
+# Moverse al directorio de trabajo primero
+- script: |
+    cd esi-media
+  displayName: 'Mover a carpeta esi-media'
+
+- script: |
+    sonar-scanner -D sonar.host.url=$(SONAR_HOST_URL) -D sonar.token=$(SONAR_TOKEN)
+  displayName: 'Run SonarQube Analysis (CLI, Windows)'
+  workingDirectory: 'esi-media'
+
+
+# Build + Deploy Angular
+# Instalar dependencias
+- script: |
+    npm install
+  displayName: 'Instalar dependencias (npm install)'
+  workingDirectory: 'esi-media' # Ejecutar dentro de esta carpeta
+
+# Compilar para producción
+- script: |
+    npm run build -- --configuration=production
+  displayName: 'Compilar Angular (production)'
+  workingDirectory: 'esi-media' # Ejecutar dentro de esta carpeta
+
+
+# Desplegar en Firebase
+- script: |
+    firebase deploy --only hosting --token $(FIREBASE_TOKEN)
+  displayName: 'Desplegar en Firebase Hosting'
+  workingDirectory: 'esi-media' # Ejecutar dentro de esta carpeta

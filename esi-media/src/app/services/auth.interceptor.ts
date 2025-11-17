@@ -1,7 +1,9 @@
 import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpEvent } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
 import { inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { environment } from '../../environments/environment';
 
 /**
  * Interceptor funcional para agregar automáticamente el token de autorización
@@ -15,12 +17,11 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
   // Si no estamos en el navegador (SSR), NO INTERCEPTAR - deja que la petición continúe sin token
   // El componente se encargará de recargar cuando esté en el navegador
   if (!isPlatformBrowser(platformId)) {
-    console.log(' INTERCEPTOR - SSR detectado, saltando interceptor para:', req.url);
     return next(req);
   }
 
-  // Solo agregar el token a peticiones hacia nuestro backend  que requieren auth
-  if (req.url.includes('localhost:8080/gestor') || req.url.includes('localhost:8080/users/listar') || req.url.includes('localhost:8080/listas') || req.url.includes('localhost:8080/contenidos/buscar') || req.url.includes('localhost:8080/listas/usuario') || req.url.includes('localhost:8080/listas/gestor') || req.url.includes('localhost:8080/multimedia')) {
+  // Solo agregar el token a peticiones hacia nuestro backend que requieren auth
+  if (req.url.includes(`${environment.apiUrl}/gestor`) || req.url.includes(`${environment.apiUrl}/users/listar`) || req.url.includes(`${environment.apiUrl}/listas`) || req.url.includes(`${environment.apiUrl}/contenidos/buscar`) || req.url.includes(`${environment.apiUrl}/listas/usuario`) || req.url.includes(`${environment.apiUrl}/listas/gestor`) || req.url.includes(`${environment.apiUrl}/multimedia`) || req.url.includes(`${environment.apiUrl}/api/valoraciones`)) {
 
 
     let token = '';
@@ -37,16 +38,8 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
       console.error('Error accediendo a sessionStorage:', error);
     }
 
-    // Agregar el header de autorización si hay token
     if (token) {
-
-      const authReq = req.clone({
-        setHeaders: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      try { console.debug('[auth.interceptor] Añadido Authorization a', req.url); } catch {}
-
+      const authReq = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
       return next(authReq);
     }
   }

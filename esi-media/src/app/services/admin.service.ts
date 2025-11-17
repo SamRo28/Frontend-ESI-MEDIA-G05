@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, throwError, timeout } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface Usuario {
   id?: string;
@@ -39,7 +40,7 @@ export interface PerfilDetalle {
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
-  private readonly apiUrl = 'http://localhost:8080';
+  private readonly apiUrl = environment.apiUrl;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -258,16 +259,7 @@ export class AdminService {
     console.log('🔗 Obteniendo administrador (usando endpoint genérico):', id);
     return this.getUserById(id);
   }
-  /*getUserById(id: string): Observable<any> {
-    console.log('🔗 Obteniendo usuario por ID:', id);
-    const url = `${this.apiUrl}/users/${id}`;
-    console.log('🌐 URL:', url);
-    return this.http.get<any>(url)
-      .pipe(
-        timeout(10000),
-        catchError(this.handleError)
-      );
-  }*/
+
 
   getGestorById(id: string): Observable<any> {
     console.log('🔗 Obteniendo gestor (usando endpoint genérico):', id);

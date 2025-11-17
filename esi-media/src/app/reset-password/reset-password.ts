@@ -23,7 +23,7 @@ export class ResetPasswordComponent implements OnInit {
   showPwd = false;
   showPwd2 = false;
 
-  // Validacion de contrasena en tiempo real
+  // Validacion de contraseña en tiempo real
   rules = {
     minLength: false,
     hasUpper: false,
@@ -51,7 +51,7 @@ export class ResetPasswordComponent implements OnInit {
     if (!this.token) {
       this.loading = false;
       this.valid = false;
-      this.error = 'El enlace no es valido o ha caducado';
+      this.error = 'El enlace no es válido o ha caducado';
       return;
     }
     // Fallback por si la validacion tarda demasiado
@@ -59,7 +59,7 @@ export class ResetPasswordComponent implements OnInit {
       if (this.loading) {
         this.loading = false;
         this.valid = false;
-        this.error = 'El enlace no es valido o ha caducado';
+        this.error = 'El enlace no es válido o ha caducado';
       }
     }, 7000);
 
@@ -68,13 +68,13 @@ export class ResetPasswordComponent implements OnInit {
         clearTimeout(fallback);
         this.valid = !!res?.valid;
         this.loading = false;
-        if (!this.valid) this.error = 'El enlace no es valido o ha caducado';
+        if (!this.valid) this.error = 'El enlace no es válido o ha caducado';
       },
       error: () => {
         clearTimeout(fallback);
         this.valid = false;
         this.loading = false;
-        this.error = 'El enlace no es valido o ha caducado';
+        this.error = 'El enlace no es válido o ha caducado';
       }
     });
   }
@@ -86,7 +86,7 @@ export class ResetPasswordComponent implements OnInit {
       this.zone.run(() => {
         this.showPolicy = true;
         this.isSaving = false;
-        this.error = 'No se pudo guardar la contrasena. Intentalo de nuevo y verifica la politica de seguridad.';
+        this.error = 'No se pudo guardar la contraseña. Inténtalo de nuevo y verifica la política de seguridad.';
         this.cdr.detectChanges();
       });
       return;
@@ -95,7 +95,7 @@ export class ResetPasswordComponent implements OnInit {
       this.zone.run(() => {
         this.showPolicy = true;
         this.isSaving = false;
-        this.error = 'No se pudo guardar la contrasena. Intentalo de nuevo y verifica la politica de seguridad.';
+        this.error = 'No se pudo guardar la contraseña. Inténtalo de nuevo y verifica la política de seguridad.';
         this.cdr.detectChanges();
       });
       return;
@@ -120,7 +120,7 @@ export class ResetPasswordComponent implements OnInit {
         this.zone.run(() => {
           this.isSaving = false;
           this.showPolicy = true;
-          this.error = 'No se pudo guardar la contrasena. Intentalo de nuevo y verifica la politica de seguridad.';
+          this.error = 'No se pudo guardar la contraseña. Inténtalo de nuevo y verifica la política de seguridad.';
           this.cdr.detectChanges();
         });
       }

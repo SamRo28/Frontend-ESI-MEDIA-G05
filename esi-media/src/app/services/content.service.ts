@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, from } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 
 export interface AudioUploadData {
@@ -65,11 +66,56 @@ export interface BackendError {
   errors?: { [key: string]: string };
 }
 
+// Gestión de contenidos para Gestor
+export interface GestorContenidoResumen {
+  id: string;
+  titulo: string;
+  tipo: 'AUDIO' | 'VIDEO';
+  vip: boolean;
+  resolucion?: string | null;
+}
+
+export interface GestorContenidoPage {
+  content: GestorContenidoResumen[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
+
+export interface GestorContenidoDetalle {
+  id: string;
+  titulo: string;
+  descripcion: string;
+  tipo: 'AUDIO' | 'VIDEO';
+  caratula?: any;
+  vip: boolean;
+  duracion: number;
+  estado: boolean;
+  fechaDisponibleHasta?: string | null;
+  edadVisualizacion: number;
+  nvisualizaciones: number;
+  tags: string[];
+  referenciaReproduccion: string;
+  resolucion?: string | null;
+}
+
+export interface GestorContenidoUpdatePayload {
+  titulo: string;
+  descripcion: string;
+  tags: string[];
+  vip: boolean;
+  estado: boolean;
+  edadVisualizacion: number;
+  fechaDisponibleHasta?: string | null;
+  caratula?: any;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class ContentService {
-  private readonly baseUrl = 'http://localhost:8080/gestor';
+  private readonly baseUrl = `${environment.apiUrl}/gestor`;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -198,7 +244,7 @@ export class ContentService {
     console.log('Realizando búsqueda en backend:', query.trim());
 
     // El interceptor se encarga del Authorization header automáticamente
-    return this.http.get<any>(`http://localhost:8080/multimedia?${params}`).pipe(
+    return this.http.get<any>(`${environment.apiUrl}/multimedia?${params}`).pipe(
       catchError(error => {
         console.error('Error en búsqueda de contenidos:', error);
         

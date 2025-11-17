@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { shareReplay, take } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface ContenidoResumenDTO {
   id: string;
@@ -21,14 +22,13 @@ export interface ContenidoDetalleDTO {
   tipo: 'AUDIO' | 'VIDEO';
   caratula?: any;
   vip: boolean;
-  duracion?: number; // en segundos
-  // Nuevos campos para enriquecer el detalle
-  fechaDisponibleHasta?: string | Date;
-  edadVisualizacion?: number;
+  duracion?: number;
+  fechadisponiblehasta?: string | Date;
+  edadvisualizacion?: number;
   nvisualizaciones?: number;
   tags?: string[];
   referenciaReproduccion: string;
-  resolucion?: string; // Campo que faltaba para videos
+  resolucion?: string;
 }
 
 export interface PageResponse<T> {
@@ -42,7 +42,7 @@ export interface PageResponse<T> {
 
 @Injectable({ providedIn: 'root' })
 export class MultimediaService {
-  private readonly baseUrl = 'http://localhost:8080/multimedia';
+  private readonly baseUrl = `${environment.apiUrl}/multimedia`;
   private pageCache = new Map<string, Observable<PageResponse<ContenidoResumenDTO>>>();
 
   constructor(private http: HttpClient) {}
