@@ -89,7 +89,7 @@
           <div class="special-options">
             <button class="option-btn" (click)="selectSpecialMode('top-contents')" [class.selected]="selectedSpecialMode==='top-contents'" type="button">🔥TOP 5 CONTENIDOS con más REPRODUCCIONES🔥</button>
             <button class="option-btn" (click)="selectSpecialMode('top-tags')" [class.selected]="selectedSpecialMode==='top-tags'" type="button">🏷️TOP 5 TAGS🏷️</button>
-            <button class="option-btn" (click)="selectSpecialMode('top-rated')" [class.selected]="selectedSpecialMode==='top-rated'" type="button">⭐TOP 5 CONTENIDOS mejor VALORADOS⭐ (🔜Próximamente🔜)</button>
+            <button class="option-btn" (click)="selectSpecialMode('top-rated')" [class.selected]="selectedSpecialMode==='top-rated'" type="button">⭐TOP 5 CONTENIDOS mejor VALORADOS⭐</button>
           </div>
 
           <div class="special-results">
@@ -118,10 +118,19 @@
 
             <div *ngIf="selectedSpecialMode==='top-contents' && topContentsResults.length>0">
               <h5>TOP 5 CONTENIDOS CON MÁS REPRODUCCIONES</h5>
-              <div class="special-message">Se aplicarán los Top 5 contenidos con más reproducciones.</div>
+              <div class="special-message">Se mostrarán los Top 5 contenidos con más reproducciones de la plataforma.</div>
               <div class="panel-actions">
                 <button class="action-button clear-button" (click)="clearFilters()" type="button">🗑️ Limpiar</button>
                 <button class="action-button apply-button" (click)="applyTopContentsAsSpecial()" type="button">✓ Aplicar filtros</button>
+              </div>
+            </div>
+
+            <div *ngIf="selectedSpecialMode==='top-rated' && topContentsResults.length>0">
+              <h5>TOP 5 CONTENIDOS MEJOR VALORADOS</h5>
+              <div class="special-message">Se mostrarán los Top 5 contenidos mejor valorados de la plataforma.</div>
+              <div class="panel-actions">
+                <button class="action-button clear-button" (click)="clearFilters()" type="button">🗑️ Limpiar</button>
+                <button class="action-button apply-button" (click)="applyTopRatedAsSpecial()" type="button">✓ Aplicar filtros</button>
               </div>
             </div>
           </div>

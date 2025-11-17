@@ -193,6 +193,7 @@ export class ContentFilterComponent implements OnInit, OnChanges {
     this.specialSelectedTags = [];
     if (mode === 'top-tags') this.fetchTopTags(5);
     else if (mode === 'top-contents') this.fetchTopContents(5);
+    else if (mode === 'top-rated') this.fetchTopRatedContents(5); 
   }
 
   private fetchTopTags(limit = 5): void {
@@ -222,6 +223,20 @@ export class ContentFilterComponent implements OnInit, OnChanges {
         this.finishLoadingSpecial();
       }
     });
+  }
+
+  private fetchTopRatedContents(limit = 5): void {
+  this.loadingSpecial = true;
+  this.http.get<any[]>(`/api/filtradoContenidosAvanzado/top-rated-contents?limit=${limit}`).subscribe({
+    next: (res) => {
+      this.topContentsResults = res;
+      this.finishLoadingSpecial();
+    },
+    error: (err) => {
+      this.specialError = 'Error al cargar Top-Rated';
+      this.finishLoadingSpecial();
+    }
+  });
   }
 
   private finishLoadingSpecial(): void {
@@ -264,6 +279,21 @@ export class ContentFilterComponent implements OnInit, OnChanges {
     };
     this.filtersChanged.emit(payload);
     this.showFilterPanel = false;
+  }
+
+  // Aplicar top-rated: emitimos un modo especial con la lista de contenidos (el receptor puede decidir cómo mostrarlo)
+  applyTopRatedAsSpecial(): void {
+  const payload: ContentFilterDTO = {
+    contentType: this.contentType,
+    tags: [],
+    suscripcion: this.selectedSuscripcion,
+    edad: this.selectedEdad,
+    resoluciones: [],
+    specialMode: 'top-rated',
+    specialPayload: { contents: this.topContentsResults }
+  };
+  this.filtersChanged.emit(payload);
+  this.showFilterPanel = false;
   }
 
   // Setter para suscripción que permite lógica adicional (p.ej. limpiar resolución 4K si no aplica)
