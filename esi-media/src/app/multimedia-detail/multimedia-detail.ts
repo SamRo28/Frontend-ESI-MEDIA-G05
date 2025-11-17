@@ -4,6 +4,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { MultimediaService, ContenidoDetalleDTO } from '../services/multimedia.service';
 import { ListaService, ListasResponse } from '../services/lista.service';
+import { environment } from '../../environments/environment';
 import { ValoracionService } from '../services/valoracion.service';
 import { ValoracionComponent } from '../shared/valoracion/valoracion.component';
 import { PLATFORM_ID } from '@angular/core';
@@ -313,7 +314,7 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     let base = this.detalle.referenciaReproduccion || '';
     // Si viene como ruta relativa (empieza por '/'), anteponer dominio backend
     if (/^\//.test(base)) {
-      base = 'http://localhost:8080' + base;
+      base = `${environment.apiUrl}` + base;
     }
     // Evitar duplicar protocolo si accidentalmente ya contiene http://http://
     base = base.replace(/^(https?:\/\/)+(https?:\/\/)/i, '$1');
