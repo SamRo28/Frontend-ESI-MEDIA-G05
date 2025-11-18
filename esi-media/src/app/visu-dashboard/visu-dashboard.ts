@@ -1,7 +1,7 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, inject, PLATFORM_ID } from '@angular/core';
 import { Router, NavigationEnd, RouterLink, RouterLinkActive, RouterModule } from '@angular/router';
 import { MultimediaService } from '../services/multimedia.service';
-import { UserService } from '../../userService';
+import { UserService } from '../services/userService';
 import { GestionListasComponent } from '../gestion-listas/gestion-listas';
 import { MultimediaListComponent } from '../multimedia-list/multimedia-list';
 import { CommonModule, isPlatformBrowser } from '@angular/common';

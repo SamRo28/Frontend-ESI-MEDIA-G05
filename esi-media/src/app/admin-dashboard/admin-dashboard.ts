@@ -3,7 +3,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AdminService, Usuario, PerfilDetalle, ContenidoResumen, ContenidoDetalle } from '../services/admin.service';
-import { UserService } from '../../userService';
+import { UserService } from '../services/userService';
 import { firstValueFrom } from 'rxjs';
 
 @Component({

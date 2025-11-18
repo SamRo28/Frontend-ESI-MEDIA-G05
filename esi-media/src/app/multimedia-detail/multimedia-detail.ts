@@ -3,7 +3,7 @@ import { CommonModule, NgIf, NgFor, isPlatformBrowser } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { MultimediaService, ContenidoDetalleDTO } from '../services/multimedia.service';
-import { UserService } from '../../userService';
+import { UserService } from '../services/userService';
 import { ListaService, ListasResponse } from '../services/lista.service';
 // Forzar uso explícito del entorno de producción (apiUrl desplegado)
 import { environment } from '../../environments/environment.production';
