@@ -1,14 +1,14 @@
-import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef } from '@angular/core';
-import { CommonModule, NgIf, NgFor } from '@angular/common';
+import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef, PLATFORM_ID } from '@angular/core';
+import { CommonModule, NgIf, NgFor, isPlatformBrowser } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { MultimediaService, ContenidoDetalleDTO } from '../services/multimedia.service';
+import { UserService } from '../services/userService';
 import { ListaService, ListasResponse } from '../services/lista.service';
-import { environment } from '../../environments/environment';
+// Forzar uso explícito del entorno de producción (apiUrl desplegado)
+import { environment } from '../../environments/environment.production';
 import { ValoracionService } from '../services/valoracion.service';
 import { ValoracionComponent } from '../shared/valoracion/valoracion.component';
-import { PLATFORM_ID } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
 
 interface Notificacion {
   mensaje: string;
@@ -69,7 +69,8 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private listaService: ListaService,
     private router: Router,
-    private valoracionSvc: ValoracionService
+    private valoracionSvc: ValoracionService,
+    private userService: UserService
   ) {}
 
   // Utilidades de uso interno para reducir complejidad
@@ -318,9 +319,21 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   audioSrc(): string {
     if (!this.detalle || this.detalle.tipo !== 'AUDIO') return '';
     let base = this.detalle.referenciaReproduccion || '';
-    // Si viene como ruta relativa (empieza por '/'), anteponer dominio backend
-    if (/^\//.test(base)) {
-      base = `${environment.apiUrl}` + base;
+    // Normalizar a dominio de backend en despliegue, evitando localhost
+    try {
+      if (/^https?:\/\//i.test(base)) {
+        const u = new URL(base);
+        // Reescribir siempre el origen al del backend configurado
+        base = `${environment.apiUrl.replace(/\/+$/,'')}${u.pathname}${u.search || ''}${u.hash || ''}`;
+      } else if (/^\//.test(base)) {
+        // Ruta relativa -> anteponer dominio backend
+        base = `${environment.apiUrl.replace(/\/+$/,'')}${base}`;
+      }
+    } catch {
+      // Fallback simple si URL constructor falla: asegurar prefijo del backend cuando parece relativo
+      if (!/^https?:\/\//i.test(base)) {
+        base = `${environment.apiUrl.replace(/\/+$/,'')}/${base.replace(/^\/+/, '')}`;
+      }
     }
     // Evitar duplicar protocolo si accidentalmente ya contiene http://http://
     base = base.replace(/^(https?:\/\/)+(https?:\/\/)/i, '$1');
@@ -622,13 +635,22 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   mostrarNotificacionDummy(): void { }
 
   logout(): void {
-    try {
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('user');
-      sessionStorage.removeItem('currentUserClass');
-      sessionStorage.removeItem('email');
-    } catch {}
-    this.multimedia.clearCache();
-    this.router.navigate(['/login']);
+    // Llamar al servicio de logout
+    this.userService.logout().subscribe({
+      next: () => {
+        try {
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+          sessionStorage.removeItem('currentUserClass');
+          sessionStorage.removeItem('email');
+        } catch {}
+        this.multimedia.clearCache();
+        this.router.navigate(['/login']);
+      },
+      error: (err) => {
+        console.error('Error al cerrar sesión:', err);
+        alert('Error al cerrar sesión');
+      }
+    });
   }
 }
