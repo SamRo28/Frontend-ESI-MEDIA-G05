@@ -143,7 +143,7 @@
 .info-list li strong{color:#e5e7eb;font-weight:400;font-size:.95rem}
 .info-list li.desc{grid-template-columns:140px 1fr}
 /* Descripción como texto plano (sin caja) */
-.info-list li.desc .desc-text{color:#e5e7eb;line-height:1.5;background:transparent;border:none;padding:0;border-radius:0;max-height:none;overflow:visible;font-size:.95rem}
+.info-list li.desc .desc-text{color:#e5e7eb;line-height:1.5;background:transparent;border:none;padding:0;border-radius:0;max-height:none;overflow:visible;font-size:.95rem;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}
 
 /* Unificar tamaño/estilo entre etiquetas y valores */
 .info-list li label,
