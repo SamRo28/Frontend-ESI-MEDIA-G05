@@ -137,6 +137,10 @@ export class GestorDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  navigateToGestionContenidos(): void {
+    this.router.navigate(['/gestor-dashboard/contenidos']);
+  }
+
 
   // Mostrar/ocultar el componente de gestión de listas (como tab)
   toggleGestionListas(): void {

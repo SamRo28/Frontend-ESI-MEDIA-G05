@@ -39,9 +39,9 @@
         
         <!-- Menú desplegable del usuario -->
         <div class="user-dropdown" *ngIf="showUserMenu" role="menu">
-          <button class="dropdown-item" (click)="openCuentaModal()" role="menuitem">
+          <a routerLink="/perfil" class="dropdown-item" role="menuitem">
             <span class="dropdown-text">Cuenta</span>
-          </button>
+          </a>
           <button class="dropdown-item" (click)="toggleListasPrivadas()" role="menuitem">
             <span class="dropdown-text">Ver mis listas privadas</span>
             <span class="dropdown-badge" *ngIf="mostrarListasPrivadas">●</span>
@@ -122,10 +122,3 @@
     (creada)="closeCrearListaModal(true)">
   </crear-lista>
 </dialog>
-
-<!-- Modal Cuenta (Perfil Visualizador) -->
-<div class="modal-backdrop" *ngIf="showCuentaModal" (click)="closeCuentaModal()" (keydown)="$event.key === 'Escape' && closeCuentaModal()"></div>
-<dialog class="modal-container" [attr.open]="showCuentaModal ? true : null">
-  <app-perfil-visualizador (close)="closeCuentaModal()"></app-perfil-visualizador>
-</dialog>
-
