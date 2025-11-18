@@ -2,7 +2,7 @@ import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { UserService } from '../../userService';
+import { UserService } from '../services/userService';
 
 @Component({
   selector: 'app-forgot-password',
