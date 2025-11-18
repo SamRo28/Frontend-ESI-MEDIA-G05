@@ -4,7 +4,8 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { MultimediaService, ContenidoDetalleDTO } from '../services/multimedia.service';
 import { ListaService, ListasResponse } from '../services/lista.service';
-import { environment } from '../../environments/environment';
+// Forzar uso explícito del entorno de producción (apiUrl desplegado)
+import { environment } from '../../environments/environment.production';
 import { ValoracionService } from '../services/valoracion.service';
 import { ValoracionComponent } from '../shared/valoracion/valoracion.component';
 import { PLATFORM_ID } from '@angular/core';
@@ -318,9 +319,21 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   audioSrc(): string {
     if (!this.detalle || this.detalle.tipo !== 'AUDIO') return '';
     let base = this.detalle.referenciaReproduccion || '';
-    // Si viene como ruta relativa (empieza por '/'), anteponer dominio backend
-    if (/^\//.test(base)) {
-      base = `${environment.apiUrl}` + base;
+    // Normalizar a dominio de backend en despliegue, evitando localhost
+    try {
+      if (/^https?:\/\//i.test(base)) {
+        const u = new URL(base);
+        // Reescribir siempre el origen al del backend configurado
+        base = `${environment.apiUrl.replace(/\/+$/,'')}${u.pathname}${u.search || ''}${u.hash || ''}`;
+      } else if (/^\//.test(base)) {
+        // Ruta relativa -> anteponer dominio backend
+        base = `${environment.apiUrl.replace(/\/+$/,'')}${base}`;
+      }
+    } catch {
+      // Fallback simple si URL constructor falla: asegurar prefijo del backend cuando parece relativo
+      if (!/^https?:\/\//i.test(base)) {
+        base = `${environment.apiUrl.replace(/\/+$/,'')}/${base.replace(/^\/+/, '')}`;
+      }
     }
     // Evitar duplicar protocolo si accidentalmente ya contiene http://http://
     base = base.replace(/^(https?:\/\/)+(https?:\/\/)/i, '$1');
