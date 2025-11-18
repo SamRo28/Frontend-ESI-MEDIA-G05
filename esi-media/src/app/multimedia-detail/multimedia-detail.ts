@@ -1,15 +1,14 @@
-import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef } from '@angular/core';
-import { CommonModule, NgIf, NgFor } from '@angular/common';
+import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef, PLATFORM_ID } from '@angular/core';
+import { CommonModule, NgIf, NgFor, isPlatformBrowser } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { MultimediaService, ContenidoDetalleDTO } from '../services/multimedia.service';
+import { UserService } from '../../userService';
 import { ListaService, ListasResponse } from '../services/lista.service';
 // Forzar uso explícito del entorno de producción (apiUrl desplegado)
 import { environment } from '../../environments/environment.production';
 import { ValoracionService } from '../services/valoracion.service';
 import { ValoracionComponent } from '../shared/valoracion/valoracion.component';
-import { PLATFORM_ID } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
 
 interface Notificacion {
   mensaje: string;
@@ -70,7 +69,8 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private listaService: ListaService,
     private router: Router,
-    private valoracionSvc: ValoracionService
+    private valoracionSvc: ValoracionService,
+    private userService: UserService
   ) {}
 
   // Utilidades de uso interno para reducir complejidad
@@ -635,13 +635,22 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   mostrarNotificacionDummy(): void { }
 
   logout(): void {
-    try {
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('user');
-      sessionStorage.removeItem('currentUserClass');
-      sessionStorage.removeItem('email');
-    } catch {}
-    this.multimedia.clearCache();
-    this.router.navigate(['/login']);
+    // Llamar al servicio de logout
+    this.userService.logout().subscribe({
+      next: () => {
+        try {
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+          sessionStorage.removeItem('currentUserClass');
+          sessionStorage.removeItem('email');
+        } catch {}
+        this.multimedia.clearCache();
+        this.router.navigate(['/login']);
+      },
+      error: (err) => {
+        console.error('Error al cerrar sesión:', err);
+        alert('Error al cerrar sesión');
+      }
+    });
   }
 }
