@@ -132,14 +132,21 @@
           <div class="buffering" *ngIf="buffering">Bufferizando...</div>
         </div>
 
-        <!-- AUDIO: reproducción directa con <audio> y token en query (?auth=) -->
-        <div *ngIf="detalle!.tipo === 'AUDIO'" class="player-card">
-          <ng-container *ngIf="!audioError">
-            <audio #audioPlayer controls [src]="audioSrc()" (error)="onAudioError($event)" (loadedmetadata)="onAudioLoaded($event)"></audio>
-          </ng-container>
-          <div class="audio-error" *ngIf="audioError">
-            {{ audioError }}
-            <button class="retry-btn" (click)="reintentarAudio()">Reintentar</button>
+        <!-- AUDIO: reproducción directa y carátula al estilo Spotify -->
+        <div *ngIf="detalle!.tipo === 'AUDIO'" class="player-card audio-layout">
+          <div class="audio-stack">
+            <div class="audio-cover" *ngIf="caratulaUrl() as cover">
+              <img [src]="cover" [alt]="detalle!.titulo + ' - carátula'" />
+            </div>
+            <div class="audio-controls">
+              <ng-container *ngIf="!audioError">
+                <audio #audioPlayer controls [src]="audioSrc()" (error)="onAudioError($event)" (loadedmetadata)="onAudioLoaded($event)"></audio>
+              </ng-container>
+              <div class="audio-error" *ngIf="audioError">
+                {{ audioError }}
+                <button class="retry-btn" (click)="reintentarAudio()">Reintentar</button>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -90,6 +90,20 @@
   background:linear-gradient(135deg, rgba(168,85,247,0.6), rgba(217,70,239,0.6));
   box-shadow:none;
 }
+
+/* --- Layout de audio con carátula (cover arriba, player debajo) --- */
+.audio-layout{--audio-media-size: 360px; display:flex;flex-direction:column;align-items:center;gap:1rem}
+.audio-stack{width:min(100%, var(--audio-media-size));display:flex;flex-direction:column;align-items:center;gap:1rem}
+.audio-cover{flex:0 0 auto;width:100%}
+.audio-cover img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:16px;border:1px solid rgba(168,85,247,.35);box-shadow:0 10px 24px rgba(0,0,0,.45)}
+.audio-controls{flex:1 1 auto;width:100%;min-width:0}
+.audio-controls audio{width:100%}
+
+/* Responsive: limitar alto de imagen en móviles pequeños */
+@media (max-width: 640px){
+  .audio-layout{--audio-media-size: 100%}
+  .audio-cover img{width:100%;height:auto;max-height:360px}
+}
 @media (max-width:640px){.cabecera{grid-template-columns:1fr;gap:1rem}.caratula{width:100%;height:200px}.cabecera-actions{justify-content:flex-start;margin-top:1rem}}
 /* Responsivo: en pantallas pequeñas apilamos acciones */
 @media (max-width: 768px){
