@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { ContentService } from '../services/content.service';
+import { UserService } from '../../userService';
 import { GestionListasComponent } from '../gestion-listas/gestion-listas';
 import { CrearListaComponent } from '../crear-lista/crear-lista';
 
@@ -54,6 +55,7 @@ export class GestorDashboardComponent implements OnInit, OnDestroy {
   constructor(
     private readonly contentService: ContentService,
     private readonly router: Router,
+    private readonly userService: UserService,
     @Inject(PLATFORM_ID) private readonly platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -229,24 +231,22 @@ export class GestorDashboardComponent implements OnInit, OnDestroy {
   }
 
   // Cerrar sesión
-  logout() {
-    // borrar usuario completo, token y metadatos de sesión, limpiar estado y redirigir
-    if (isPlatformBrowser(this.platformId)) {
-      sessionStorage.removeItem('user');
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('email');
-      sessionStorage.removeItem('currentUserClass');
-
-      // Limpiar estado local
-      this.userName = '';
-
-      // Mostrar mensaje breve (puede usarse en template si se quiere mostrar)
-      this.successMessage = 'Sesión cerrada';
-
-      // Redirigir al home después de un pequeño retardo para permitir ver el mensaje
-      setTimeout(() => {
-        this.router.navigate(['/home']);
-      }, 1350);
-    }
+  logout(): void {
+    // Llamar al servicio de logout
+    this.userService.logout().subscribe({
+      next: () => {
+        try {
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+          sessionStorage.removeItem('currentUserClass');
+          sessionStorage.removeItem('email');
+        } catch {}
+        this.router.navigate(['/login']);
+      },
+      error: (err) => {
+        console.error('Error al cerrar sesión:', err);
+        alert('Error al cerrar sesión');
+      }
+    });
   }
 }

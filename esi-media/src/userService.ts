@@ -28,19 +28,20 @@ export class UserService {
         return this.client.post<any>(`${environment.apiUrl}/users/login3Auth`, { email });
     }
 
+    logout() {
+        let token = sessionStorage.getItem("token");
+        return this.client.post(`${environment.apiUrl}/users/logout`, { token},{ responseType: 'text' } );
+    }
+
     verify3ACode(id: string, code: string): Observable<any> {
         return this.client.post<any>(`${environment.apiUrl}/users/verify3AuthCode`, { id, code });
     }
-    /*verify2FACode(email: string, code: string): Observable<any> {
-        return this.client.post<any>(`http://localhost:8080/users/verify2FACode`, { email, code },
-    { responseType: 'text' });
-    }*/
 
     verify2FACode(email: string, code: string) {
   return this.client.post(
     `${environment.apiUrl}/users/verify2FACode`,
     { email, code },
-    { responseType: 'text' } // <--- ESTA ES LA CLAVE
+    { responseType: 'text' } 
   );
 }
 

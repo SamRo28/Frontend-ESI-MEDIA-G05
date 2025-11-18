@@ -1,6 +1,7 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, inject, PLATFORM_ID } from '@angular/core';
 import { Router, NavigationEnd, RouterLink, RouterLinkActive, RouterModule } from '@angular/router';
 import { MultimediaService } from '../services/multimedia.service';
+import { UserService } from '../../userService';
 import { GestionListasComponent } from '../gestion-listas/gestion-listas';
 import { MultimediaListComponent } from '../multimedia-list/multimedia-list';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
@@ -49,6 +50,7 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
 
 
   private multimedia = inject(MultimediaService);
+  private userService = inject(UserService);
   constructor(private router: Router) {
     this.isBrowser = isPlatformBrowser(this.platformId);
   }
@@ -373,19 +375,24 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
 
 
 
-  /**
-   * Cierra la sesión del usuario, limpia sessionStorage y navega al login
-   */
   logout(): void {
-    console.log('Cerrando sesión...');
-    // Limpiar token sesión y cache multimedia
-    try { sessionStorage.removeItem('token'); 
-      sessionStorage.removeItem('user');
-      sessionStorage.removeItem('currentUserClass');
-      sessionStorage.removeItem('email');
-    } catch {}
-    this.multimedia.clearCache();
-    this.router.navigate(['/login']);
+    // Llamar al servicio de logout
+    this.userService.logout().subscribe({
+      next: () => {
+        try {
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+          sessionStorage.removeItem('currentUserClass');
+          sessionStorage.removeItem('email');
+        } catch {}
+        this.multimedia.clearCache();
+        this.router.navigate(['/home']);
+      },
+      error: (err) => {
+        console.error('Error al cerrar sesión:', err);
+        alert('Error al cerrar sesión');
+      }
+    });
   }
 
   /**

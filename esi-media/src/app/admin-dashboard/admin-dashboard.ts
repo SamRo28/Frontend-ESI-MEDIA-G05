@@ -3,6 +3,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AdminService, Usuario, PerfilDetalle, ContenidoResumen, ContenidoDetalle } from '../services/admin.service';
+import { UserService } from '../../userService';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -133,6 +134,7 @@ export class AdminDashboardComponent implements OnInit {
     private readonly adminService: AdminService,
     private readonly cdr: ChangeDetectorRef,
     private readonly router: Router,
+    private readonly userService: UserService,
     private ngZone: NgZone,
     @Inject(PLATFORM_ID) private readonly platformId: Object
   ) {}
@@ -797,18 +799,23 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
-  logout() {
-    if (isPlatformBrowser(this.platformId)) {
-      // Limpiar sessionStorage
-      sessionStorage.removeItem('currentUserClass');
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('user');
-      sessionStorage.removeItem('email');
-      
-      setTimeout(() => {
-        this.router.navigate(['/home']);
-      }, 1000);
-    }
+ logout(): void {
+    // Llamar al servicio de logout
+    this.userService.logout().subscribe({
+      next: () => {
+        try {
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+          sessionStorage.removeItem('currentUserClass');
+          sessionStorage.removeItem('email');
+        } catch {}
+        this.router.navigate(['/login']);
+      },
+      error: (err) => {
+        console.error('Error al cerrar sesión:', err);
+        alert('Error al cerrar sesión');
+      }
+    });
   }
 
   // MÃ©todos para la eliminaciÃ³n de usuarios
