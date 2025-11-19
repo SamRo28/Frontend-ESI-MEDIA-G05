@@ -34,7 +34,7 @@ export class Fa3Code implements OnInit {
     this.userService.verify3ACode(this.codeId, this.verificationCode).subscribe({
       next: (response) => {
         let tipoUsuario = sessionStorage.getItem('currentUserClass');
-        sessionStorage.setItem('token', response.token);
+        // El token ya está en la cookie HttpOnly, no necesitamos guardarlo
 
         if(tipoUsuario === 'Visualizador'){
           this.router.navigate(['/dashboard']);
@@ -44,11 +44,9 @@ export class Fa3Code implements OnInit {
           this.router.navigate(['/admin-dashboard']);
           return;
         }
-
         else{
           this.router.navigate(['/gestor-dashboard']);
         }
-
       }
     });
   }

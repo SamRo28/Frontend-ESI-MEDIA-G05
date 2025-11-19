@@ -43,7 +43,7 @@ export class Fa2Code {
           return;
         }
         else{
-          sessionStorage.setItem('token', res);
+          // El token ya está en la cookie HttpOnly, no necesitamos guardarlo
           this.router.navigate(['/dashboard']);
         }
       },

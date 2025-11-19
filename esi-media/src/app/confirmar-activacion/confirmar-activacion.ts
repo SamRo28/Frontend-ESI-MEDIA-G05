@@ -27,9 +27,7 @@ export class ConfirmarActivacionComponent implements OnInit {
 
     this.svc.activarCuenta(token).subscribe({
       next: (res) => {
-        if (res?.token) {
-          sessionStorage.setItem('token', res.token);
-        }
+        // El token ya está en la cookie HttpOnly, no necesitamos guardarlo
         this.estado = 'ok';
         this.mensaje = 'Cuenta activada correctamente.';
         setTimeout(() => {
