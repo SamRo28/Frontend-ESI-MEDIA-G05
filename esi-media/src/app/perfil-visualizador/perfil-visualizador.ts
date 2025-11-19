@@ -7,12 +7,14 @@ import { environment } from '../../environments/environment';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { timeout, finalize } from 'rxjs';
 import { UserService } from '../services/userService';
+import { PasswordValidatorComponent } from '../shared/components/password-validator/password-validator.component';
+import { PasswordValidation } from '../services/user-validation.service';
 
 
 @Component({
   selector: 'app-perfil-visualizador',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, PasswordValidatorComponent],
   templateUrl: './perfil-visualizador.html',
   styleUrls: ['./perfil-visualizador.css'] // Asegúrate que esta línea esté presente
 })
@@ -35,7 +37,9 @@ export class PerfilVisualizadorComponent implements OnInit {
   };
   originalForm: any = null;
 
-  // Reglas contraseña
+  // Política unificada + reglas adicionales locales
+  pwPolicy?: PasswordValidation;
+  pwPolicyValid = false;
   passwordRules = { minLength: false, upper: false, lower: false, number: false, special: false, match: true, noPersonal: true, notCurrent: true };
 
   // Avatares
@@ -252,12 +256,8 @@ export class PerfilVisualizadorComponent implements OnInit {
     this.successMessage = '';
     this.errorMessage = '';
 
-    this.onPasswordInput(); // Re-evaluar reglas
-
-    const passwordRulesValid =
-      this.passwordRules.minLength && this.passwordRules.upper && this.passwordRules.lower &&
-      this.passwordRules.number && this.passwordRules.special && this.passwordRules.match &&
-      this.passwordRules.noPersonal && this.passwordRules.notCurrent;
+    // Usar la política unificada para validar todo excepto 'notCurrent'
+    const passwordRulesValid = this.pwPolicyValid && this.passwordRules.notCurrent;
 
     // Validar que la contraseña actual fue verificada
     if (!this.passwordVerified) {
@@ -315,17 +315,25 @@ export class PerfilVisualizadorComponent implements OnInit {
 
   onPasswordInput(): void {
     const p = this.form.newPassword || '';
-    this.passwordRules.minLength = p.length >= 8 && p.length <= 64;
-    this.passwordRules.upper = /[A-Z]/.test(p);
-    this.passwordRules.lower = /[a-z]/.test(p);
-    this.passwordRules.number = /\d/.test(p);
-    this.passwordRules.special = /[^A-Za-z0-9]/.test(p);
+    // Estas flags se mantienen solo para la UI existente: se sincronizarán desde la política cuando llegue el callback
     this.passwordRules.match = !!p && this.form.newPassword === this.form.repeatPassword;
     this.passwordRules.notCurrent = !!p && this.form.newPassword !== this.form.currentPassword; // La lógica se mantiene, pero el mensaje en el HTML será genérico
-    const normalize = (s?: string) => (s || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
-    const pwd = normalize(this.form.newPassword);
-    const tokens = [normalize(this.form.nombre), normalize(this.form.apellidos), normalize(this.form.alias), normalize((this.email || '').split('@')[0])].filter(t => t && t.length >= 3) as string[];
-    this.passwordRules.noPersonal = !tokens.some(t => pwd.includes(t));
+  }
+
+  // Callbacks de política unificada
+  onPwPolicyChange(v: PasswordValidation): void {
+    this.pwPolicy = v;
+    // Mantener las flags para la UI legada
+    this.passwordRules.minLength = v.minLength;
+    this.passwordRules.upper = v.hasUpperCase;
+    this.passwordRules.lower = v.hasLowerCase;
+    this.passwordRules.number = v.hasNumber;
+    this.passwordRules.special = v.hasSpecialChar;
+    this.passwordRules.noPersonal = v.notContainsPersonalData;
+    this.passwordRules.match = v.passwordsMatch;
+  }
+  onPwPolicyValidChange(ok: boolean): void {
+    this.pwPolicyValid = ok;
   }
 
   canSubmit(): boolean { if (this.loading) return false; return true; }
