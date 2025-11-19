@@ -33,8 +33,8 @@ export class GestionListasComponent extends BaseListasComponent {
 
   protected cargarListasEspecificas(): void {
     if (this.modo === 'gestor') {
-      // Gestor: usar el método existente para obtener listas de gestor
-      this.listaService.getMisListas().subscribe({
+      // Gestor: obtener todas las listas públicas para poder modificarlas
+      this.listaService.obtenerListasPublicas().subscribe({
         next: (response: ListasResponse) => {
           this.procesarRespuestaListas(response);
         },

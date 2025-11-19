@@ -160,6 +160,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     private readonly adminService: AdminService,
     private readonly userValidationService: UserValidationService,
     private readonly modalService: ModalService,
+    private readonly userService: UserService,
     private readonly cdr: ChangeDetectorRef,
     private readonly router: Router,
     private readonly userService: UserService,
