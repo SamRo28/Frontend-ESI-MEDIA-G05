@@ -6,7 +6,8 @@ import { AdminService } from '../services/admin.service';
 import { environment } from '../../environments/environment';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { timeout, finalize } from 'rxjs';
-import { UserService } from '../../userService';
+import { UserService } from '../services/userService';
+
 
 @Component({
   selector: 'app-perfil-visualizador',
