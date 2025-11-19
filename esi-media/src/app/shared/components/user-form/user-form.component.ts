@@ -188,60 +188,64 @@ export class UserFormComponent implements OnInit, OnChanges {
   validateForm(): boolean {
     this.formErrors = {};
     let isValid = true;
-
-    // Validar username
-    if (!this.user.username || this.user.username.trim().length === 0) {
-      this.formErrors['username'] = 'El nombre de usuario es requerido';
-      isValid = false;
-    } else if (this.user.username.length < 3) {
-      this.formErrors['username'] = 'El nombre de usuario debe tener al menos 3 caracteres';
-      isValid = false;
-    } 
-
-    // Validar email
-    if (!this.userValidationService.validateEmail(this.user.email)) {
-      this.formErrors['email'] = 'Formato de email inválido';
-      isValid = false;
-    }
-
-    // Validar contraseñas (solo si se muestra el campo de contraseña)
-    if (this.showPassword) {
-      const passwordValidation = this.userValidationService.validatePassword(
-        this.user.password || '', 
-        this.user.confirmPassword || '', 
-        this.user.username
-      );
-      
-      if (!this.userValidationService.isPasswordValid(passwordValidation)) {
-        this.formErrors['password'] = 'La contraseña no cumple con los requisitos de seguridad';
-        isValid = false;
-      }
-
-      if (!passwordValidation.passwordsMatch) {
-        this.formErrors['confirmPassword'] = 'Las contraseñas no coinciden';
-        isValid = false;
-      }
-    }
-
-    // Validar nombres
-    if (!this.user.nombres || this.user.nombres.trim().length === 0) {
-      this.formErrors['nombres'] = 'Los nombres son requeridos';
-      isValid = false;
-    } 
-
-    // Validar apellidos
-    if (!this.user.apellidos || this.user.apellidos.trim().length === 0) {
-      this.formErrors['apellidos'] = 'Los apellidos son requeridos';
-      isValid = false;
-    } 
-
-    // Validar fecha de nacimiento
-    if (!this.user.fechaNacimiento) {
-      this.formErrors['fechaNacimiento'] = 'La fecha de nacimiento es requerida';
-      isValid = false;
-    } 
+    isValid = this.validateUsername() && isValid;
+    isValid = this.validateEmail() && isValid;
+    isValid = this.validatePasswords() && isValid;
+    isValid = this.validateRequiredField('nombres', 'Los nombres son requeridos', this.user.nombres) && isValid;
+    isValid = this.validateRequiredField('apellidos', 'Los apellidos son requeridos', this.user.apellidos) && isValid;
+    isValid = this.validateRequiredField('fechaNacimiento', 'La fecha de nacimiento es requerida', this.user.fechaNacimiento) && isValid;
     this.validationChange.emit(isValid);
     return isValid;
+  }
+
+  private validateUsername(): boolean {
+    const username = this.user.username?.trim() ?? '';
+    if (!username) {
+      this.formErrors['username'] = 'El nombre de usuario es requerido';
+      return false;
+    }
+    if (username.length < 3) {
+      this.formErrors['username'] = 'El nombre de usuario debe tener al menos 3 caracteres';
+      return false;
+    }
+    return true;
+  }
+
+  private validateEmail(): boolean {
+    if (!this.userValidationService.validateEmail(this.user.email)) {
+      this.formErrors['email'] = 'Formato de email inválido';
+      return false;
+    }
+    return true;
+  }
+
+  private validatePasswords(): boolean {
+    if (!this.showPassword) {
+      return true;
+    }
+    const passwordValidation = this.userValidationService.validatePassword(
+      this.user.password || '',
+      this.user.confirmPassword || '',
+      this.user.username
+    );
+    let isValid = true;
+    if (!this.userValidationService.isPasswordValid(passwordValidation)) {
+      this.formErrors['password'] = 'La contraseña no cumple con los requisitos de seguridad';
+      isValid = false;
+    }
+    if (!passwordValidation.passwordsMatch) {
+      this.formErrors['confirmPassword'] = 'Las contraseñas no coinciden';
+      isValid = false;
+    }
+    return isValid;
+  }
+
+  private validateRequiredField(field: string, message: string, value: string | null | undefined): boolean {
+    if (!value || value.trim().length === 0) {
+      this.formErrors[field] = message;
+      return false;
+    }
+    return true;
   }
 
   onSubmit(): void {
@@ -370,68 +374,59 @@ export class UserFormComponent implements OnInit, OnChanges {
     this.fieldsWithError = [];
     let isValid = true;
 
-    // Validaciones básicas para todos los roles
-    if (!this.newUser.nombre || !this.newUser.nombre.trim()) {
-      this.fieldsWithError.push('nombre');
-      isValid = false;
-    }
-
-    if (!this.newUser.apellidos || !this.newUser.apellidos.trim()) {
-      this.fieldsWithError.push('apellidos');
-      isValid = false;
-    }
-
-    if (!this.newUser.email || !this.newUser.email.trim() || !this.isValidEmail(this.newUser.email)) {
-      this.fieldsWithError.push('email');
-      isValid = false;
-    }
-
-    // Validaciones específicas por rol
-    switch (this.newUser.rol) {
-      case 'Administrador':
-        if (!this.newUser.departamento || !this.newUser.departamento.trim()) {
-          this.fieldsWithError.push('departamento');
-          isValid = false;
-        }
-        break;
-
-      case 'Gestor':
-        if (!this.newUser.alias || !this.newUser.alias.trim()) {
-          this.fieldsWithError.push('alias');
-          isValid = false;
-        }
-        if (!this.newUser.especialidad) {
-          this.fieldsWithError.push('especialidad');
-          isValid = false;
-        }
-        if (!this.newUser.tipoContenido) {
-          this.fieldsWithError.push('tipoContenido');
-          isValid = false;
-        }
-        if (!this.newUser.foto) {
-          this.fieldsWithError.push('foto');
-          isValid = false;
-        }
-        break;
-    }
-
-    // Validar contraseñas solo si se están mostrando
-    if (this.showPassword) {
-      if (!this.newUser.contrasenia || !this.newUser.contrasenia.trim()) {
-        this.fieldsWithError.push('contrasenia');
-        isValid = false;
-      }
-      if (!this.newUser.repetirContrasenia || !this.newUser.repetirContrasenia.trim()) {
-        this.fieldsWithError.push('repetirContrasenia');
-        isValid = false;
-      }
-      if (this.newUser.contrasenia !== this.newUser.repetirContrasenia) {
-        this.fieldsWithError.push('repetirContrasenia');
-        isValid = false;
-      }
-    }
+    isValid = this.validateNewUserField('nombre', this.newUser.nombre) && isValid;
+    isValid = this.validateNewUserField('apellidos', this.newUser.apellidos) && isValid;
+    isValid = this.validateEmailField() && isValid;
+    isValid = this.validateRoleSpecificFields() && isValid;
+    isValid = this.validatePasswordFields() && isValid;
 
     return isValid;
+  }
+
+  private validateEmailField(): boolean {
+    return this.validateNewUserField('email', this.newUser.email, true, () =>
+      this.isValidEmail(this.newUser.email));
+  }
+
+  private validateRoleSpecificFields(): boolean {
+    switch (this.newUser.rol) {
+      case 'Administrador':
+        return this.validateNewUserField('departamento', this.newUser.departamento);
+      case 'Gestor':
+        return this.validateNewUserField('alias', this.newUser.alias)
+          && this.validateNewUserField('especialidad', this.newUser.especialidad, false)
+          && this.validateNewUserField('tipoContenido', this.newUser.tipoContenido, false)
+          && this.validateNewUserField('foto', this.newUser.foto, false);
+      default:
+        return true;
+    }
+  }
+
+  private validatePasswordFields(): boolean {
+    if (!this.showPassword) {
+      return true;
+    }
+
+    let isValid = true;
+    isValid = this.validateNewUserField('contrasenia', this.newUser.contrasenia) && isValid;
+    isValid = this.validateNewUserField('repetirContrasenia', this.newUser.repetirContrasenia) && isValid;
+    if (this.newUser.contrasenia !== this.newUser.repetirContrasenia) {
+      this.fieldsWithError.push('repetirContrasenia');
+      isValid = false;
+    }
+    return isValid;
+  }
+
+  private validateNewUserField(field: string, value: any, trim: boolean = true, extraCheck?: () => boolean): boolean {
+    if (value == null || (trim && typeof value === 'string' && value.trim().length === 0)) {
+      this.fieldsWithError.push(field);
+      return false;
+    }
+    if (extraCheck && !extraCheck()) {
+      this.fieldsWithError.push(field);
+      return false;
+    }
+    return true;
   }
 
   private isValidEmail(email: string): boolean {
@@ -460,27 +455,21 @@ export class UserFormComponent implements OnInit, OnChanges {
 
   // Métodos adicionales para compatibilidad con template del admin-dashboard
   onRoleChange(role: string): void {
-    // Actualizar el rol en newUser
     this.newUser.rol = role;
-    
-    // Limpiar campos específicos del rol anterior
     this.resetRoleSpecificFields();
-    
-    // También actualizar el modelo del usuario
-    if (role === 'Administrador') {
-      this.user.rol = 'ADMINISTRADOR';
-    } else if (role === 'Gestor') {
-      this.user.rol = 'GESTOR_CONTENIDOS';
-    } else if (role === 'Visualizador') {
-      this.user.rol = 'VISUALIZADOR';
-    }
-    
-    // Limpiar errores de campos
+    this.user.rol = this.mapRoleToInternal(role);
     this.fieldsWithError = [];
-    
-    // Emitir cambio y forzar detección
     this.onInputChange();
     this.cdr.detectChanges();
+  }
+
+  private mapRoleToInternal(role: string): 'ADMINISTRADOR' | 'GESTOR_CONTENIDOS' | 'VISUALIZADOR' {
+    const roleMap: Record<string, 'ADMINISTRADOR' | 'GESTOR_CONTENIDOS' | 'VISUALIZADOR'> = {
+      Administrador: 'ADMINISTRADOR',
+      Gestor: 'GESTOR_CONTENIDOS',
+      Visualizador: 'VISUALIZADOR'
+    };
+    return roleMap[role] || 'VISUALIZADOR';
   }
 
   private resetRoleSpecificFields(): void {
