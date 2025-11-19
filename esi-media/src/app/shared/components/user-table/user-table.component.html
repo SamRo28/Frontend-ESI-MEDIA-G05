@@ -20,7 +20,7 @@
                    class="w-full h-full object-cover">
               <div *ngIf="!usuario.foto" 
                    class="w-full h-full rounded bg-blue-600 text-white flex items-center justify-center font-medium text-sm">
-                {{ usuario.nombres?.charAt(0)?.toUpperCase() }}
+                {{ usuario.nombres.charAt(0) | uppercase }}
               </div>
             </div>
           </td>
@@ -150,7 +150,7 @@
               <div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
                 <img *ngIf="usuarioAEliminar.foto" [src]="getFotoUrl(usuarioAEliminar.foto)" [alt]="usuarioAEliminar.nombres" class="w-full h-full object-cover">
                 <div *ngIf="!usuarioAEliminar.foto" class="w-full h-full bg-blue-600 text-white flex items-center justify-center font-bold">
-                  {{ usuarioAEliminar.nombres?.charAt(0)?.toUpperCase() }}
+                  {{ usuarioAEliminar.nombres.charAt(0) | uppercase }}
                 </div>
               </div>
               <div class="text-left">
@@ -249,7 +249,7 @@
               <div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
                 <img *ngIf="usuarioABloquear.foto" [src]="getFotoUrl(usuarioABloquear.foto)" [alt]="usuarioABloquear.nombres" class="w-full h-full object-cover">
                 <div *ngIf="!usuarioABloquear.foto" class="w-full h-full bg-blue-600 text-white flex items-center justify-center font-bold">
-                  {{ usuarioABloquear.nombres?.charAt(0)?.toUpperCase() }}
+                  {{ usuarioABloquear.nombres.charAt(0) | uppercase }}
                 </div>
               </div>
               <div class="text-left">

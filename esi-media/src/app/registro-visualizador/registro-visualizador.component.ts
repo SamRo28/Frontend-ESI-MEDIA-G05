@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { VisualizadorService } from '../services/visualizador.service';
+import { UserService } from '../services/userService';
 import { PasswordValidatorComponent } from '../shared/components/password-validator/password-validator.component';
 
 @Component({
@@ -48,7 +49,7 @@ export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
   private pendingShow2FA = false; // activación detectada con pestaña oculta
   // Ya no necesitamos lastActivationToken, el backend gestiona los tokens mediante cookies
 
-  constructor(private fb: FormBuilder, private router: Router, private svc: VisualizadorService) {
+  constructor(private fb: FormBuilder, private router: Router, private svc: VisualizadorService, private userService: UserService) {
     
     const today = new Date();
     this.todayStr = RegistroVisualizadorComponent.toDateInputValue(today);
@@ -580,7 +581,11 @@ export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
     if (wants2fa) {
       this.router.navigate(['/2fa'], { state: { allowFa2: true } });
     } else {
-      try { window.location.assign('/dashboard'); } catch { this.router.navigate(['/dashboard']); }
+      this.userService.login(this.form.value.email, this.form.value.password).subscribe({
+          next: () => {
+            this.router.navigate(['/dashboard']);
+          }
+        });
     }
   }
 

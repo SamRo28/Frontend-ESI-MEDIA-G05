@@ -165,7 +165,7 @@ export const routes: Routes = [
   { path: 'multimedia', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'multimedia/videos', redirectTo: 'dashboard/videos', pathMatch: 'full' },
   { path: 'multimedia/audios', redirectTo: 'dashboard/audios', pathMatch: 'full' },
-  { path: 'multimedia/:id', redirectTo: 'dashboard/:id', pathMatch: 'full' },
+  { path: 'multimedia/:id', redirectTo: 'dashboard/:id', pathMatch: 'full', data: { prerender: false } },
   {
 
     path: 'gestor-dashboard/gestion-listas',
