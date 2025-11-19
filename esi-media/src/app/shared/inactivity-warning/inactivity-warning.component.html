@@ -1,0 +1,26 @@
+<div class="warning-overlay" *ngIf="showWarning" (click)="keepSession()" (keydown)="$event.stopPropagation()">
+  <div class="warning-content" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+    <div class="warning-header">
+      <h3 class="warning-title">¡Sesión inactiva!</h3>
+    </div>
+    
+    <div class="warning-body">
+      <p class="warning-message">
+        Su sesión está a punto de expirar por inactividad.
+      </p>
+      <p class="warning-submessage">
+        La sesión se cerrará automáticamente en <strong>{{ formattedTime }}</strong> si no realiza ninguna acción.
+      </p>
+    </div>
+    
+    <div class="warning-footer">
+      <button 
+        class="btn btn-primary" 
+        (click)="keepSession()"
+        aria-label="Mantener sesión activa">
+        <span class="icon">✓</span>
+        Mantener sesión activa
+      </button>
+    </div>
+  </div>
+</div>

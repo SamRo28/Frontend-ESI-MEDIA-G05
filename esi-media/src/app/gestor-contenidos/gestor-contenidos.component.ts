@@ -4,6 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
+import { forkJoin, of } from 'rxjs';
+import { timeout, catchError } from 'rxjs/operators';
+import { ValoracionService } from '../services/valoracion.service';
 
 interface ContenidoResumenGestor {
   id: string;
@@ -65,6 +68,12 @@ export class GestorContenidosComponent implements OnInit {
   detalleError = '';
   detalleSeleccionado: ContenidoDetalleGestor | null = null;
 
+  // Estadísticas modal
+  mostrarEstadisticas = false;
+  estadisticasLoading = false;
+  estadisticasError = '';
+  estadisticasData: { id?: string; title?: string; caratula?: string | null; nvisualizaciones?: number; averageRating?: number | null; ratingsCount?: number; daysRemaining?: number | string } | null = null;
+
   // --- INICIO: Propiedades para edición restauradas ---
   editMode = false;
   saving = false;
@@ -94,7 +103,8 @@ export class GestorContenidosComponent implements OnInit {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly cdr: ChangeDetectorRef
+    private readonly cdr: ChangeDetectorRef,
+    private readonly valoracionSvc: ValoracionService
   ) {}
 
   ngOnInit(): void {
@@ -216,6 +226,115 @@ export class GestorContenidosComponent implements OnInit {
     }
 
     this.verDetalle(contenido, true);
+  }
+
+  /**
+   * Abrir modal de estadísticas para un contenido concreto.
+   * Obtiene detalle (para nvisualizaciones y fechaDisponibleHasta) y promedio de valoraciones.
+   */
+  verEstadisticas(contenido: ContenidoResumenGestor): void {
+    this.mostrarEstadisticas = true;
+    this.estadisticasLoading = true;
+    this.estadisticasError = '';
+    this.estadisticasData = null;
+    this.cdr.detectChanges();
+
+    const detalle$ = this.http.get<any>(`${environment.apiUrl}/multimedia/${contenido.id}`).pipe(
+      timeout(15000),
+      catchError(err => {
+        console.error('[GestorContenidos] detalle error', err);
+        return of(null);
+      })
+    );
+
+    const avg$ = this.valoracionSvc.average(contenido.id).pipe(
+      timeout(15000),
+      catchError(err => {
+        console.error('[GestorContenidos] average error', err);
+        return of(null);
+      })
+    );
+
+    forkJoin([detalle$, avg$]).subscribe({
+      next: ([detalle, avg]) => {
+        const nvisualizaciones = typeof detalle?.nvisualizaciones === 'number' ? detalle.nvisualizaciones : (detalle?.nvisualizaciones ?? undefined);
+        const fechaHasta = detalle?.fechaDisponibleHasta || detalle?.fechaDisponibleHasta || null;
+
+        let daysRemaining: number | string = '-';
+        if (fechaHasta) {
+          const now = new Date();
+          const until = new Date(fechaHasta);
+          const diffMs = until.getTime() - now.getTime();
+          daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+          if (daysRemaining < 0) daysRemaining = 0;
+        }
+
+        this.estadisticasData = {
+          id: detalle?.id,
+          title: detalle?.titulo,
+          caratula: detalle?.caratula ?? null,
+          nvisualizaciones: nvisualizaciones,
+          averageRating: avg?.averageRating ?? null,
+          ratingsCount: avg?.ratingsCount ?? 0,
+          daysRemaining: fechaHasta ? daysRemaining : '-'
+        };
+
+        this.estadisticasLoading = false;
+       this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('[GestorContenidos] forkJoin error al cargar estadísticas', err);
+        this.estadisticasError = 'No se han podido cargar las estadísticas.';
+        this.estadisticasLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  abrirDetalleDesdeEstadisticas(): void {
+    if (!this.estadisticasData?.id) return;
+    // Cerramos el modal de estadísticas y abrimos el detalle reutilizando verDetalle
+    const resumen = {
+      id: this.estadisticasData.id,
+      titulo: this.estadisticasData.title ?? '',
+      tipo: 'VIDEO' as 'VIDEO' | 'AUDIO',
+      vip: false
+    } as ContenidoResumenGestor;
+
+    this.cerrarEstadisticas();
+    this.verDetalle(resumen, false);
+  }
+
+  /**
+   * Devuelve la clase para la pill de días según el valor recibido (colores).
+   * Acepta number | string | undefined | null y evita comparaciones directas en la plantilla.
+   */
+  daysClass(days: number | string | undefined | null): string {
+    if (days == null) return 'bad';
+    if (days === '-' || days === '—') return 'bad';
+    const n = typeof days === 'number' ? days : Number(days);
+    if (Number.isNaN(n)) return 'bad';
+    if (n >= 7) return 'ok';
+    if (n > 0) return 'warn';
+    return 'bad';
+  }
+
+  /** Devuelve la clase para el pill de valoración promedio (colores) */
+  ratingClass(value: number | null | undefined): string {
+    if (value == null) return 'neutral';
+    const n = Number(value);
+    if (Number.isNaN(n)) return 'neutral';
+    if (n < 2.0) return 'low';
+    if (n < 3.5) return 'mid';
+    return 'high';
+  }
+
+  cerrarEstadisticas(): void {
+    this.mostrarEstadisticas = false;
+    this.estadisticasData = null;
+    this.estadisticasError = '';
+    this.estadisticasLoading = false;
+    this.cdr.detectChanges();
   }
 
   private initEditFormFromDetalle(det: ContenidoDetalleGestor): void {
@@ -424,5 +543,24 @@ export class GestorContenidosComponent implements OnInit {
           this.cdr.detectChanges();
         }
       });
+  }
+
+  /**
+   * Formatea la duración (en segundos) como "X min Y s".
+   */
+  getDuracionFormateada(segundos: number | null | undefined): string {
+    const total = typeof segundos === 'number' ? segundos : 0;
+    if (total <= 0) {
+      return 'No indicada';
+    }
+    const mins = Math.floor(total / 60);
+    const secs = total % 60;
+    if (mins === 0) {
+      return `${secs} s`;
+    }
+    if (secs === 0) {
+      return `${mins} min`;
+    }
+    return `${mins} min ${secs} s`;
   }
 }

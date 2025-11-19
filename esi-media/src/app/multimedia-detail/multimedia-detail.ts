@@ -1,13 +1,14 @@
-import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef } from '@angular/core';
-import { CommonModule, NgIf, NgFor } from '@angular/common';
+import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef, PLATFORM_ID } from '@angular/core';
+import { CommonModule, NgIf, NgFor, isPlatformBrowser } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { MultimediaService, ContenidoDetalleDTO } from '../services/multimedia.service';
+import { UserService } from '../services/userService';
 import { ListaService, ListasResponse } from '../services/lista.service';
+// Forzar uso explícito del entorno de producción (apiUrl desplegado)
+import { environment } from '../../environments/environment.production';
 import { ValoracionService } from '../services/valoracion.service';
 import { ValoracionComponent } from '../shared/valoracion/valoracion.component';
-import { PLATFORM_ID } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
 
 interface Notificacion {
   mensaje: string;
@@ -68,8 +69,23 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private listaService: ListaService,
     private router: Router,
-    private valoracionSvc: ValoracionService
+    private valoracionSvc: ValoracionService,
+    private userService: UserService
   ) {}
+
+  // Utilidades de uso interno para reducir complejidad
+  private schedule(fn: () => void): void { setTimeout(fn, 0); }
+  private clearDetalleTimeoutSafely(): void {
+    if (this.detalleTimeout) { clearTimeout(this.detalleTimeout); this.detalleTimeout = null; }
+  }
+  private isYoutubeUrl(url: string): boolean {
+    return /youtube\.com\/watch\?v=|youtu\.be\//i.test(url);
+  }
+  private extractYoutubeId(url: string): string | null {
+    const watchMatch = url.match(/[?&]v=([^&#]+)/);
+    const shortMatch = url.match(/youtu\.be\/([^?&#]+)/);
+    return (watchMatch && watchMatch[1]) || (shortMatch && shortMatch[1]) || null;
+  }
 
   ngOnInit(): void {
     // Evitar peticiones en SSR
@@ -134,10 +150,8 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   cargar(): void {
     this.cargando = true;
     this.error = null;
-    
-    if (this.detalleTimeout) {
-      clearTimeout(this.detalleTimeout);
-    }
+    console.log('[MultimediaDetail] Iniciando carga detalle id=', this.id);
+    this.clearDetalleTimeoutSafely();
     // Fallback de seguridad: si en 8s no llega respuesta, apagamos loader y mostramos error genérico
     this.detalleTimeout = setTimeout(() => {
       if (this.cargando) {
@@ -159,16 +173,10 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
           
           this.cdr.markForCheck();
           const url = d.referenciaReproduccion || '';
-          this.isYoutube = /youtube\.com\/watch\?v=|youtu\.be\//i.test(url);
-          if (this.isYoutube) {
-            const watchMatch = url.match(/[?&]v=([^&#]+)/);
-            const shortMatch = url.match(/youtu\.be\/([^?&#]+)/);
-            const id = (watchMatch && watchMatch[1]) || (shortMatch && shortMatch[1]) || null;
-            this.youtubeVideoId = id;
-            this.youtubeSafeUrl = id ? this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.youtube.com/embed/${id}`) : null;
-          } else {
-            this.youtubeSafeUrl = null;
-          }
+          this.isYoutube = this.isYoutubeUrl(url);
+          const id = this.isYoutube ? this.extractYoutubeId(url) : null;
+          this.youtubeVideoId = id;
+          this.youtubeSafeUrl = id ? this.sanitizer.bypassSecurityTrustResourceUrl(`https://www.youtube.com/embed/${id}`) : null;
         }
         // Para AUDIO mantenemos cargando sólo hasta el botón (descarga diferida), así que apagamos también
         if (d.tipo === 'AUDIO') {
@@ -176,7 +184,7 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
           
           this.cdr.markForCheck();
         }
-        if (this.detalleTimeout) { clearTimeout(this.detalleTimeout); this.detalleTimeout = null; }
+        this.clearDetalleTimeoutSafely();
         // Tras cargar detalle, obtener promedio y estado de mi valoración (si existe)
         try {
           // Average (siempre público)
@@ -220,7 +228,7 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
         this.error = (err?.error?.mensaje) || 'No se pudo cargar el detalle';
         this.cargando = false;
         this.cdr.markForCheck();
-        if (this.detalleTimeout) { clearTimeout(this.detalleTimeout); this.detalleTimeout = null; }
+        this.clearDetalleTimeoutSafely();
       }
     });
   }
@@ -311,9 +319,21 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   audioSrc(): string {
     if (!this.detalle || this.detalle.tipo !== 'AUDIO') return '';
     let base = this.detalle.referenciaReproduccion || '';
-    // Si viene como ruta relativa (empieza por '/'), anteponer dominio backend
-    if (/^\//.test(base)) {
-      base = 'http://localhost:8080' + base;
+    // Normalizar a dominio de backend en despliegue, evitando localhost
+    try {
+      if (/^https?:\/\//i.test(base)) {
+        const u = new URL(base);
+        // Reescribir siempre el origen al del backend configurado
+        base = `${environment.apiUrl.replace(/\/+$/,'')}${u.pathname}${u.search || ''}${u.hash || ''}`;
+      } else if (/^\//.test(base)) {
+        // Ruta relativa -> anteponer dominio backend
+        base = `${environment.apiUrl.replace(/\/+$/,'')}${base}`;
+      }
+    } catch {
+      // Fallback simple si URL constructor falla: asegurar prefijo del backend cuando parece relativo
+      if (!/^https?:\/\//i.test(base)) {
+        base = `${environment.apiUrl.replace(/\/+$/,'')}/${base.replace(/^\/+/, '')}`;
+      }
     }
     // Evitar duplicar protocolo si accidentalmente ya contiene http://http://
     base = base.replace(/^(https?:\/\/)+(https?:\/\/)/i, '$1');
@@ -336,9 +356,9 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     if (!c) return null;
     if (typeof c === 'string') return c;
     if (typeof c === 'object') {
-      if (typeof c.url === 'string') return c.url;
-      if (typeof c.src === 'string') return c.src;
-      if (typeof c.data === 'string') return c.data;
+      for (const k of ['url','src','data']) {
+        if (typeof (c as any)[k] === 'string') return (c as any)[k];
+      }
     }
     return null;
   }
@@ -359,12 +379,8 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
 
   // --- Eventos del reproductor de VIDEO ---
   onIframeLoaded(): void {
-    
-    setTimeout(() => {
-      this.playerReady = true;
-      this.buffering = false;
-      this.cdr.markForCheck();
-    }, 0);
+    console.log('[MultimediaDetail] iframe load');
+    this.schedule(() => { this.playerReady = true; this.buffering = false; this.cdr.markForCheck(); });
   }
 
   // Formatea Date|string ISO a fecha corta local
@@ -379,35 +395,20 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   }
   onVideoLoaded(): void {
     // loadedmetadata: ya tenemos duración, podemos mostrar el player
-    
-    setTimeout(() => {
-      this.playerReady = true;
-      this.cdr.markForCheck();
-    }, 0);
+    console.log('[MultimediaDetail] video loadedmetadata');
+    this.schedule(() => { this.playerReady = true; this.cdr.markForCheck(); });
   }
   onVideoCanPlay(): void {
-    
-    setTimeout(() => {
-      this.playerReady = true;
-      this.buffering = false;
-      this.cdr.markForCheck();
-    }, 0);
+    console.log('[MultimediaDetail] video canplay');
+    this.schedule(() => { this.playerReady = true; this.buffering = false; this.cdr.markForCheck(); });
   }
   onVideoWaiting(): void {
-    
-    setTimeout(() => {
-      if (this.playerReady) {
-        this.buffering = true;
-        this.cdr.markForCheck();
-      }
-    }, 0);
+    console.log('[MultimediaDetail] video waiting');
+    this.schedule(() => { if (this.playerReady) { this.buffering = true; this.cdr.markForCheck(); } });
   }
   onVideoPlaying(): void {
-    
-    setTimeout(() => {
-      this.buffering = false;
-      this.cdr.markForCheck();
-    }, 0);
+    console.log('[MultimediaDetail] video playing');
+    this.schedule(() => { this.buffering = false; this.cdr.markForCheck(); });
   }
 
   // --- Métodos para manejo de listas privadas ---
@@ -634,13 +635,22 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   mostrarNotificacionDummy(): void { }
 
   logout(): void {
-    try {
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('user');
-      sessionStorage.removeItem('currentUserClass');
-      sessionStorage.removeItem('email');
-    } catch {}
-    this.multimedia.clearCache();
-    this.router.navigate(['/login']);
+    // Llamar al servicio de logout
+    this.userService.logout().subscribe({
+      next: () => {
+        try {
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+          sessionStorage.removeItem('currentUserClass');
+          sessionStorage.removeItem('email');
+        } catch {}
+        this.multimedia.clearCache();
+        this.router.navigate(['/login']);
+      },
+      error: (err) => {
+        console.error('Error al cerrar sesión:', err);
+        alert('Error al cerrar sesión');
+      }
+    });
   }
 }

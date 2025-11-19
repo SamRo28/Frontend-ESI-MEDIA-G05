@@ -1,0 +1,221 @@
+<div class="table-container">
+  <!-- Barra de herramientas -->
+  <div class="table-toolbar">
+    <!-- Búsqueda -->
+    <div class="search-container">
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Buscar usuarios..."
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="onSearchTermChange($event)">
+      <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+      </svg>
+    </div>
+
+    <!-- Información de resultados -->
+    <div class="results-info">
+      <span *ngIf="!loading">
+        Mostrando {{ startIndex }} - {{ endIndex }} de {{ totalUsers }} usuarios
+      </span>
+      <span *ngIf="loading">
+        Cargando usuarios...
+      </span>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="table-wrapper" [class.loading]="loading">
+    <!-- Indicador de carga -->
+    <div *ngIf="loading" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <span>Cargando usuarios...</span>
+    </div>
+
+    <!-- Tabla de usuarios -->
+    <table class="user-table" [class.dimmed]="loading">
+      <thead>
+        <tr>
+          <!-- Checkbox para seleccionar todos -->
+          <th *ngIf="selectable" class="checkbox-column">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                class="checkbox-input"
+                [checked]="allUsersSelected"
+                [indeterminate]="someUsersSelected && !allUsersSelected"
+                (change)="toggleAllUsersSelection()">
+            </label>
+          </th>
+
+          <!-- Columnas de datos -->
+          <th *ngFor="let column of columns" 
+              [style.width]="column.width"
+              [class.sortable]="column.sortable"
+              (click)="onSort(column.key)">
+            <div class="column-header">
+              <span>{{ column.label }}</span>
+              <span *ngIf="column.sortable" class="sort-indicator">
+                {{ getSortIcon(column.key) }}
+              </span>
+            </div>
+          </th>
+
+          <!-- Columna de acciones -->
+          <th *ngIf="showActions" class="actions-column">
+            Acciones
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <!-- Fila vacía cuando no hay datos -->
+        <tr *ngIf="paginatedUsers.length === 0 && !loading" class="empty-row">
+          <td [attr.colspan]="columns.length + (selectable ? 1 : 0) + (showActions ? 1 : 0)" 
+              class="empty-cell">
+            <div class="empty-state">
+              <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m3 5.197V9a3 3 0 00-6 0v2M7 9a3 3 0 016 0m-3 3.75V9"></path>
+              </svg>
+              <span>{{ searchTerm ? 'No se encontraron usuarios que coincidan con la búsqueda' : 'No hay usuarios registrados' }}</span>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Filas de usuarios -->
+        <tr *ngFor="let user of paginatedUsers" 
+            class="user-row"
+            [class.selected]="selectable && user.id && isUserSelected(user.id)"
+            [class.inactive]="!user.estado"
+            (click)="selectable && user.id ? toggleUserSelection(user.id) : onUserSelect(user)">
+          
+          <!-- Checkbox de selección -->
+          <td *ngIf="selectable" class="checkbox-cell">
+            <label class="checkbox-label" (click)="$event.stopPropagation()">
+              <input
+                type="checkbox"
+                class="checkbox-input"
+                [checked]="user.id ? isUserSelected(user.id) : false"
+                (change)="user.id && toggleUserSelection(user.id)">
+            </label>
+          </td>
+
+          <!-- Celdas de datos -->
+          <td *ngFor="let column of columns" [class]="'cell-' + column.key">
+            <ng-container [ngSwitch]="column.type">
+              
+              <!-- Tipo badge (roles) -->
+              <span *ngSwitchCase="'badge'" 
+                    [class]="'badge ' + getRoleBadgeClass(getCellValue(user, column))">
+                {{ getRoleLabel(getCellValue(user, column)) }}
+              </span>
+              
+              <!-- Tipo booleano (estado activo/inactivo) -->
+              <span *ngSwitchCase="'boolean'" 
+                    [class]="'status-badge ' + (getCellValue(user, column) ? 'status-active' : 'status-inactive')">
+                {{ getCellValue(user, column) ? 'Activo' : 'Inactivo' }}
+              </span>
+              
+              <!-- Tipo fecha -->
+              <span *ngSwitchCase="'date'">
+                {{ column.key === 'ultimoAcceso' ? formatDateTime(getCellValue(user, column)) : formatDate(getCellValue(user, column)) }}
+              </span>
+              
+              <!-- Tipo texto por defecto -->
+              <span *ngSwitchDefault>
+                {{ getCellValue(user, column) }}
+              </span>
+            </ng-container>
+          </td>
+
+          <!-- Botones de acción -->
+          <td *ngIf="showActions" class="actions-cell">
+            <div class="action-buttons">
+              <button
+                type="button"
+                class="action-btn edit-btn"
+                title="Editar usuario"
+                (click)="$event.stopPropagation(); onUserEdit(user)">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                [class]="'action-btn ' + (user.estado ? 'disable-btn' : 'enable-btn')"
+                [title]="user.estado ? 'Desactivar usuario' : 'Activar usuario'"
+                (click)="$event.stopPropagation(); onUserToggleStatus(user)">
+                <svg *ngIf="user.estado" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L5.636 5.636"></path>
+                </svg>
+                <svg *ngIf="!user.estado" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                class="action-btn delete-btn"
+                title="Eliminar usuario"
+                (click)="$event.stopPropagation(); onUserDelete(user)">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginación -->
+  <div *ngIf="totalPages > 1" class="pagination-container">
+    <div class="pagination-info">
+      Página {{ currentPage }} de {{ totalPages }}
+    </div>
+    
+    <div class="pagination-controls">
+      <button
+        type="button"
+        class="pagination-btn"
+        [disabled]="currentPage === 1"
+        (click)="previousPage()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        Anterior
+      </button>
+
+      <div class="page-numbers">
+        <button
+          *ngFor="let page of [].constructor(totalPages); let i = index"
+          type="button"
+          class="page-btn"
+          [class.active]="i + 1 === currentPage"
+          (click)="goToPage(i + 1)">
+          {{ i + 1 }}
+        </button>
+      </div>
+
+      <button
+        type="button"
+        class="pagination-btn"
+        [disabled]="currentPage === totalPages"
+        (click)="nextPage()">
+        Siguiente
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>

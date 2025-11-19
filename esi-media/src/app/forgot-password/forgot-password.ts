@@ -2,7 +2,7 @@ import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { UserService } from '../../userService';
+import { UserService } from '../services/userService';
 
 @Component({
   selector: 'app-forgot-password',
@@ -32,7 +32,7 @@ export class ForgotPasswordComponent {
       next: () => {
         this.loading = false;
         this.submitted = true;
-        this.message = 'Hemos enviado un correo electronico. Sigue las instrucciones para obtener una nueva contrasena.';
+        this.message = 'Hemos enviado un correo electronico. Sigue las instrucciones para obtener una nueva contraseña.';
         this.cdr.detectChanges();
       },
       error: () => {

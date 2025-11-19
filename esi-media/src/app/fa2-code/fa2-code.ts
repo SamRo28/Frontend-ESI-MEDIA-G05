@@ -1,6 +1,6 @@
 import { Component, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
-import { UserService } from '../../userService';
+import { UserService } from '../services/userService';
 import { CodeInputComponent } from '../shared/code-input/code-input.component';
 
 @Component({

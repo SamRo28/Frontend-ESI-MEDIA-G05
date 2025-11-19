@@ -2,7 +2,7 @@ import { Component, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core
 import { RouterLink, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { UserService } from '../../userService';
+import { UserService } from '../services/userService';
 import { isPlatformBrowser } from '@angular/common';
 
 @Component({

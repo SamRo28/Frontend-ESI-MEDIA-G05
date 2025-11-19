@@ -637,4 +637,47 @@
   .plan-chooser {
     grid-template-columns: 1fr;
   }
+
+  .delete-content {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
 }
+
+/* Nueva sección de eliminación de cuenta */
+.delete-account-section {
+  width: 100%;
+  max-width: 1400px;
+  margin: 2rem auto 0;
+  text-align: center;
+  padding: 1.5rem;
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 16px;
+}
+
+.btn-delete {
+  background-color: #c53030; /* Rojo oscuro */
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.btn-delete:hover {
+  background-color: #9b2c2c; /* Rojo más oscuro al pasar el ratón */
+}
+
+/* Estilos para el modal de confirmación de borrado */
+
+.current-plan-meta {
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: #9ca3af; /* gris suave */
+}
+

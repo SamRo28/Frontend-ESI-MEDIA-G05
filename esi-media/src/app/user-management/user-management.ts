@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService, VisualizadorGestionDTO, GestorGestionDTO, AdministradorGestionDTO } from '../services/admin.service';
 import { firstValueFrom } from 'rxjs';
@@ -54,14 +54,34 @@ export class UserManagementComponent implements OnInit {
   showDeleteModal = false;
   userToDelete: any = null;
 
+  // Modal de cambio de estado
+  showToggleStatusModal = false;
+  userToToggleStatus: any = null;
+
   // Estados de éxito y error
   successMessage = '';
   errorMessage = '';
+  currentAdminId: string | null = null;
 
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private readonly cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.loadAllUserTypes();
+    if (isPlatformBrowser(this.platformId)) {
+      try {
+        const userRaw = sessionStorage.getItem('user');
+        if (userRaw) {
+          const user = JSON.parse(userRaw);
+          this.currentAdminId = user?.id || user?._id || null;
+        }
+      } catch (e) {
+        console.error('Error al obtener el ID del administrador desde sessionStorage', e);
+      }
+    }
   }
 
   // ====== MÉTODOS DE CARGA DE DATOS ======
@@ -228,35 +248,45 @@ export class UserManagementComponent implements OnInit {
   }
 
   async saveUserChanges(): Promise<void> {
-    if (!this.editingUser || !this.editForm.id) return;
+  if (!this.editingUser || !this.editForm.id) return;
 
-    this.processing = true;
-    try {
-      let updatedUser;
-      
-      switch (this.activeTab) {
-        case 'visualizadores':
-          updatedUser = await firstValueFrom(this.adminService.updateVisualizador(this.editForm.id, this.editForm));
-          break;
-        case 'gestores':
-          updatedUser = await firstValueFrom(this.adminService.updateGestor(this.editForm.id, this.editForm));
-          break;
-        case 'administradores':
-          updatedUser = await firstValueFrom(this.adminService.updateAdministrador(this.editForm.id, this.editForm));
-          break;
-      }
+  // Evitar que el administrador se bloquee a sí mismo desde la edición
+  if (this.activeTab === 'administradores'
+      && this.editForm.id === this.currentAdminId
+      && this.editForm.bloqueado) {
 
-      if (updatedUser) {
-        this.showSuccess('Usuario actualizado correctamente');
-        await this.loadCurrentTabData();
-        this.closeEditModal();
-      }
-    } catch (error: any) {
-      this.showError(error.error?.message || 'Error actualizando usuario');
-    } finally {
-      this.processing = false;
-    }
+    this.closeEditModal(); // cierra la ventana
+    this.showError('No puedes bloquear tu propia cuenta de administrador.');
+    return;
   }
+
+  this.processing = true;
+  try {
+    let updatedUser;
+    
+    switch (this.activeTab) {
+      case 'visualizadores':
+        updatedUser = await firstValueFrom(this.adminService.updateVisualizador(this.editForm.id, this.editForm));
+        break;
+      case 'gestores':
+        updatedUser = await firstValueFrom(this.adminService.updateGestor(this.editForm.id, this.editForm));
+        break;
+      case 'administradores':
+        updatedUser = await firstValueFrom(this.adminService.updateAdministrador(this.editForm.id, this.editForm));
+        break;
+    }
+
+    if (updatedUser) {
+      this.showSuccess('Usuario actualizado correctamente');
+      await this.loadCurrentTabData();
+      this.closeEditModal();
+    }
+  } catch (error: any) {
+    this.showError(error.error?.message || 'Error actualizando usuario');
+  } finally {
+    this.processing = false;
+  }
+}
 
   openDeleteModal(user: any): void {
     this.userToDelete = user;
@@ -295,12 +325,6 @@ export class UserManagementComponent implements OnInit {
     } finally {
       this.processing = false;
     }
-  }
-
-  toggleUserStatus(user: any): void {
-    user.bloqueado = !user.bloqueado;
-    this.editForm = { ...user };
-    this.saveUserChanges();
   }
 
   // ====== UTILIDADES ======
@@ -358,6 +382,63 @@ export class UserManagementComponent implements OnInit {
   previousPage(): void {
     this.goToPage(this.currentPage - 1);
   }
+
+  // ====== GESTIÓN DE ESTADO (BLOQUEO/DESBLOQUEO) ======
+  openToggleStatusModal(user: any): void {
+    this.userToToggleStatus = { ...user };
+    this.showToggleStatusModal = true;
+    this.clearMessages();
+  }
+
+  closeToggleStatusModal(): void {
+    this.showToggleStatusModal = false;
+    this.userToToggleStatus = null;
+  }
+
+  async confirmToggleStatus(): Promise<void> {
+  if (!this.userToToggleStatus) return;
+
+  const isBlocking = !this.userToToggleStatus.bloqueado;
+
+  // Evitar que el administrador se bloquee a sí mismo desde el modal de estado
+  if (this.activeTab === 'administradores'
+      && this.userToToggleStatus.id === this.currentAdminId
+      && isBlocking) {
+
+    this.closeToggleStatusModal(); // cierra el modal de confirmar
+    this.showError('No puedes bloquear tu propia cuenta de administrador.');
+    // Forzamos la detección de cambios para que el mensaje aparezca inmediatamente
+    this.cdr.detectChanges();
+    // Limpiamos el mensaje después de 5 segundos
+    setTimeout(() => this.clearMessages(), 5000);
+    return;
+  }
+
+  this.processing = true;
+  const payload = { ...this.userToToggleStatus, bloqueado: isBlocking };
+
+  try {
+    switch (this.activeTab) {
+      case 'visualizadores':
+        await firstValueFrom(this.adminService.updateVisualizador(payload.id, payload));
+        break;
+      case 'gestores':
+        await firstValueFrom(this.adminService.updateGestor(payload.id, payload));
+        break;
+      case 'administradores':
+        await firstValueFrom(this.adminService.updateAdministrador(payload.id, payload));
+        break;
+    }
+    this.closeToggleStatusModal(); // Mover el cierre del modal aquí
+    this.showSuccess(`Usuario ${isBlocking ? 'bloqueado' : 'desbloqueado'} correctamente.`);
+    await this.loadCurrentTabData();
+  } catch (error: any) {
+    this.showError(error.error?.message || `Error al ${isBlocking ? 'bloquear' : 'desbloquear'} usuario.`);
+  } finally {
+    this.processing = false;
+  }
+}
+
 
   // ====== MENSAJES ======
   showSuccess(message: string): void {

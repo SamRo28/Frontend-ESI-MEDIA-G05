@@ -1,4 +1,4 @@
-﻿<div class="min-h-screen bg-gray-50">
+﻿﻿<div class="min-h-screen bg-gray-50">
   <!-- Header -->
   <header class="dashboard-header shadow-md">
     <div class="flex h-16 items-center justify-between px-6 max-w-7xl mx-auto">
@@ -49,7 +49,7 @@
       </div>
 
       <div class="flex items-center gap-2">
-        <button (click)="openProfileModal()" class="px-4 py-2 rounded-lg bg-blue-700 text-white hover:bg-blue-800 transition-all font-medium flex items-center gap-2">
+        <button class="px-4 py-2 rounded-lg bg-blue-700 text-white hover:bg-blue-800 transition-all font-medium flex items-center gap-2">
           <img *ngIf="currentUser?.foto" [src]="getFotoUrl(currentUser.foto)" alt="Foto de perfil" class="w-8 h-8 rounded-full object-cover">
           <svg *ngIf="!currentUser?.foto" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
@@ -420,15 +420,12 @@
                       </span>
                     </td>
                     <td class="px-4 py-3">
-                      <button type="button" 
-                        (click)="abrirModalBloqueo(usuario)"
-                        class="inline-flex items-center px-2 py-1 text-xs font-medium rounded cursor-pointer transition-all hover:opacity-80 hover:shadow-sm"
+                      <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded"
                         [ngClass]="usuario.bloqueado ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'"
-                        [title]="usuario.bloqueado ? 'Click para desbloquear' : 'Click para bloquear'">
-                        <span class="w-1.5 h-1.5 rounded-full mr-1" 
-                          [ngClass]="usuario.bloqueado ? 'bg-red-500' : 'bg-green-500'"></span>
+                        [title]="usuario.bloqueado ? 'Usuario bloqueado' : 'Usuario activo'">
+                        <span class="w-1.5 h-1.5 rounded-full mr-1" [ngClass]="usuario.bloqueado ? 'bg-red-500' : 'bg-green-500'"></span>
                         {{ usuario.bloqueado ? 'Bloqueado' : 'Activo' }}
-                      </button>
+                      </span>
                     </td>
                     <td class="px-4 py-3">
                       <div class="flex gap-1">
@@ -443,7 +440,26 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                           </svg>
                         </button>
-                        <button class="p-1 hover:bg-gray-100 rounded" title="Eliminar" (click)="openDeleteModal(usuario)">
+                        <button type="button"
+                                (click)="abrirModalBloqueo(usuario)"
+                                class="p-1 hover:bg-gray-100 rounded"
+                                [title]="usuario.bloqueado ? 'Desbloquear usuario' : 'Bloquear usuario'">
+                          <!-- Bloqueado: candado CERRADO en rojo -->
+                          <svg *ngIf="usuario.bloqueado"
+                               class="w-4 h-4 text-red-600"
+                               fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                          </svg>
+                          <!-- Desbloqueado: candado ABIERTO en verde -->
+                          <svg *ngIf="!usuario.bloqueado"
+                               class="w-4 h-4 text-green-600"
+                               fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
+                          </svg>
+                        </button>
+                        <button *ngIf="usuario.rol !== 'Visualizador'" class="p-1 hover:bg-gray-100 rounded" title="Eliminar" (click)="openDeleteModal(usuario)">
                           <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                           </svg>
@@ -553,13 +569,14 @@
                 </div>
 
                 <!-- Formulario para Administrador -->
-                <form *ngIf="newUser.rol === 'Administrador'" (ngSubmit)="createUser(); $event.preventDefault()" class="space-y-5">
+                <form *ngIf="newUser.rol === 'Administrador'" (ngSubmit)="confirmCreateUser(); $event.preventDefault()" class="space-y-5">
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-group">
                       <label for="nombre" class="block text-sm font-semibold text-gray-700 mb-2">
                         Nombre <span class="text-red-500">*</span>
                       </label>
                       <input type="text" id="nombre" [(ngModel)]="newUser.nombre" name="nombre"
+                        (focus)="onFieldInteraction()" (input)="onFieldInteraction()"
                         [class]="'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('nombre') ? 'field-error' : 'border-gray-300 focus:ring-blue-500')"
                         placeholder="Juan" required />
                     </div>
@@ -569,6 +586,7 @@
                         Apellidos <span class="text-red-500">*</span>
                       </label>
                       <input type="text" id="apellidos" [(ngModel)]="newUser.apellidos" name="apellidos"
+                        (focus)="onFieldInteraction()" (input)="onFieldInteraction()"
                         [class]="'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('apellidos') ? 'field-error' : 'border-gray-300 focus:ring-blue-500')"
                         placeholder="Pérez García" required />
                     </div>
@@ -585,6 +603,7 @@
                         </svg>
                       </div>
                       <input type="email" id="email" [(ngModel)]="newUser.email" name="email"
+                        (focus)="onFieldInteraction()" (input)="onFieldInteraction()"
                         [class]="'w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('email') ? 'field-error' : 'border-gray-300 focus:ring-blue-500')"
                         placeholder="usuario@ejemplo.com" required />
                     </div>
@@ -595,6 +614,7 @@
                       Departamento <span class="text-red-500">*</span>
                     </label>
                     <input type="text" id="departamento" [(ngModel)]="newUser.departamento" name="departamento"
+                      (focus)="onFieldInteraction()" (input)="onFieldInteraction()"
                       [class]="'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('departamento') ? 'field-error' : 'border-gray-300 focus:ring-blue-500')"
                       placeholder="Desarrollo" required />
                   </div>
@@ -715,8 +735,6 @@
                       </div>
                     </div>
                   </div>
-
-
 
                   <!-- Mensaje de error justo encima de los botones -->
                   <div *ngIf="errorMessage" class="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-start gap-2">
@@ -1007,7 +1025,8 @@
                         id="gestorContrasenia"
                         [(ngModel)]="newUser.contrasenia"
                         name="gestorContrasenia"
-                        (ngModelChange)="validatePassword()"
+                        (focus)="onFieldInteraction()"
+                        (ngModelChange)="validatePassword(); onFieldInteraction()"
                         required
                         [class]="'w-full px-4 py-2.5 pr-12 border-2 rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('contrasenia') ? 'border-red-500 bg-red-50' : 'border-gray-300 focus:ring-blue-500')"
                         placeholder="••••••••">
@@ -1034,7 +1053,8 @@
                         id="gestorRepetirContrasenia"
                         [(ngModel)]="newUser.repetirContrasenia"
                         name="gestorRepetirContrasenia"
-                        (ngModelChange)="validatePassword()"
+                        (focus)="onFieldInteraction()"
+                        (ngModelChange)="validatePassword(); onFieldInteraction()"
                         required
                         [class]="'w-full px-4 py-2.5 pr-12 border-2 rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('repetirContrasenia') ? 'border-red-500 bg-red-50' : 'border-gray-300 focus:ring-blue-500')"
                         placeholder="••••••••">
@@ -1199,10 +1219,10 @@
                   {{ isCreating ? 'Creando...' : 'Sí, Crear Usuario' }}
                 </button>
               </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
       </div>
 
         <!-- Vista de Inicio -->
@@ -1330,7 +1350,6 @@
 
   <!-- Modal de Edición de Perfil -->
   
-  
   <!-- ============================================ -->
   <!-- MODAL DE VISUALIZACIÓN DE PERFIL -->
   <!-- ============================================ -->
@@ -1408,7 +1427,7 @@
 
             <div class="p-4 bg-white border border-gray-200 rounded-lg">
               <label for="perfilFechaRegistro" class="block text-sm font-semibold text-gray-700 mb-1">Fecha de Registro</label>
-              <p class="text-gray-900">{{ formatearFecha(perfilDetalle.fechaRegistro) }}</p>
+              <p class="text-gray-900">Registro: {{ perfilDetalle.id }}</p>
             </div>
 
             <div *ngIf="perfilDetalle.rol === 'Administrador' && perfilDetalle.departamento" class="p-4 bg-white border border-gray-200 rounded-lg md:col-span-2">
@@ -1418,39 +1437,39 @@
 
             <ng-container *ngIf="perfilDetalle.rol === 'Gestor'">
               <div class="p-4 bg-white border border-gray-200 rounded-lg">
-                <label for="perfilAlias" class="block text-sm font-semibold text-gray-700 mb-1">Alias</label>
-                <p class="text-gray-900">{{ perfilDetalle.alias || '-' }}</p>
+                <label for="perfilAlias" class="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+                <p class="text-gray-900">{{ perfilDetalle.email || '-' }}</p>
               </div>
               <div class="p-4 bg-white border border-gray-200 rounded-lg">
                 <label for="perfilEspecialidad" class="block text-sm font-semibold text-gray-700 mb-1">Especialidad</label>
-                <p class="text-gray-900">{{ perfilDetalle.especialidad || '-' }}</p>
+                <p class="text-gray-900">{{ perfilDetalle.departamento || '-' }}</p>
               </div>
               <div class="p-4 bg-white border border-gray-200 rounded-lg md:col-span-2">
                 <label for="perfilTipoContenido" class="block text-sm font-semibold text-gray-700 mb-1">TIPO de Contenido</label>
-                <p class="text-gray-900">{{ perfilDetalle.tipoContenido || '-' }}</p>
+                <p class="text-gray-900">{{ perfilDetalle.rol || '-' }}</p>
               </div>
               <div class="p-4 bg-white border border-gray-200 rounded-lg md:col-span-2">
                 <label for="perfilDescripcion" class="block text-sm font-semibold text-gray-700 mb-1">Descripción</label>
-                <p class="text-gray-900">{{ perfilDetalle.descripcion || '-' }}</p>
+                <p class="text-gray-900">{{ perfilDetalle.email || '-' }}</p>
               </div>
             </ng-container>
 
             <ng-container *ngIf="perfilDetalle.rol === 'Visualizador'">
               <div class="p-4 bg-white border border-gray-200 rounded-lg">
-                <label for="perfilAliasVisual" class="block text-sm font-semibold text-gray-700 mb-1">Alias</label>
-                <p class="text-gray-900">{{ perfilDetalle.alias || '-' }}</p>
+                <label for="perfilAliasVisual" class="block text-sm font-semibold text-gray-700 mb-1">ID</label>
+                <p class="text-gray-900">{{ perfilDetalle.id || '-' }}</p>
               </div>
               <div class="p-4 bg-white border border-gray-200 rounded-lg">
-                <label for="perfilEdad" class="block text-sm font-semibold text-gray-700 mb-1">Edad</label>
-                <p class="text-gray-900">{{ perfilDetalle.edad || '-' }}</p>
+                <label for="perfilEdad" class="block text-sm font-semibold text-gray-700 mb-1">Estado</label>
+                <p class="text-gray-900">{{ perfilDetalle.bloqueado ? 'Bloqueado' : 'Activo' }}</p>
               </div>
               <div class="p-4 bg-white border border-gray-200 rounded-lg md:col-span-2">
-                <label for="perfilFechaNacimiento" class="block text-sm font-semibold text-gray-700 mb-1">Fecha de Nacimiento</label>
-                <p class="text-gray-900">{{ formatearFecha(perfilDetalle.fechaNacimiento) }}</p>
+                <label for="perfilFechaNacimiento" class="block text-sm font-semibold text-gray-700 mb-1">Departamento</label>
+                <p class="text-gray-900">{{ perfilDetalle.departamento || '-' }}</p>
               </div>
               <div class="p-4 bg-white border border-gray-200 rounded-lg md:col-span-2">
-                <label for="perfilVIP" class="block text-sm font-semibold text-gray-700 mb-1">Estado VIP</label>
-                <p class="text-gray-900">{{ perfilDetalle.vip ? 'Sí' : 'No' }}</p>
+                <label for="perfilVIP" class="block text-sm font-semibold text-gray-700 mb-1">Estado</label>
+                <p class="text-gray-900">{{ !perfilDetalle.bloqueado ? 'Activo' : 'Bloqueado' }}</p>
               </div>
             </ng-container>
           </div>
@@ -1667,13 +1686,6 @@
       </div>
     </div>
   </div>
-
-
-
-
-
-
-
 
   <!-- ============================================ -->
   <!-- MODAL DE CONFIRMACIÓN PARA EDITAR USUARIO -->
@@ -2417,3 +2429,12 @@
     </div>
   </div>
 
+  <!-- Modal de confirmación global -->
+  <app-confirmation-modal
+    [isVisible]="modalVisible"
+    [config]="modalConfig"
+    (confirmed)="onModalConfirmed()"
+    (cancelled)="onModalCancelled()"
+    (modalClosed)="onModalClosed()">
+  </app-confirmation-modal>
+</div>

@@ -55,20 +55,16 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    const userStr = sessionStorage.getItem('user');
+    if (userStr) {
+      this.userId = JSON.parse(userStr).id;
     }
 
-    // Cargar usuario
-    this.cargarUserId();
-
-    // Configurar búsqueda de contenidos
     this.configurarBusquedaContenidos();
 
-    // Obtener ID de la lista desde la ruta
-    this.route.paramMap.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(params => {
+    this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
       const listaId = params.get('id');
       if (listaId) {
         this.cargarDatosLista(listaId);
@@ -84,118 +80,53 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  private cargarUserId(): void {
-    try {
-      const userStr = sessionStorage.getItem('user');
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        this.userId = user.id;
-      }
-    } catch (error) {
-      console.error('Error cargando userId:', error);
-    }
-  }
-
   private cargarDatosLista(listaId: string): void {
     this.loading = true;
     this.error = null;
 
-    const observables = this.crearObservablesLista(listaId);
-    
-    forkJoin(observables).subscribe({
-      next: (responses) => this.procesarRespuestasLista(responses),
-      error: (error) => this.manejarErrorCarga(error)
-    });
-  }
-
-  private crearObservablesLista(listaId: string) {
-    const tipoUsuario = this.obtenerTipoUsuario();
-    console.log('🔍 DEBUG - Tipo de usuario:', tipoUsuario);
-
-    if (this.esVisualizador()) {
-      return {
-        lista: this.crearObservableListaVisualizador(listaId),
-        contenidos: this.crearObservableContenidosVisualizador(listaId)
-      };
-    }
-
-    return {
+    const observables = this.esVisualizador() ? {
+      lista: this.listaService.obtenerListaPublicaPorId(listaId).pipe(
+        catchError(error => (error.status === 404 || error.status === 403) 
+          ? this.listaService.obtenerListaPorId(listaId) : of(error))
+      ),
+      contenidos: this.listaService.obtenerContenidosListaPublica(listaId).pipe(
+        catchError(error => (error.status === 404 || error.status === 403)
+          ? this.listaService.obtenerContenidosLista(listaId) : of(error))
+      )
+    } : {
       lista: this.listaService.obtenerListaPorId(listaId),
       contenidos: this.listaService.obtenerContenidosLista(listaId)
     };
-  }
+    
+    forkJoin(observables).subscribe({
+      next: (responses) => {
+        if (responses.lista?.success) {
+          this.lista = responses.lista.lista;
+          if (!this.puedeVerLista()) {
+            this.error = 'No tienes permisos para acceder a esta lista';
+          }
+        } else {
+          this.error = responses.lista?.mensaje || 'No se pudo cargar la lista';
+        }
 
-  private crearObservableListaVisualizador(listaId: string) {
-    return this.listaService.obtenerListaPublicaPorId(listaId).pipe(
-      catchError(error => {
-        console.log('❌ Error con lista pública:', error.status, '- intentando lista privada');
-        return (error.status === 404 || error.status === 403) 
-          ? this.listaService.obtenerListaPorId(listaId)
-          : of(error);
-      })
-    );
-  }
+        if (responses.contenidos?.success && this.puedeVerLista()) {
+          this.contenidos = responses.contenidos.contenidos || [];
+        } else {
+          this.contenidos = [];
+        }
 
-  private crearObservableContenidosVisualizador(listaId: string) {
-    return this.listaService.obtenerContenidosListaPublica(listaId).pipe(
-      catchError(error => {
-        console.log('❌ Error con contenidos públicos:', error.status, '- intentando contenidos privados');
-        return (error.status === 404 || error.status === 403)
-          ? this.listaService.obtenerContenidosLista(listaId)
-          : of(error);
-      })
-    );
-  }
-
-  private procesarRespuestasLista(responses: any): void {
-    this.procesarRespuestaLista(responses.lista);
-    this.procesarRespuestaContenidos(responses.contenidos);
-    this.finalizarCarga();
-  }
-
-  private procesarRespuestaLista(respuestaLista: any): void {
-    if (respuestaLista?.success) {
-      this.lista = respuestaLista.lista;
-      
-      if (!this.puedeVerLista()) {
-        this.error = 'No tienes permisos para acceder a esta lista';
-        return;
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        this.error = error.status === 404 ? 'Lista no encontrada' :
+                    error.status === 403 ? 'No tienes permisos para acceder a esta lista privada' :
+                    error.status === 401 ? 'Debes iniciar sesión para acceder a las listas' :
+                    'Error al cargar la lista. Intenta de nuevo más tarde.';
+        this.loading = false;
+        this.cdr.detectChanges();
       }
-    } else {
-      this.error = respuestaLista?.mensaje || 'No se pudo cargar la lista';
-    }
-  }
-
-  private procesarRespuestaContenidos(respuestaContenidos: any): void {
-    if (respuestaContenidos?.success && this.puedeVerLista()) {
-      this.contenidos = respuestaContenidos.contenidos || [];
-      console.log('Contenidos cargados:', this.contenidos.length, this.contenidos);
-    } else {
-      this.contenidos = [];
-      console.log('No se encontraron contenidos o respuesta sin éxito');
-    }
-  }
-
-  private finalizarCarga(): void {
-    this.ngZone.run(() => {
-      this.loading = false;
-      this.cdr.detectChanges();
     });
-  }
-
-  private manejarErrorCarga(error: any): void {
-    console.error('Error cargando datos de la lista:', error);
-    this.error = this.obtenerMensajeError(error);
-    this.finalizarCarga();
-  }
-
-  private obtenerMensajeError(error: any): string {
-    switch (error.status) {
-      case 404: return 'Lista no encontrada';
-      case 403: return 'No tienes permisos para acceder a esta lista privada';
-      case 401: return 'Debes iniciar sesión para acceder a las listas';
-      default: return 'Error al cargar la lista. Intenta de nuevo más tarde.';
-    }
   }
 
   /**
@@ -293,65 +224,30 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
     this.searchSubject.pipe(
       debounceTime(300),
       distinctUntilChanged(),
-      switchMap(query => this.procesarQueryBusqueda(query)),
+      switchMap(query => {
+        if (!query || query.trim().length < 2) {
+          this.buscandoContenidos = false;
+          return of({ success: false, contenidos: [], total: 0, query: '', mensaje: '' });
+        }
+        
+        this.buscandoContenidos = true;
+        return this.contentService.buscarContenidos(query.trim(), 8).pipe(
+          catchError(() => of({ success: false, contenidos: [], total: 0, query: query.trim(), mensaje: 'Error al buscar contenidos' }))
+        );
+      }),
       takeUntil(this.destroy$)
     ).subscribe({
-      next: (response) => this.procesarResultadoBusqueda(response),
-      error: (error) => this.manejarErrorBusqueda(error)
+      next: (response) => {
+        this.buscandoContenidos = false;
+        if (response?.success) {
+          this.contenidosEncontrados = response.contenidos || [];
+          this.mostrarSugerencias = this.contenidosEncontrados.length > 0;
+        } else {
+          this.contenidosEncontrados = [];
+          this.mostrarSugerencias = false;
+        }
+      }
     });
-  }
-
-  private procesarQueryBusqueda(query: string) {
-    if (!this.esQueryValido(query)) {
-      this.buscandoContenidos = false;
-      return of(this.crearRespuestaVacia());
-    }
-    
-    this.buscandoContenidos = true;
-    return this.contentService.buscarContenidos(query.trim(), 8).pipe(
-      catchError(error => this.manejarErrorHttpBusqueda(error, query))
-    );
-  }
-
-  private esQueryValido(query: string): boolean {
-    return !!(query && query.trim().length >= 2);
-  }
-
-  private crearRespuestaVacia() {
-    return { success: false, contenidos: [], total: 0, query: '', mensaje: '' };
-  }
-
-  private manejarErrorHttpBusqueda(error: any, query: string) {
-    console.error('Error HTTP en búsqueda:', error);
-    return of({ 
-      success: false, 
-      contenidos: [], 
-      total: 0, 
-      query: query.trim(), 
-      mensaje: 'Error al buscar contenidos' 
-    });
-  }
-
-  private procesarResultadoBusqueda(response: any): void {
-    this.buscandoContenidos = false;
-    
-    if (response?.success) {
-      this.contenidosEncontrados = response.contenidos || [];
-      this.mostrarSugerencias = this.contenidosEncontrados.length > 0;
-    } else {
-      this.limpiarResultadosBusqueda();
-    }
-  }
-
-  private limpiarResultadosBusqueda(): void {
-    this.contenidosEncontrados = [];
-    this.mostrarSugerencias = false;
-  }
-
-  private manejarErrorBusqueda(error: any): void {
-    console.error('Error en búsqueda de contenidos:', error);
-    this.buscandoContenidos = false;
-    this.limpiarResultadosBusqueda();
   }
 
   /**
@@ -425,21 +321,10 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
    * Guarda los cambios de la edición
    */
   private guardarEdicion(): void {
-    if (!this.validarDatosEdicion()) {
-      return;
-    }
+    if (!this.validarDatosEdicion()) return;
 
     this.guardandoEdicion = true;
-    const datosLista = this.construirDatosLista();
-
-    this.listaService.editarLista(this.lista.id, datosLista).subscribe({
-      next: (response) => this.procesarRespuestaGuardado(response),
-      error: (error) => this.manejarErrorGuardado(error)
-    });
-  }
-
-  private construirDatosLista() {
-    return {
+    const datosLista = {
       nombre: this.datosEdicion.nombre.trim(),
       descripcion: this.datosEdicion.descripcion.trim(),
       tags: this.parseTags(this.datosEdicion.tagsInput),
@@ -448,37 +333,26 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
       especializacionGestor: this.lista.especializacionGestor,
       contenidosIds: [...new Set(this.contenidosEditables)]
     };
-  }
 
-  private procesarRespuestaGuardado(response: any): void {
-    this.guardandoEdicion = false;
-    
-    if (response?.success) {
-      this.actualizarDatosLocales(response);
-      this.finalizarEdicion();
-      alert('✅ Lista actualizada correctamente');
-    } else {
-      alert(response?.mensaje || 'Error al actualizar la lista');
-    }
-  }
-
-  private actualizarDatosLocales(response: any): void {
-    this.lista = { ...this.lista, ...this.construirDatosLista() };
-    this.cargarContenidosLista();
-  }
-
-  private finalizarEdicion(): void {
-    this.ngZone.run(() => {
-      this.modoEdicion = false;
-      this.limpiarDatosEdicion();
-      this.cdr.detectChanges();
+    this.listaService.editarLista(this.lista.id, datosLista).subscribe({
+      next: (response) => {
+        this.guardandoEdicion = false;
+        if (response?.success) {
+          this.lista = { ...this.lista, ...datosLista };
+          this.cargarContenidosLista();
+          this.modoEdicion = false;
+          this.limpiarDatosEdicion();
+          this.cdr.detectChanges();
+          alert('✅ Lista actualizada correctamente');
+        } else {
+          alert(response?.mensaje || 'Error al actualizar la lista');
+        }
+      },
+      error: () => {
+        this.guardandoEdicion = false;
+        alert('Error al actualizar la lista');
+      }
     });
-  }
-
-  private manejarErrorGuardado(error: any): void {
-    this.guardandoEdicion = false;
-    console.error('Error actualizando lista:', error);
-    alert('Error al actualizar la lista');
   }
 
   /**
@@ -543,33 +417,20 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
    * Recarga solo los contenidos de la lista
    */
   private cargarContenidosLista(): void {
-    console.log('Recargando contenidos para lista:', this.lista.id);
-    
-    const contenidosObservable = this.crearObservableContenidos();
+    const contenidosObservable = this.esVisualizador() 
+      ? this.listaService.obtenerContenidosListaPublica(this.lista.id).pipe(
+          catchError(() => this.listaService.obtenerContenidosLista(this.lista.id))
+        )
+      : this.listaService.obtenerContenidosLista(this.lista.id);
     
     contenidosObservable.subscribe({
-      next: (response) => this.procesarRespuestaRecargaContenidos(response),
-      error: (error) => console.error('Error recargando contenidos:', error)
+      next: (response) => {
+        if (response?.success) {
+          this.contenidos = response.contenidos || [];
+          this.cdr.detectChanges();
+        }
+      }
     });
-  }
-
-  private crearObservableContenidos() {
-    return this.esVisualizador() 
-      ? this.crearObservableContenidosVisualizador(this.lista.id)
-      : this.listaService.obtenerContenidosLista(this.lista.id);
-  }
-
-  private procesarRespuestaRecargaContenidos(response: any): void {
-    console.log('Respuesta de recarga de contenidos:', response);
-    
-    if (response?.success) {
-      this.contenidos = response.contenidos || [];
-      console.log('Contenidos actualizados después de edición:', this.contenidos.length, this.contenidos);
-      
-      this.ngZone.run(() => {
-        this.cdr.detectChanges();
-      });
-    }
   }
 
   /**
@@ -583,25 +444,13 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
    * Selecciona un contenido de las sugerencias
    */
   seleccionarContenido(contenido: ContenidoSearchResult): void {
-    if (this.esContenidoDuplicado(contenido.id)) {
+    if (this.contenidosEditables.includes(contenido.id)) {
       alert('Este contenido ya está en la lista');
       return;
     }
 
-    this.agregarContenidoALista(contenido);
-    this.limpiarFormularioBusqueda();
-  }
-
-  private esContenidoDuplicado(contenidoId: string): boolean {
-    return this.contenidosEditables.includes(contenidoId);
-  }
-
-  private agregarContenidoALista(contenido: ContenidoSearchResult): void {
     this.contenidosSeleccionados.set(contenido.id, contenido);
     this.contenidosEditables.push(contenido.id);
-  }
-
-  private limpiarFormularioBusqueda(): void {
     this.nuevoContenido = '';
     this.mostrarSugerencias = false;
     this.contenidosEncontrados = [];
@@ -621,35 +470,26 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
    */
   agregarContenido(): void {
     const contenidoTrimmed = this.nuevoContenido?.trim();
-    
-    if (!contenidoTrimmed) {
-      return;
-    }
+    if (!contenidoTrimmed) return;
 
-    const contenidoEncontrado = this.buscarContenidoExacto(contenidoTrimmed);
+    const contenidoEncontrado = this.contenidosEncontrados.find(c => 
+      c.titulo.toLowerCase() === contenidoTrimmed.toLowerCase()
+    );
     
     if (contenidoEncontrado) {
       this.seleccionarContenido(contenidoEncontrado);
       return;
     }
     
-    this.agregarContenidoPorId(contenidoTrimmed);
-  }
-
-  private buscarContenidoExacto(contenido: string): ContenidoSearchResult | undefined {
-    return this.contenidosEncontrados.find(c => 
-      c.titulo.toLowerCase() === contenido.toLowerCase()
-    );
-  }
-
-  private agregarContenidoPorId(contenidoId: string): void {
-    if (this.esContenidoDuplicado(contenidoId)) {
+    if (this.contenidosEditables.includes(contenidoTrimmed)) {
       alert('Este contenido ya está en la lista');
       return;
     }
 
-    this.contenidosEditables.push(contenidoId);
-    this.limpiarFormularioBusqueda();
+    this.contenidosEditables.push(contenidoTrimmed);
+    this.nuevoContenido = '';
+    this.mostrarSugerencias = false;
+    this.contenidosEncontrados = [];
   }
 
   /**
@@ -669,29 +509,17 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
    * Obtiene el nombre de un contenido por su ID
    */
   obtenerNombreContenido(id: string): string {
-    const contenidoCacheado = this.buscarEnCache(id);
+    const contenidoCacheado = this.contenidosSeleccionados.get(id);
     if (contenidoCacheado) {
-      return this.formatearNombreContenido(contenidoCacheado.titulo, contenidoCacheado.tipo);
+      return `${contenidoCacheado.titulo} (${contenidoCacheado.tipo})`;
     }
     
-    const contenidoActual = this.buscarEnContenidosActuales(id);
+    const contenidoActual = this.contenidos.find(c => c.id === id);
     if (contenidoActual) {
-      return this.formatearNombreContenido(contenidoActual.titulo, contenidoActual.tipo);
+      return `${contenidoActual.titulo} (${contenidoActual.tipo})`;
     }
     
     return `Contenido ID: ${id}`;
-  }
-
-  private buscarEnCache(id: string): ContenidoSearchResult | undefined {
-    return this.contenidosSeleccionados.get(id);
-  }
-
-  private buscarEnContenidosActuales(id: string): ContenidoResumenDTO | undefined {
-    return this.contenidos.find(c => c.id === id);
-  }
-
-  private formatearNombreContenido(titulo: string, tipo: string): string {
-    return `${titulo} (${tipo})`;
   }
 
   /**
@@ -722,9 +550,8 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
           alert(response.mensaje || 'Error al eliminar la lista');
         }
       },
-      error: (error) => {
+      error: () => {
         this.eliminandoLista = false;
-        console.error('Error eliminando lista:', error);
         alert('Error al eliminar la lista');
       }
     });

@@ -48,6 +48,19 @@
           <button
             type="button"
             class="action-btn"
+            title="Estadísticas"
+            (click)="verEstadisticas(c)">
+            <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 3v18h18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="6" y="10" width="2" height="8" fill="currentColor"/>
+              <rect x="10" y="6" width="2" height="12" fill="currentColor"/>
+              <rect x="14" y="13" width="2" height="5" fill="currentColor"/>
+              <rect x="18" y="8" width="2" height="10" fill="currentColor"/>
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="action-btn"
             title="Ver detalle"
             (click)="verDetalle(c)">
             <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -213,17 +226,19 @@
  
                <div class="detalle-item">
                  <span class="detalle-label">Duración</span>
-                 <span class="detalle-value" *ngIf="detalleSeleccionado.duracion > 0; else sinDuracion">
-                   {{ (detalleSeleccionado.duracion / 60) | number:'1.0-1' }} min
-                 </span>
-                 <ng-template #sinDuracion>
-                   <span class="detalle-value">No indicada</span>
-                 </ng-template>
+                 <span class="detalle-value">{{ getDuracionFormateada(detalleSeleccionado.duracion) }}</span>
                </div>
                <div class="detalle-item">
                  <label class="detalle-label" for="edadVisualizacion">Edad mínima</label>
                  <span *ngIf="!editMode" class="detalle-value">{{ detalleSeleccionado.edadVisualizacion }} años</span>
-                 <input *ngIf="editMode" id="edadVisualizacion" name="edadVisualizacion" type="number" class="detalle-input" min="0" max="18" [(ngModel)]="editForm.edadVisualizacion">
+                 <select *ngIf="editMode"
+                         id="edadVisualizacion"
+                         name="edadVisualizacion"
+                         class="detalle-input"
+                         [(ngModel)]="editForm.edadVisualizacion">
+                   <option [ngValue]="0">0 años (Todo público)</option>
+                   <option [ngValue]="18">18 años (+18)</option>
+                 </select>
                </div>
                <div class="detalle-item">
                  <label class="detalle-label" for="fechaDisponibleHasta">Fecha disponible hasta</label>
@@ -314,6 +329,57 @@
            </div>
          </div>
        </form>
+    </div>
+  </div>
+
+  <!-- Modal de estadísticas -->
+  <div class="detalle-backdrop" *ngIf="mostrarEstadisticas" (click)="cerrarEstadisticas()"></div>
+  <div class="detalle-modal estadisticas-modal" *ngIf="mostrarEstadisticas">
+    <div class="detalle-header">
+      <div class="detalle-title-group">
+        <h2 class="detalle-title">Estadísticas</h2>
+      </div>
+      <button type="button" class="detalle-close-btn" (click)="cerrarEstadisticas()" aria-label="Cerrar estadisticas">✕</button>
+    </div>
+
+    <div class="detalle-body stats-body">
+      <div *ngIf="estadisticasLoading" class="detalle-loading">
+        <span class="loading-dot"></span>
+        <span class="loading-dot"></span>
+        <span class="loading-dot"></span>
+        <span>Cargando estadísticas...</span>
+      </div>
+
+      <div *ngIf="!estadisticasLoading && estadisticasError" class="alert-error mt-4">{{ estadisticasError }}</div>
+
+      <div *ngIf="!estadisticasLoading && estadisticasData" class="stats-simple">
+
+        <div class="content-main-title">{{ estadisticasData.title }}</div>
+
+        <div class="stats-row">
+          <div class="stats-thumb">
+            <img *ngIf="estadisticasData.caratula; else noCoverSmall" [src]="estadisticasData.caratula" [alt]="estadisticasData.title" class="stats-caratula-large" />
+            <ng-template #noCoverSmall>
+              <div class="stats-caratula-large placeholder">{{ estadisticasData.title ? (estadisticasData.title | slice:0:1) : '–' }}</div>
+            </ng-template>
+          </div>
+
+          <div class="stats-info">
+            <ul class="stats-list">
+              <li><strong>👁️ Visualizaciones:</strong> {{ estadisticasData.nvisualizaciones ?? 0 }}</li>
+              <li>
+                <strong>⭐ Valoración promedio: </strong>
+                <ng-container *ngIf="estadisticasData.averageRating != null; else noAvg">
+                  <span class="rating-pill" [ngClass]="ratingClass(estadisticasData?.averageRating)">{{ estadisticasData.averageRating | number:'1.1-1' }}</span>
+                </ng-container>
+                <ng-template #noAvg>—</ng-template>
+                <span *ngIf="estadisticasData.ratingsCount"> • ({{ estadisticasData.ratingsCount }} valoraciones)</span>
+              </li>
+              <li><strong>⌚ Días disponible restantes: </strong> <span class="days-pill" [ngClass]="daysClass(estadisticasData?.daysRemaining)">{{ estadisticasData.daysRemaining === '-' ? 'Sin límite' : estadisticasData.daysRemaining }}</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
