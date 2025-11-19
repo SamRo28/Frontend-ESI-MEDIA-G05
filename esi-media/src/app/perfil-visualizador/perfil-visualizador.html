@@ -110,7 +110,7 @@
               <div *ngIf="!passwordVerified" class="pw-step">
                 <div class="pw-helper-text">Para cambiar tu contraseña es necesario ingresar la contraseña actual.</div>
                 <!-- Campo oculto para evitar auto-relleno del navegador -->
-                <input type="password" style="display:none" aria-hidden="true">
+                <input type="password" style="display:none" tabindex="-1">
                 <div class="input-group with-icon">
                   <input [type]="passwordVisibility['current'] ? 'text' : 'password'" class="input" placeholder="Contraseña actual" [(ngModel)]="form.currentPassword" name="currentPassword" autocomplete="off" autocapitalize="off" spellcheck="false" />
                   <button type="button" class="icon-btn pw-icon-btn" (click)="togglePasswordVisibility('current')">

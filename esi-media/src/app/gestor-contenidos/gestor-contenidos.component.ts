@@ -358,7 +358,7 @@ export class GestorContenidosComponent implements OnInit {
     forkJoin([detalle$, avg$]).subscribe({
       next: ([detalle, avg]) => {
         const nvisualizaciones = typeof detalle?.nvisualizaciones === 'number' ? detalle.nvisualizaciones : (detalle?.nvisualizaciones ?? undefined);
-        const fechaHasta = detalle?.fechaDisponibleHasta || detalle?.fechaDisponibleHasta || null;
+        const fechaHasta = detalle?.fechaDisponibleHasta ?? detalle?.fechadisponiblehasta ?? null;
 
         let daysRemaining: number | string = '-';
         if (fechaHasta) {
