@@ -544,4 +544,23 @@ export class GestorContenidosComponent implements OnInit {
         }
       });
   }
+
+  /**
+   * Formatea la duración (en segundos) como "X min Y s".
+   */
+  getDuracionFormateada(segundos: number | null | undefined): string {
+    const total = typeof segundos === 'number' ? segundos : 0;
+    if (total <= 0) {
+      return 'No indicada';
+    }
+    const mins = Math.floor(total / 60);
+    const secs = total % 60;
+    if (mins === 0) {
+      return `${secs} s`;
+    }
+    if (secs === 0) {
+      return `${mins} min`;
+    }
+    return `${mins} min ${secs} s`;
+  }
 }
