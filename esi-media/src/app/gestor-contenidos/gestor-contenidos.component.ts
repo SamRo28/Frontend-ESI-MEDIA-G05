@@ -60,6 +60,8 @@ const VIDEO_TAGS: string[] = [
 })
 export class GestorContenidosComponent implements OnInit {
   loading = false;
+  readonly vipToggleId = `vip-toggle-${Math.random().toString(36).slice(2, 7)}`;
+  readonly estadoToggleId = `estado-toggle-${Math.random().toString(36).slice(2, 7)}`;
   errorMessage = '';
   contenidos: ContenidoResumenGestor[] = [];
   // Indicador para evitar flicker: mientras se aplican filtros (enriquecimiento/consulta de detalle), mostrar overlay
