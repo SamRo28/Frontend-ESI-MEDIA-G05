@@ -61,7 +61,8 @@ export class MultimediaListComponent implements OnInit, OnChanges {
   }
 
   private handleSpecialModeEarlyReturn(): boolean {
-    if (this.filtersObject?.specialMode === 'top-contents' || this.filtersObject?.specialMode === 'top-rated') {
+    const specialMode = this.filtersObject?.specialMode;
+    if (specialMode === 'top-contents' || specialMode === 'top-rated' || specialMode === 'favorites') {
       const contents = this.filtersObject?.specialPayload?.contents ?? [];
       // Intentamos mapear a ContenidoResumenDTO si vienen campos necesarios
       this.contenido = Array.isArray(contents) ? contents as ContenidoResumenDTO[] : [];
