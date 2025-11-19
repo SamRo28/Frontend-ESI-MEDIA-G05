@@ -200,12 +200,23 @@ export class AdminService {
   updateUser(id: string, userData: any, tipo: string): Observable<any> {
     const url = `${this.apiUrl}/users/${id}/profile`;
     
+    console.log('🔄 AdminService.updateUser llamado con:');
+    console.log('  📌 ID:', id, '(longitud:', id.length, ')');
+    console.log('  📌 URL completa:', url);
+    console.log('  📌 userData:', userData);
+    console.log('  📌 tipo:', tipo);
+    
     // El backend espera el formato {userData, tipo}
     const payload = { userData, tipo };
     
     // IMPORTANTE: NO usar headers de autorización para estos endpoints
     return this.http.put<any>(url, payload).pipe(
-      catchError(this.handleError)
+      catchError((error) => {
+        console.error('❌ Error en AdminService.updateUser:', error);
+        console.error('  📌 ID usado:', id);
+        console.error('  📌 URL intentada:', url);
+        return this.handleError(error);
+      })
     );
   }
 
