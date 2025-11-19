@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -25,16 +25,9 @@ export class ValoracionService {
 
   constructor(private http: HttpClient) {}
 
-  private authOptions(params?: Record<string, string | string[]>) : { headers?: HttpHeaders; params?: Record<string, string | string[]> } {
-    const possibleKeys = ['token', 'access_token', 'authToken', 'Authorization'];
-    let token: string | null = null;
-    for (const k of possibleKeys) {
-      const v = sessionStorage.getItem(k);
-      if (v) { token = v; break; }
-    }
-    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
-    const opts: { headers?: HttpHeaders; params?: Record<string, string | string[]> } = {};
-    if (headers) { opts.headers = headers; }
+  // Ya no necesitamos añadir headers manualmente, el interceptor gestiona withCredentials
+  private authOptions(params?: Record<string, string | string[]>) : { params?: Record<string, string | string[]> } {
+    const opts: { params?: Record<string, string | string[]> } = {};
     if (params) { opts.params = params; }
     return opts;
   }
