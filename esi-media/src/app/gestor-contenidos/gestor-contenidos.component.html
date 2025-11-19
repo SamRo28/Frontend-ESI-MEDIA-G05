@@ -226,17 +226,19 @@
  
                <div class="detalle-item">
                  <span class="detalle-label">Duración</span>
-                 <span class="detalle-value" *ngIf="detalleSeleccionado.duracion > 0; else sinDuracion">
-                   {{ (detalleSeleccionado.duracion / 60) | number:'1.0-1' }} min
-                 </span>
-                 <ng-template #sinDuracion>
-                   <span class="detalle-value">No indicada</span>
-                 </ng-template>
+                 <span class="detalle-value">{{ getDuracionFormateada(detalleSeleccionado.duracion) }}</span>
                </div>
                <div class="detalle-item">
                  <label class="detalle-label" for="edadVisualizacion">Edad mínima</label>
                  <span *ngIf="!editMode" class="detalle-value">{{ detalleSeleccionado.edadVisualizacion }} años</span>
-                 <input *ngIf="editMode" id="edadVisualizacion" name="edadVisualizacion" type="number" class="detalle-input" min="0" max="18" [(ngModel)]="editForm.edadVisualizacion">
+                 <select *ngIf="editMode"
+                         id="edadVisualizacion"
+                         name="edadVisualizacion"
+                         class="detalle-input"
+                         [(ngModel)]="editForm.edadVisualizacion">
+                   <option [ngValue]="0">0 años (Todo público)</option>
+                   <option [ngValue]="18">18 años (+18)</option>
+                 </select>
                </div>
                <div class="detalle-item">
                  <label class="detalle-label" for="fechaDisponibleHasta">Fecha disponible hasta</label>
