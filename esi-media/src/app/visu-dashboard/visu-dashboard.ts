@@ -3,6 +3,7 @@ import { Router, NavigationEnd, RouterLink, RouterModule, ActivatedRoute } from 
 import { MultimediaService, ContenidoResumenDTO } from '../services/multimedia.service';
 import { UserService } from '../services/userService';
 import { FavoritesService } from '../services/favorites.service';
+import { Subscription } from 'rxjs';
 import { GestionListasComponent } from '../gestion-listas/gestion-listas';
 import { MultimediaListComponent } from '../multimedia-list/multimedia-list';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
@@ -44,6 +45,9 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
   favoritos: ContenidoResumenDTO[] = [];
   favoritosLoading = false;
   activeSection: 'inicio' | 'videos' | 'audios' | 'listas' | 'favoritos' = 'inicio';
+  private favoritesUpdateSubscription: Subscription | null = null;
+  private pendingFavoritesRetry = false;
+  private pendingFavoritesRetryHandle: number | null = null;
   
   // Variables para el sistema de filtrado
   currentTagFilters: string[] = [];
@@ -98,6 +102,11 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
         this.activateFavoritesView();
       }
     });
+    this.favoritesUpdateSubscription = this.favoritesService.favoritesUpdates$.subscribe(() => {
+      if (this.mostrarFavoritos) {
+        this.refreshFavorites();
+      }
+    });
     // Inicial rápido
     const initUrl = this.router.url || '';
     if (initUrl.includes('/dashboard/videos')) {
@@ -142,6 +151,11 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
       } catch (e) {
         // ignorar
       }
+    }
+    this.favoritesUpdateSubscription?.unsubscribe();
+    if (this.pendingFavoritesRetryHandle) {
+      clearTimeout(this.pendingFavoritesRetryHandle);
+      this.pendingFavoritesRetryHandle = null;
     }
   }
 
@@ -302,9 +316,16 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
     if (!this.isBrowser) {
       return;
     }
+    const cachedFavorites = this.favoritesService.getCachedFavorites();
+    if (Array.isArray(cachedFavorites)) {
+      this.favoritos = [...cachedFavorites];
+    }
     this.favoritosLoading = true;
     this.favoritesService.list()
-      .pipe(finalize(() => this.favoritosLoading = false))
+      .pipe(finalize(() => {
+        this.favoritosLoading = false;
+        this.tryScheduleFavoritesRetry();
+      }))
       .subscribe({
         next: list => { this.favoritos = Array.isArray(list) ? list : []; },
         error: err => {
@@ -312,6 +333,26 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
           this.favoritos = [];
         }
       });
+  }
+
+  private tryScheduleFavoritesRetry(): void {
+    if (!this.mostrarFavoritos) {
+      return;
+    }
+    if (this.pendingFavoritesRetry) {
+      return;
+    }
+    if (!this.favoritesService.hasPendingUpdates()) {
+      return;
+    }
+    this.pendingFavoritesRetry = true;
+    this.pendingFavoritesRetryHandle = window.setTimeout(() => {
+      this.pendingFavoritesRetry = false;
+      this.pendingFavoritesRetryHandle = null;
+      if (this.mostrarFavoritos) {
+        this.refreshFavorites();
+      }
+    }, 650);
   }
 
   private updateUserDisplayData(): void {
