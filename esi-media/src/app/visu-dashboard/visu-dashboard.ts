@@ -1,7 +1,8 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, inject, PLATFORM_ID } from '@angular/core';
-import { Router, NavigationEnd, RouterLink, RouterLinkActive, RouterModule } from '@angular/router';
-import { MultimediaService } from '../services/multimedia.service';
+import { Router, NavigationEnd, RouterLink, RouterLinkActive, RouterModule, ActivatedRoute } from '@angular/router';
+import { MultimediaService, ContenidoResumenDTO } from '../services/multimedia.service';
 import { UserService } from '../services/userService';
+import { FavoritesService } from '../services/favorites.service';
 import { GestionListasComponent } from '../gestion-listas/gestion-listas';
 import { MultimediaListComponent } from '../multimedia-list/multimedia-list';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
@@ -9,6 +10,7 @@ import { ListasPrivadas } from '../listas-privadas/listas-privadas';
 import { CrearListaComponent } from '../crear-lista/crear-lista';
 import { PerfilVisualizadorComponent } from '../perfil-visualizador/perfil-visualizador';
 import { ContentFilterComponent } from '../shared/content-filter/content-filter.component';
+import { finalize } from 'rxjs/operators';
 
 interface Star {
   left: number;
@@ -39,6 +41,10 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
   forceReloadListasPublicas: number = 0;
   showCrearModal: boolean = false;
   showCuentaModal: boolean = false;
+  mostrarFavoritos: boolean = false;
+  favoritos: ContenidoResumenDTO[] = [];
+  favoritosLoading = false;
+  activeSection: 'inicio' | 'videos' | 'audios' | 'listas' | 'favoritos' = 'inicio';
   
   // Variables para el sistema de filtrado
   currentTagFilters: string[] = [];
@@ -51,7 +57,8 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
 
   private multimedia = inject(MultimediaService);
   private userService = inject(UserService);
-  constructor(private router: Router) {
+  private favoritesService = inject(FavoritesService);
+  constructor(private router: Router, private route: ActivatedRoute) {
     this.isBrowser = isPlatformBrowser(this.platformId);
   }
   private platformId = inject(PLATFORM_ID);
@@ -62,21 +69,34 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
     // Detectar ruta para ajustar filtro de contenido
     this.router.events.subscribe(evt => {
       if (evt instanceof NavigationEnd) {
+        if (this.mostrarFavoritos) {
+          this.mostrarFavoritos = false;
+        }
         const url = evt.urlAfterRedirects || evt.url;
         if (url.includes('/dashboard/videos')) {
           this.filtroTipo = 'VIDEO';
           this.mostrarListasPublicas = false;
+          this.activeSection = 'videos';
         } else if (url.includes('/dashboard/audios')) {
           this.filtroTipo = 'AUDIO';
           this.mostrarListasPublicas = false;
+          this.activeSection = 'audios';
         } else if (url.includes('/dashboard/listas-publicas')) {
           this.mostrarListasPublicas = true;
           this.filtroTipo = null;
           this.forceReloadListasPublicas = Math.random();
+          this.activeSection = 'listas';
         } else {
           this.filtroTipo = null; // mostrar ambos
           this.mostrarListasPublicas = false;
+          this.activeSection = 'inicio';
         }
+      }
+    });
+    this.route.queryParams.subscribe(params => {
+      const section = params?.['section'];
+      if (section === 'favoritos') {
+        this.activateFavoritesView();
       }
     });
     // Inicial rápido
@@ -84,13 +104,16 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
     if (initUrl.includes('/dashboard/videos')) {
       this.filtroTipo = 'VIDEO';
       this.mostrarListasPublicas = false;
+      this.activeSection = 'videos';
     } else if (initUrl.includes('/dashboard/audios')) {
       this.filtroTipo = 'AUDIO';
       this.mostrarListasPublicas = false;
+      this.activeSection = 'audios';
     } else if (initUrl.includes('/dashboard/listas-publicas')) {
       this.mostrarListasPublicas = true;
       this.filtroTipo = null;
       this.forceReloadListasPublicas = Math.random();
+      this.activeSection = 'listas';
     }
   }
 
@@ -234,8 +257,8 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const userStr = sessionStorage.getItem('user');
-    if (userStr) {
-      try {
+      if (userStr) {
+        try {
         this.currentUser = JSON.parse(userStr);
         this.updateUserDisplayData();
       } catch (error) {
@@ -246,6 +269,50 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
     } else {
       this.setDefaultUserData();
     }
+    this.refreshFavorites();
+  }
+
+  toggleFavoritosView(): void {
+    if (this.mostrarFavoritos) {
+      this.mostrarFavoritos = false;
+      this.activeSection = 'inicio';
+      return;
+    }
+    this.activateFavoritesView();
+  }
+
+  private activateFavoritesView(): void {
+    this.mostrarFavoritos = true;
+    this.activeSection = 'favoritos';
+    this.mostrarListasPublicas = false;
+    this.mostrarListasPrivadas = false;
+    this.filtroTipo = null;
+    this.currentTagFilters = [];
+    this.currentFiltersObject = null;
+    this.refreshFavorites();
+  }
+
+  handleNavSelect(section: 'inicio' | 'videos' | 'audios' | 'listas'): void {
+    if (this.mostrarFavoritos) {
+      this.mostrarFavoritos = false;
+    }
+    this.activeSection = section;
+  }
+
+  private refreshFavorites(): void {
+    if (!this.isBrowser) {
+      return;
+    }
+    this.favoritosLoading = true;
+    this.favoritesService.list()
+      .pipe(finalize(() => this.favoritosLoading = false))
+      .subscribe({
+        next: list => { this.favoritos = Array.isArray(list) ? list : []; },
+        error: err => {
+          console.error('Error al cargar favoritos', err);
+          this.favoritos = [];
+        }
+      });
   }
 
   private updateUserDisplayData(): void {
@@ -370,6 +437,35 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
     this.showCuentaModal = false;
     if (this.isBrowser) {
       document.body.classList.remove('no-scroll');
+    }
+  }
+
+  /**
+   * Inicia el proceso de eliminación de la cuenta del usuario.
+   * Muestra una confirmación antes de proceder.
+   */
+  handleDeleteAccount(): void {
+    if (!this.isBrowser) return;
+
+    const confirmation = window.confirm(
+      '¿Estás seguro de que quieres eliminar tu cuenta? Esta acción es irreversible. ' +
+      'Se eliminarán tus datos personales, pero el contenido que hayas creado permanecerá en la plataforma.'
+    );
+
+    if (confirmation) {
+      this.userService.deleteMyAccount().subscribe({
+        next: () => {
+          this.showToast('Tu cuenta ha sido eliminada.');
+          // Forzar logout y redirección
+          setTimeout(() => this.logout(), 1500);
+        },
+        error: (err: any) => {
+          console.error('Error al eliminar la cuenta:', err);
+          const message = err?.error?.mensaje || 'No se pudo eliminar la cuenta. Inténtalo de nuevo más tarde.';
+          // Usar alert para errores críticos
+          alert(`Error: ${message}`);
+        }
+      });
     }
   }
 

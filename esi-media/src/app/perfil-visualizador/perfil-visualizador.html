@@ -214,7 +214,13 @@
           <div class="current-plan-info">
             <div class="current-plan-label">Tu plan actual</div>
             <div class="current-plan-name">{{ form.vip ? 'VIP' : 'Estándar' }}</div>
-            <div class="current-plan-desc">{{ form.vip ? '¡Disfrutando de la experiencia completa!' : 'Acceso a una gran selección de contenido.' }}</div>
+            <div class="current-plan-desc">
+              {{ form.vip ? '¡Disfrutando de la experiencia completa!' : 'Acceso a una gran selección de contenido.' }}
+            </div>
+            <div class="current-plan-meta" *ngIf="subscriberSince">
+              <span>Miembro desde {{ subscriberSince }}</span>
+              <span *ngIf="accountAgeLabel">&nbsp;·&nbsp;{{ accountAgeLabel }}</span>
+            </div>
           </div>
         </div>
 
@@ -262,7 +268,6 @@
       </div>
     </div>
   </div>
-</div>
 
   <!-- Confirmación Suscripción -->
   <div *ngIf="showSubConfirm" class="confirm-backdrop" (click)="cancelarCambioSuscripcion()">
@@ -293,3 +298,29 @@
       </div>
     </div>
   </div>
+
+ 
+  <!-- Sección de Eliminación de Cuenta (solo en Información general) -->
+<div *ngIf="activeSection==='info'" class="delete-account-section">
+  <button (click)="handleDeleteAccount()" class="btn-delete">Eliminar cuenta</button>
+</div>
+
+
+  <!-- Modal de Confirmación de Eliminación -->
+  <div *ngIf="showDeleteConfirm" class="confirm-backdrop" (click)="cancelDeleteAccount()">
+    <div class="confirm-card delete-confirm-card" (click)="$event.stopPropagation()">
+      <div class="confirm-title delete-confirm-title">¿Estás seguro?</div>
+      <p class="confirm-text">
+        Si eliminas tu cuenta, todos tus datos personales y listas privadas se borrarán permanentemente.
+        <br><strong>Esta acción no se puede deshacer.</strong>
+      </p>
+      <div class="confirm-actions">
+        <button class="btn" (click)="cancelDeleteAccount()" [disabled]="isDeleting">Cancelar</button>
+        <button class="btn-primary btn-delete-confirm" (click)="confirmDeleteAccount()" [disabled]="isDeleting">
+          {{ isDeleting ? 'Eliminando...' : 'Sí, eliminar mi cuenta' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
