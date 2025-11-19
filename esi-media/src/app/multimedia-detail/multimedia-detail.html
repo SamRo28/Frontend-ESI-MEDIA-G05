@@ -13,6 +13,7 @@
       <a routerLink="/dashboard/videos" routerLinkActive="active" class="nav-link">Videos</a>
       <a routerLink="/dashboard/audios" routerLinkActive="active" class="nav-link">Audios</a>
       <a routerLink="/dashboard/listas-publicas" routerLinkActive="active" class="nav-link">Listas Públicas</a>
+      <a routerLink="/dashboard" [queryParams]="{ section: 'favoritos' }" class="nav-link">Mis favoritos</a>
 
     </nav>
 
@@ -132,14 +133,21 @@
           <div class="buffering" *ngIf="buffering">Bufferizando...</div>
         </div>
 
-        <!-- AUDIO: reproducción directa con <audio> y token en query (?auth=) -->
-        <div *ngIf="detalle!.tipo === 'AUDIO'" class="player-card">
-          <ng-container *ngIf="!audioError">
-            <audio #audioPlayer controls [src]="audioSrc()" (error)="onAudioError($event)" (loadedmetadata)="onAudioLoaded($event)"></audio>
-          </ng-container>
-          <div class="audio-error" *ngIf="audioError">
-            {{ audioError }}
-            <button class="retry-btn" (click)="reintentarAudio()">Reintentar</button>
+        <!-- AUDIO: reproducción directa y carátula al estilo Spotify -->
+        <div *ngIf="detalle!.tipo === 'AUDIO'" class="player-card audio-layout">
+          <div class="audio-stack">
+            <div class="audio-cover" *ngIf="caratulaUrl() as cover">
+              <img [src]="cover" [alt]="detalle!.titulo + ' - carátula'" />
+            </div>
+            <div class="audio-controls">
+              <ng-container *ngIf="!audioError">
+                <audio #audioPlayer controls [src]="audioSrc()" (error)="onAudioError($event)" (loadedmetadata)="onAudioLoaded($event)"></audio>
+              </ng-container>
+              <div class="audio-error" *ngIf="audioError">
+                {{ audioError }}
+                <button class="retry-btn" (click)="reintentarAudio()">Reintentar</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -160,6 +168,19 @@
             <li><label for="mm-disponible-hasta">Disponible hasta:</label><b>{{ fechaDisponibleTexto() }}</b></li>
             <li class="desc"><label for="mm-descripcion">Descripción:</label><div class="desc-text">{{ detalle!.descripcion || 'Sin descripción' }}</div></li>
           </ul>
+          <div class="favorite-actions">
+            <button
+              class="btn favorite-btn"
+              [class.removing]="isFavoritoDetalle && !favoritoLoading"
+              [class.adding]="!isFavoritoDetalle && !favoritoLoading"
+              [class.active]="isFavoritoDetalle && !favoritoLoading"
+              (click)="toggleFavoritoDetalle()"
+              [disabled]="favoritoLoading">
+              <span class="favorite-icon" aria-hidden="true">{{ isFavoritoDetalle ? '☆' : '★' }}</span>
+              <span *ngIf="!favoritoLoading">{{ isFavoritoDetalle ? 'Eliminar de favoritos' : 'Guardar en favoritos' }}</span>
+              <span *ngIf="favoritoLoading">Actualizando...</span>
+            </button>
+          </div>
         </div>
       </aside>
     </div>

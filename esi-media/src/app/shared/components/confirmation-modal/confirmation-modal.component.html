@@ -1,0 +1,57 @@
+<!-- Modal backdrop -->
+<div *ngIf="isVisible" 
+     class="modal-backdrop"
+     (click)="onBackdropClick($event)"
+     (keydown)="onKeyDown($event)"
+     tabindex="-1"
+     role="dialog"
+     [attr.aria-labelledby]="'modal-title'"
+     [attr.aria-describedby]="'modal-description'">
+  
+  <!-- Modal container -->
+  <div class="modal-container" [ngClass]="getModalSizeClass()">
+    
+    <!-- Modal content -->
+    <div class="modal-content">
+      
+      <!-- Header con icono -->
+      <div class="modal-header">
+        <div class="icon-container" [ngClass]="getIconClass()">
+          <svg class="modal-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" [innerHTML]="getIconSvg()">
+          </svg>
+        </div>
+        <h3 id="modal-title" class="modal-title">
+          {{ config.title }}
+        </h3>
+      </div>
+
+      <!-- Body con mensaje -->
+      <div class="modal-body">
+        <p id="modal-description" class="modal-message">
+          {{ config.message }}
+        </p>
+      </div>
+
+      <!-- Footer con botones -->
+      <div class="modal-footer">
+        <button
+          *ngIf="config.showCancel"
+          type="button"
+          class="btn btn-cancel"
+          (click)="onCancel()"
+          [attr.aria-label]="config.cancelText">
+          {{ config.cancelText }}
+        </button>
+        
+        <button
+          type="button"
+          class="btn"
+          [ngClass]="getConfirmButtonClass()"
+          (click)="onConfirm()"
+          [attr.aria-label]="config.confirmText">
+          {{ config.confirmText }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

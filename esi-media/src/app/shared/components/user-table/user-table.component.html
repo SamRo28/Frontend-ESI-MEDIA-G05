@@ -1,0 +1,307 @@
+<!-- Tabla de usuarios exacta de admin-dashboard -->
+<div class="table-container">
+  <div class="overflow-x-auto">
+    <table class="min-w-full">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Foto</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Nombre</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Email</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Rol</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Estado</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-100">
+        <tr *ngFor="let usuario of users" class="hover:bg-gray-50">
+          <td class="px-4 py-3">
+            <div class="w-8 h-8 rounded overflow-hidden">
+              <img *ngIf="usuario.foto" [src]="getFotoUrl(usuario.foto)" [alt]="usuario.nombres" 
+                   class="w-full h-full object-cover">
+              <div *ngIf="!usuario.foto" 
+                   class="w-full h-full rounded bg-blue-600 text-white flex items-center justify-center font-medium text-sm">
+                {{ usuario.nombres?.charAt(0)?.toUpperCase() }}
+              </div>
+            </div>
+          </td>
+          <td class="px-4 py-3">
+            <div class="text-sm font-medium text-gray-900">{{ usuario.nombres }} {{ usuario.apellidos }}</div>
+          </td>
+          <td class="px-4 py-3">
+            <div class="text-sm text-gray-700">{{ usuario.email }}</div>
+          </td>
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded"
+              [ngClass]="{
+                'bg-amber-100 text-amber-700': usuario.rol === 'ADMINISTRADOR',
+                'bg-blue-100 text-blue-700': usuario.rol === 'GESTOR_CONTENIDOS',
+                'bg-gray-100 text-gray-700': usuario.rol === 'VISUALIZADOR'
+              }">
+              {{ getRoleDisplayName(usuario.rol) }}
+            </span>
+          </td>
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded"
+              [ngClass]="!usuario.estado ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'"
+              [title]="!usuario.estado ? 'Usuario bloqueado' : 'Usuario activo'">
+              <span class="w-1.5 h-1.5 rounded-full mr-1" [ngClass]="!usuario.estado ? 'bg-red-500' : 'bg-green-500'"></span>
+              {{ !usuario.estado ? 'Bloqueado' : 'Activo' }}
+            </span>
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex gap-1">
+              <button type="button" (click)="onUserViewProfile(usuario)" class="p-1 hover:bg-gray-100 rounded" title="Ver detalles">
+                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 616 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+              </button>
+              <button type="button" (click)="onUserEdit(usuario)" class="p-1 hover:bg-gray-100 rounded" title="Editar">
+                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+              </button>
+              <button type="button"
+                      (click)="onUserToggleStatus(usuario)"
+                      class="p-1 hover:bg-gray-100 rounded"
+                      [title]="!usuario.estado ? 'Desbloquear usuario' : 'Bloquear usuario'">
+                <!-- Bloqueado: candado CERRADO en rojo -->
+                <svg *ngIf="!usuario.estado"
+                     class="w-4 h-4 text-red-600"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                <!-- Desbloqueado: candado ABIERTO en verde -->
+                <svg *ngIf="usuario.estado"
+                     class="w-4 h-4 text-green-600"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
+                </svg>
+              </button>
+              <button *ngIf="usuario.rol !== 'VISUALIZADOR' && !isCurrentUser(usuario)" class="p-1 hover:bg-gray-100 rounded" title="Eliminar" (click)="onUserDelete(usuario)">
+                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+              </button>
+              <span *ngIf="usuario.rol !== 'VISUALIZADOR' && isCurrentUser(usuario)" class="p-1 text-gray-400 rounded" title="No puedes eliminarte a ti mismo">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636L5.636 18.364M5.636 5.636l12.728 12.728"></path>
+                </svg>
+              </span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Si no hay usuarios -->
+<div *ngIf="users.length === 0" class="text-center py-16 bg-white rounded-lg border border-gray-200">
+  <svg class="w-20 h-20 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+  </svg>
+  <h3 class="text-lg font-semibold text-gray-900 mb-2">No hay usuarios registrados</h3>
+  <p class="text-gray-500 mb-4">Comienza agregando el primer usuario al sistema</p>
+</div>
+
+<!-- Modal de Confirmación para Eliminar Usuario -->
+<div *ngIf="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm" (click)="closeDeleteModal()">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4" (click)="$event.stopPropagation()">
+    <div class="relative">
+      <!-- Botón cerrar absoluto en esquina superior derecha -->
+      <button 
+        (click)="closeDeleteModal()" 
+        class="absolute top-3 right-3 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 focus:outline-none"
+        aria-label="Cerrar">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+      
+      <!-- Header del Modal -->
+      <div class="bg-gradient-to-r from-red-600 to-red-800 text-white p-6 rounded-t-xl">
+        <h2 class="text-2xl font-bold">Eliminar Usuario</h2>
+        <p class="text-red-100 text-sm mt-1">Esta acción no se puede deshacer</p>
+      </div>
+
+      <!-- Contenido del Modal -->
+      <div class="p-6 space-y-4">
+        <div class="flex items-center justify-center">
+          <div class="bg-red-100 rounded-full p-4">
+            <svg class="w-16 h-16 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+        </div>
+
+        <div class="text-center">
+          <h3 class="text-lg font-bold text-gray-900 mb-2">¿Deseas eliminar el siguiente usuario?</h3>
+          <div *ngIf="usuarioAEliminar" class="bg-gray-50 p-4 rounded-lg mb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                <img *ngIf="usuarioAEliminar.foto" [src]="getFotoUrl(usuarioAEliminar.foto)" [alt]="usuarioAEliminar.nombres" class="w-full h-full object-cover">
+                <div *ngIf="!usuarioAEliminar.foto" class="w-full h-full bg-blue-600 text-white flex items-center justify-center font-bold">
+                  {{ usuarioAEliminar.nombres?.charAt(0)?.toUpperCase() }}
+                </div>
+              </div>
+              <div class="text-left">
+                <p class="font-bold text-gray-900">{{ usuarioAEliminar.nombres }} {{ usuarioAEliminar.apellidos }}</p>
+                <p class="text-sm text-gray-600">{{ usuarioAEliminar.email }}</p>
+                <span class="inline-flex items-center px-2 py-1 mt-1 text-xs font-medium rounded"
+                    [ngClass]="{
+                      'bg-amber-100 text-amber-700': usuarioAEliminar.rol === 'ADMINISTRADOR',
+                      'bg-blue-100 text-blue-700': usuarioAEliminar.rol === 'GESTOR_CONTENIDOS',
+                      'bg-gray-100 text-gray-700': usuarioAEliminar.rol === 'VISUALIZADOR'
+                    }">
+                    {{ getRoleDisplayName(usuarioAEliminar.rol) }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <p class="text-gray-500 mb-4">Esta acción eliminará permanentemente al usuario del sistema y todos sus datos asociados.</p>
+        </div>
+      </div>
+      
+      <!-- Footer del Modal -->
+      <div class="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end gap-3">
+        <button 
+          (click)="closeDeleteModal()"
+          [disabled]="isDeleting"
+          class="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+          Cancelar
+        </button>
+        <button 
+          (click)="deleteUser(); $event.preventDefault(); $event.stopPropagation();"
+          [disabled]="isDeleting"
+          class="px-5 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed transition-all flex items-center gap-2">
+          <!-- Icono de carga cuando está eliminando -->
+          <svg *ngIf="isDeleting" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <!-- Icono de papelera cuando no está eliminando -->
+          <svg *ngIf="!isDeleting" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+          {{ isDeleting ? 'Eliminando...' : 'Eliminar Usuario' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Confirmación para Bloquear/Desbloquear Usuario -->
+<div *ngIf="showBloqueoModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm" (click)="cerrarModalBloqueo()">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4" (click)="$event.stopPropagation()">
+    <div class="relative">
+      <!-- Botón cerrar absoluto en esquina superior derecha -->
+      <button 
+        (click)="cerrarModalBloqueo()" 
+        [disabled]="loadingBloqueo"
+        class="absolute top-3 right-3 p-1.5 text-white rounded-full hover:opacity-80 focus:outline-none disabled:opacity-50"
+        [ngClass]="accionBloqueo === 'bloquear' ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'"
+        aria-label="Cerrar">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+      
+      <!-- Header del Modal -->
+      <div class="text-white p-6 rounded-t-xl"
+        [ngClass]="accionBloqueo === 'bloquear' ? 'bg-gradient-to-r from-red-600 to-red-800' : 'bg-gradient-to-r from-green-600 to-green-800'">
+        <h2 class="text-2xl font-bold">{{ accionBloqueo === 'bloquear' ? 'Bloquear' : 'Desbloquear' }} Usuario</h2>
+        <p class="text-sm mt-1" [ngClass]="accionBloqueo === 'bloquear' ? 'text-red-100' : 'text-green-100'">
+          {{ accionBloqueo === 'bloquear' ? 'El usuario no podrá iniciar sesión' : 'El usuario podrá iniciar sesión nuevamente' }}
+        </p>
+      </div>
+
+      <!-- Contenido del Modal -->
+      <div class="p-6 space-y-4">
+        <div class="flex items-center justify-center">
+          <div class="rounded-full p-4"
+            [ngClass]="accionBloqueo === 'bloquear' ? 'bg-red-100' : 'bg-green-100'">
+            <svg class="w-16 h-16" 
+              [ngClass]="accionBloqueo === 'bloquear' ? 'text-red-600' : 'text-green-600'"
+              fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path *ngIf="accionBloqueo === 'bloquear'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+              <path *ngIf="accionBloqueo === 'desbloquear'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+        </div>
+
+        <div class="text-center">
+          <h3 class="text-lg font-bold text-gray-900 mb-2">
+            ¿Deseas {{ accionBloqueo }} el siguiente usuario?
+          </h3>
+          <div *ngIf="usuarioABloquear" class="bg-gray-50 p-4 rounded-lg mb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                <img *ngIf="usuarioABloquear.foto" [src]="getFotoUrl(usuarioABloquear.foto)" [alt]="usuarioABloquear.nombres" class="w-full h-full object-cover">
+                <div *ngIf="!usuarioABloquear.foto" class="w-full h-full bg-blue-600 text-white flex items-center justify-center font-bold">
+                  {{ usuarioABloquear.nombres?.charAt(0)?.toUpperCase() }}
+                </div>
+              </div>
+              <div class="text-left">
+                <p class="font-bold text-gray-900">{{ usuarioABloquear.nombres }} {{ usuarioABloquear.apellidos }}</p>
+                <p class="text-sm text-gray-600">{{ usuarioABloquear.email }}</p>
+                <span class="inline-flex items-center px-2 py-1 mt-1 text-xs font-medium rounded"
+                    [ngClass]="{
+                      'bg-amber-100 text-amber-700': usuarioABloquear.rol === 'ADMINISTRADOR',
+                      'bg-blue-100 text-blue-700': usuarioABloquear.rol === 'GESTOR_CONTENIDOS',
+                      'bg-gray-100 text-gray-700': usuarioABloquear.rol === 'VISUALIZADOR'
+                    }">
+                    {{ getRoleDisplayName(usuarioABloquear.rol) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mensaje de error -->
+          <div *ngIf="errorBloqueo" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            <p class="text-sm font-medium">{{ errorBloqueo }}</p>
+          </div>
+
+          <p class="text-gray-500 mb-4">
+            {{ accionBloqueo === 'bloquear' 
+              ? 'El usuario no podrá iniciar sesión hasta que sea desbloqueado por un administrador.' 
+              : 'El usuario podrá volver a iniciar sesión normalmente en la plataforma.' }}
+          </p>
+        </div>
+      </div>
+      
+      <!-- Footer del Modal -->
+      <div class="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end gap-3">
+        <button 
+          (click)="cerrarModalBloqueo()"
+          [disabled]="loadingBloqueo"
+          class="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+          Cancelar
+        </button>
+        <button 
+          (click)="confirmarBloqueo(); $event.preventDefault(); $event.stopPropagation();"
+          [disabled]="loadingBloqueo"
+          class="px-5 py-2.5 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+          [ngClass]="accionBloqueo === 'bloquear' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'">
+          <!-- Icono de carga cuando está procesando -->
+          <svg *ngIf="loadingBloqueo" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <!-- Icono de candado -->
+          <svg *ngIf="!loadingBloqueo" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path *ngIf="accionBloqueo === 'bloquear'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            <path *ngIf="accionBloqueo === 'desbloquear'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+              d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
+          </svg>
+          {{ loadingBloqueo ? 'Procesando...' : (accionBloqueo === 'bloquear' ? 'Bloquear Usuario' : 'Desbloquear Usuario') }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

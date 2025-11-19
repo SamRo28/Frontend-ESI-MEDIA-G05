@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
+import { Observable, tap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -8,7 +8,7 @@ import { environment } from '../../environments/environment';
 })
 export class UserService {
 
-    constructor(private client: HttpClient) {}
+  constructor(private client: HttpClient) {}
 
     /**
      * Login del usuario. El backend ahora devuelve el token en una cookie HttpOnly.
@@ -27,9 +27,9 @@ export class UserService {
         );
     }
 
-    send3AVerificationCode(email: string): Observable<any> {
-        return this.client.post<any>(`${environment.apiUrl}/users/login3Auth`, { email });
-    }
+  send3AVerificationCode(email: string): Observable<any> {
+    return this.client.post<any>(`${environment.apiUrl}/users/login3Auth`, { email });
+  }
 
     /**
      * Logout del usuario. El backend invalida la cookie automáticamente.
@@ -57,7 +57,7 @@ export class UserService {
         );
     }
 
-// Password Recovery 
+  // Password Recovery
   requestPasswordReset(email: string): Observable<any> {
     return this.client.post<any>(`${environment.apiUrl}/users/password-reset/request`, { email });
   }
@@ -71,4 +71,21 @@ export class UserService {
     return this.client.post<any>(`${environment.apiUrl}/users/password-reset/confirm`, { token, newPassword });
   }
 
+  /**
+   * Elimina la cuenta del usuario autenticado.
+   * Requiere que el token esté en sessionStorage.
+   */
+  deleteMyAccount(): Observable<any> {
+    const token = sessionStorage.getItem('token');
+    if (!token) {
+      return throwError(() => new Error('No hay token de sesión'));
+    }
+
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`
+    });
+
+    const url = `${environment.apiUrl}/api/perfil/me`;
+    return this.client.delete(url, { headers });
+  }
 }
