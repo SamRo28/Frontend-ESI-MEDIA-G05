@@ -148,7 +148,7 @@ export class ResetPasswordComponent implements OnInit {
     this.rules.hasNumber = /[0-9]/.test(pwd);
     this.rules.hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(pwd);
     this.rules.noPersonalData = this.noPersonalTerms(pwd);
-    this.rules.noControlChars = !(/[\u0000-\u001F\u007F-\u009F]/.test(pwd));
+    this.rules.noControlChars = !this.containsControlCharacters(pwd);
     this.rules.noEdgeSpaces = (pwd === pwd.trim());
     this.rules.match = pwd.length > 0 && pwd === confirm;
     this.allValid = this.rules.minLength && this.rules.hasUpper && this.rules.hasLower && this.rules.hasNumber && this.rules.hasSpecial && this.rules.noPersonalData && this.rules.noControlChars && this.rules.noEdgeSpaces && this.rules.match;
@@ -177,5 +177,15 @@ export class ResetPasswordComponent implements OnInit {
     // Filtrar tokens muy cortos
     tokens = tokens.filter(t => t && t.length >= 3);
     return !tokens.some(t => p.includes(t));
+  }
+
+  private containsControlCharacters(input: string): boolean {
+    for (const char of input) {
+      const code = char.charCodeAt(0);
+      if ((code >= 0 && code <= 31) || (code >= 127 && code <= 159)) {
+        return true;
+      }
+    }
+    return false;
   }
 }
