@@ -1,49 +1,32 @@
 import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpEvent } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
 import { inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../../environments/environment';
 
 /**
- * Interceptor funcional para agregar automáticamente el token de autorización
- * a todas las peticiones HTTP hacia los endpoints del gestor.
- * 
+ * Interceptor funcional para configurar las peticiones HTTP con withCredentials
+ * para permitir el envío automático de cookies HttpOnly (JWT) al backend.
+ * El navegador gestiona las cookies automáticamente.
  */
 export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: HttpHandlerFn): Observable<HttpEvent<any>> => {
   
   const platformId = inject(PLATFORM_ID);
 
-  // Si no estamos en el navegador (SSR), NO INTERCEPTAR - deja que la petición continúe sin token
-  // El componente se encargará de recargar cuando esté en el navegador
+  // Si no estamos en el navegador (SSR), NO INTERCEPTAR
   if (!isPlatformBrowser(platformId)) {
     return next(req);
   }
 
-  // Solo agregar el token a peticiones hacia nuestro backend que requieren auth
-  if (req.url.includes(`${environment.apiUrl}/gestor`) || req.url.includes(`${environment.apiUrl}/users/listar`) || req.url.includes(`${environment.apiUrl}/listas`) || req.url.includes(`${environment.apiUrl}/contenidos/buscar`) || req.url.includes(`${environment.apiUrl}/listas/usuario`) || req.url.includes(`${environment.apiUrl}/listas/gestor`) || req.url.includes(`${environment.apiUrl}/multimedia`) || req.url.includes(`${environment.apiUrl}/api/valoraciones`)) {
-
-
-    let token = '';
-
-    // Acceder a sessionStorage directamente (ya sabemos que estamos en el navegador)
-    try {
-      token = sessionStorage.getItem('token') || '';
-      if (!token) {
-        try {
-          token = localStorage.getItem('authToken') || localStorage.getItem('userToken') || localStorage.getItem('currentUserToken') || '';
-        } catch {}
-      }
-    } catch (error) {
-      console.error('Error accediendo a sessionStorage:', error);
-    }
-
-    if (token) {
-      const authReq = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
-      return next(authReq);
-    }
+  // Añadir withCredentials a todas las peticiones hacia nuestro backend
+  // Esto permite que el navegador envíe automáticamente las cookies HttpOnly
+  if (req.url.includes(environment.apiUrl)) {
+    const authReq = req.clone({ 
+      withCredentials: true 
+    });
+    return next(authReq);
   }
-  // Para otras peticiones o sin token, continuar sin modificar
+  
+  // Para otras peticiones externas, continuar sin modificar
   return next(req);
-
 }

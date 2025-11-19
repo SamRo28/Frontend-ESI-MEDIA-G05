@@ -24,12 +24,7 @@ export class PerfilVisualizadorComponent implements OnInit {
   // Datos
   userId: string | null = null;
   email: string = '';
-  private authToken: string | null = null;
-  private normalizeToken(t: string | null): string | null {
-    if (!t) return null;
-    const v = t.trim().replace(/^['\\"]/, '').replace(/['\\"]$/, '');
-    return v || null;
-  }
+  // Ya no necesitamos el authToken, las cookies lo gestionan automáticamente
   form = {
     nombre: '', apellidos: '', alias: '', fechaNacimiento: '', foto: '', vip: false,
     currentPassword: '', newPassword: '', repeatPassword: ''
@@ -84,22 +79,19 @@ export class PerfilVisualizadorComponent implements OnInit {
   ) { }
 
   private getAuthContext(): void {
-    // Prioriza localStorage(authToken + currentUser) y luego sessionStorage(token + user)
+    // Ya no necesitamos el token, solo información del usuario
     try {
-      const lsToken = localStorage.getItem('authToken');
       const lsUserRaw = localStorage.getItem('currentUser');
-      const ssToken = sessionStorage.getItem('token');
       const ssUserRaw = sessionStorage.getItem('user');
-      if (lsToken && lsUserRaw) {
+      
+      if (lsUserRaw) {
         const u = JSON.parse(lsUserRaw);
-        this.authToken = this.normalizeToken(lsToken);
         this.userId = u?.id || u?._id || null;
         this.email = u?.email || this.email;
         return;
       }
-      if (ssToken && ssUserRaw) {
+      if (ssUserRaw) {
         const u = JSON.parse(ssUserRaw);
-        this.authToken = this.normalizeToken(ssToken);
         this.userId = u?.id || u?._id || null;
         this.email = u?.email || this.email;
         return;
@@ -111,10 +103,9 @@ export class PerfilVisualizadorComponent implements OnInit {
         this.userId = u?.id || u?._id || null;
         this.email = u?.email || '';
       }
-      this.authToken = this.normalizeToken(sessionStorage.getItem('token') || localStorage.getItem('authToken'));
     } catch {
-      this.authToken = this.normalizeToken(sessionStorage.getItem('token') || localStorage.getItem('authToken'));
-    }
+      }
+    
   }
 
   ngOnInit(): void {
@@ -322,65 +313,58 @@ export class PerfilVisualizadorComponent implements OnInit {
   cancelConfirm(): void { this.showConfirm = false; }
 
   save(): void {
-  if (!this.userId || this.loading) return;
-  this.showConfirm = false;
-  this.loading = true;
-  this.errorMessage = '';
-  this.successMessage = '';
+    if (!this.userId || this.loading) return;
+    this.showConfirm = false;
+    this.loading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
 
-  // Construir el payload con los datos del formulario
-  const userData: any = {
-    nombre: this.form.nombre?.trim() || '',
-    apellidos: this.form.apellidos?.trim() || '',
-    alias: this.form.alias?.trim() || '',
-    fechanac: this.form.fechaNacimiento || null,
-    foto: this.form.foto || null,
-    vip: !!this.form.vip
-  };
+    // Construir el payload con los datos del formulario
+    const userData: any = {
+      nombre: this.form.nombre?.trim() || '',
+      apellidos: this.form.apellidos?.trim() || '',
+      alias: this.form.alias?.trim() || '',
+      fechanac: this.form.fechaNacimiento || null,
+      foto: this.form.foto || null,
+      vip: !!this.form.vip
+    };
 
-  // Realizar la llamada a la API
-  this.adminService.updateUser(this.userId!, userData, 'Visualizador').subscribe({
-    next: () => {
-      this.loading = false;
-      this.successMessage = 'Perfil actualizado correctamente.';
+    // Realizar la llamada a la API
+    this.adminService.updateUser(this.userId!, userData, 'Visualizador').subscribe({
+      next: () => {
+        this.loading = false;
+        this.successMessage = 'Perfil actualizado correctamente.';
 
-      this.captureOriginal();
-      this.cdr.detectChanges();
+        this.captureOriginal();
+        this.cdr.detectChanges();
 
-      // Limpiamos el mensaje de éxito después de un tiempo
-      setTimeout(() => { this.successMessage = ''; this.cdr.detectChanges(); }, 3000);
-    },
-    error: (err: any) => {
-      this.loading = false;
-      const backendMsg: string = (err?.error && (err.error.mensaje || err.error.message)) || err?.message || '';
+        // Limpiamos el mensaje de éxito después de un tiempo
+        setTimeout(() => { this.successMessage = ''; this.cdr.detectChanges(); }, 3000);
+      },
+      error: (err: any) => {
+        this.loading = false;
+        const backendMsg: string = (err?.error && (err.error.mensaje || err.error.message)) || err?.message || '';
 
-      // Mensajes de fallback por si el backend devuelve un error genérico
-      const fallbackProfileMsg = 'No se pudo actualizar el perfil. Inténtalo de nuevo más tarde.';
-      this.errorMessage =
-          backendMsg && backendMsg !== 'Error interno del servidor'
-            ? backendMsg
-            : fallbackProfileMsg;
-      this.cdr.detectChanges();
-    }
-  });
-}
+        // Mensajes de fallback por si el backend devuelve un error genérico
+        const fallbackProfileMsg = 'No se pudo actualizar el perfil. Inténtalo de nuevo más tarde.';
+        this.errorMessage =
+            backendMsg && backendMsg !== 'Error interno del servidor'
+              ? backendMsg
+              : fallbackProfileMsg;
+        this.cdr.detectChanges();
+      }
+    });
+  }
 
   // =================== SUSCRIPCION ===================
-  private getAuthHeaders(): HttpHeaders | null {
-    return (this.authToken && this.authToken.length > 0)
-      ? new HttpHeaders({ Authorization: `Bearer ${this.authToken}`, 'Content-Type': 'application/json' })
-      : null;
-  }
-  private getRawToken(): string | null { return this.authToken; }
-  private buildOptions(): { headers?: HttpHeaders; observe: 'body' } {
-    const headers = this.getAuthHeaders();
-    return headers ? { headers, observe: 'body' } : { observe: 'body' };
+  // Ya no necesitamos añadir headers manualmente, el interceptor gestiona withCredentials
+  private buildOptions(): { observe: 'body' } {
+    return { observe: 'body' };
   }
   loadSubscription(): void {
     if (!this.userId) return;
-    let url = `${environment.apiUrl}/users/${this.userId}/subscription`;
-    const tok = this.getRawToken();
-    if (tok) url += (url.includes('?') ? '&' : '?') + 'auth=' + encodeURIComponent(tok);
+    const url = `${environment.apiUrl}/users/${this.userId}/subscription`;
+    // Ya no necesitamos añadir el token manualmente, el interceptor gestiona withCredentials
     this.http.get<{ vip: boolean; fechaCambio?: string }>(url, this.buildOptions()).subscribe({
       next: (res) => {
         if (typeof res?.vip === 'boolean') this.form.vip = !!res.vip;
@@ -414,18 +398,15 @@ export class PerfilVisualizadorComponent implements OnInit {
     this.abrirCambioSuscripcion(targetVip);
   }
   confirmarCambioSuscripcion(): void {
-  console.debug('[Suscripcion] confirm: id=', this.userId, ' token=', (this.authToken || '').slice(-6));
+  console.debug('[Suscripcion] confirm: id=', this.userId);
   if (!this.userId || this.pendingVip === null || this.subLoading) return;
 
   this.subError = '';
   this.subSuccess = '';
   this.subLoading = true;
 
-  let url = `${environment.apiUrl}/users/${this.userId}/subscription`;
-  const tok = this.getRawToken();
-  if (tok) {
-    url += (url.includes('?') ? '&' : '?') + 'auth=' + encodeURIComponent(tok);
-  }
+  const url = `${environment.apiUrl}/users/${this.userId}/subscription`;
+  // Ya no necesitamos añadir el token manualmente, el interceptor gestiona withCredentials
 
   this.http.put<{ vip: boolean; fechaCambio?: string }>(url, { vip: this.pendingVip }, this.buildOptions()).pipe(
     timeout(10000),

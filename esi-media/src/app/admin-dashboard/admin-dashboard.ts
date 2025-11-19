@@ -804,7 +804,7 @@ export class AdminDashboardComponent implements OnInit {
     this.userService.logout().subscribe({
       next: () => {
         try {
-          sessionStorage.removeItem('token');
+          // Ya no necesitamos eliminar el token, el backend invalida la cookie
           sessionStorage.removeItem('user');
           sessionStorage.removeItem('currentUserClass');
           sessionStorage.removeItem('email');
@@ -1562,27 +1562,12 @@ export class AdminDashboardComponent implements OnInit {
   // ============================================
   // MÉTODO PARA VERIFICAR TOKEN DE AUTENTICACIÓN
   // ============================================
-  
   private checkAuthToken() {
+    // Ya no es necesario verificar el token manualmente.
+    // La autenticación se gestiona mediante cookies HttpOnly.
     if (isPlatformBrowser(this.platformId)) {
-      const token = sessionStorage.getItem('authToken') || 
-                    localStorage.getItem('authToken') || 
-                    sessionStorage.getItem('token');
-      
-      if (token) {
-        console.log('✅ Token de autorización encontrado:', token.substring(0, 20) + '...');
-      } else {
-        console.warn('⚠️ No se encontró token de autorización');
-        // Generar token de prueba temporal si es necesario
-        const testToken = 'test-token-' + Date.now();
-        sessionStorage.setItem('authToken', testToken);
-        console.log('🧪 Token de prueba generado:', testToken);
-      }
+      console.log('✅ Autenticación gestionada mediante cookies HttpOnly');
     }
-
-    // Ãšltimo recurso: primer administrador de la lista
-    const primerAdmin = this.usuarios.find(u => u.rol === 'Administrador');
-    return primerAdmin?.id || null;
   }
 
   confirmUserChanges() {

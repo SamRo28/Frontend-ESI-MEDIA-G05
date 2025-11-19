@@ -119,7 +119,7 @@ export class Fa2Qr implements OnInit {
             // Redirigir a la verificación 3FA
             this.router.navigate(['/3verification'], { state: { allowFa3Code: true } });
           } else {
-              sessionStorage.setItem('token', res);
+              // El token ya está en la cookie HttpOnly
               this.router.navigate(['/dashboard']);
           }
       }
