@@ -7,12 +7,13 @@ import { Subject, takeUntil, firstValueFrom } from 'rxjs';
 // Servicios refactorizados
 import { UserValidationService } from '../services/user-validation.service';
 import { ModalService, ModalConfig } from '../services/modal.service';
-import { AdminService, Usuario, PerfilDetalle, ContenidoResumen, ContenidoDetalle } from '../services/admin.service';
+import { AdminService, Usuario, ContenidoResumen, ContenidoDetalle } from '../services/admin.service';
 
 // Componentes refactorizados
 import { UserFormComponent, Usuario as UserFormUser } from '../shared/components/user-form/user-form.component';
 import { UserTableComponent } from '../shared/components/user-table/user-table.component';
 import { ConfirmationModalComponent } from '../shared/components/confirmation-modal/confirmation-modal.component';
+import { UserService } from '../services/userService';
 
 // Interface local para datos de usuario del formulario (usando alias)
 interface LocalUserForm {
@@ -154,6 +155,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   isCreatingUser = false;
   isUpdatingUser = false;
   loadingContenido = false;
+  userService!: UserService;
 
   constructor(
     private readonly adminService: AdminService,
@@ -458,29 +460,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     return updateData;
   }
 
-  // ==================== ACCIONES DE NAVEGACIÓN ====================
-
-  logout(): void {
-    this.modalService.openConfirmationModal({
-      title: 'Cerrar Sesión',
-      message: '¿Está seguro de que desea cerrar sesión?',
-      confirmText: 'Cerrar Sesión',
-      cancelText: 'Cancelar',
-      confirmClass: 'warning',
-      icon: 'warning'
-    }).then((confirmed) => {
-      if (confirmed) {
-        this.executeLogout();
-      }
-    });
-  }
-
-  private executeLogout(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      sessionStorage.clear();
-    }
-    this.router.navigate(['/login']);
-  }
+  
+  
 
   // ==================== GETTERS PARA ESTADÍSTICAS ====================
 
@@ -626,30 +607,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  // MÃ©todos para la eliminaciÃ³n de usuarios
-  openDeleteModal(usuario: Usuario) {
-    this.usuarioAEliminar = usuario;
-    this.showDeleteModal = true;
-  }
-
-  closeDeleteModal() {
-    this.showDeleteModal = false;
-    this.usuarioAEliminar = null;
-    this.isDeleting = false; // Asegurar que el flag de eliminaciÃ³n se resetea
-    
-    // Forzar la detecciÃ³n de cambios para asegurar que Angular actualiza la vista
-    this.cdr.detectChanges();
-    
-    // Doble comprobaciÃ³n para asegurar que el modal se cierra
-    setTimeout(() => {
-      if (this.showDeleteModal) {
-        console.log("Forzando cierre del modal");
-        this.showDeleteModal = false;
-        this.cdr.detectChanges();
-      }
-    }, 100);
-  }
-
+ 
 
   // Métodos de modales removidos - ahora manejados por user-table component
 
@@ -779,11 +737,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   // ============================================
   // MÉTODO PARA VERIFICAR TOKEN DE AUTENTICACIÓN
   // ============================================
-  private checkAuthToken() {
-    // Ya no es necesario verificar el token manualmente.
-    // La autenticación se gestiona mediante cookies HttpOnly.
-    if (isPlatformBrowser(this.platformId)) {
-      console.log('✅ Autenticación gestionada mediante cookies HttpOnly');
+
   onUserTableToggleStatus(user: any): void {
     // Convertir de mappedUser de vuelta a Usuario del AdminService
     const usuarioOriginal = this.usuarios.find(u => u.id === user.id);
@@ -791,6 +745,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       this.onToggleUserStatus(usuarioOriginal);
     }
   }
+  
 
   onUserTableViewProfile(user: any): void {
     // Convertir de mappedUser de vuelta a Usuario del AdminService
