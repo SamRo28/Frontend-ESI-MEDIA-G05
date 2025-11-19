@@ -1,20 +1,23 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
+import { AdminService } from '../../../services/admin.service';
 
 export interface Usuario {
   id?: number;
-  username: string;
+  username?: string;
   email: string;
   nombres: string;
   apellidos: string;
-  fechaNacimiento: string;
-  telefono: string;
-  genero: string;
+  fechaNacimiento?: string;
+  telefono?: string;
+  genero?: string;
   fechaCreacion?: string;
   ultimoAcceso?: string;
   estado: boolean;
   rol: 'ADMINISTRADOR' | 'VISUALIZADOR' | 'GESTOR_CONTENIDOS';
+  foto?: string;
 }
 
 export interface TableColumn {
@@ -37,25 +40,42 @@ export interface SortConfig {
   templateUrl: './user-table.component.html',
   styleUrls: ['./user-table.component.css']
 })
-export class UserTableComponent {
+export class UserTableComponent implements OnInit {
   @Input() users: Usuario[] = [];
   @Input() loading: boolean = false;
   @Input() searchTerm: string = '';
   @Input() showActions: boolean = true;
   @Input() selectable: boolean = false;
   @Input() pageSize: number = 10;
+  @Input() currentUserId: string | number | null = null;
   
   @Output() userSelect = new EventEmitter<Usuario>();
   @Output() userEdit = new EventEmitter<Usuario>();
   @Output() userDelete = new EventEmitter<Usuario>();
   @Output() userToggleStatus = new EventEmitter<Usuario>();
+  @Output() userViewProfile = new EventEmitter<Usuario>();
   @Output() searchTermChange = new EventEmitter<string>();
   @Output() sortChange = new EventEmitter<SortConfig>();
+  
+  // Nuevos eventos para notificar acciones completadas exitosamente
+  @Output() userDeletedSuccessfully = new EventEmitter<Usuario>();
+  @Output() userStatusToggledSuccessfully = new EventEmitter<Usuario>();
 
   // Estado interno del componente
   selectedUsers: Set<number> = new Set();
   currentPage: number = 1;
   sortConfig: SortConfig | null = null;
+
+  // Estados de modales de eliminación y bloqueo
+  showDeleteModal = false;
+  showBloqueoModal = false;
+  usuarioAEliminar: Usuario | null = null;
+  usuarioABloquear: Usuario | null = null;
+  isDeleting = false;
+  loadingBloqueo = false;
+  accionBloqueo: 'bloquear' | 'desbloquear' = 'bloquear';
+  confirmBloqueoStep = 1;
+  errorBloqueo: string | null = null;
 
   // Configuración de columnas
   columns: TableColumn[] = [
@@ -69,6 +89,8 @@ export class UserTableComponent {
     { key: 'ultimoAcceso', label: 'Último Acceso', type: 'date', sortable: true, width: '12%' }
   ];
 
+  constructor(private readonly adminService: AdminService) {}
+
   get filteredUsers(): Usuario[] {
     if (!this.searchTerm) {
       return this.users;
@@ -76,7 +98,7 @@ export class UserTableComponent {
     
     const search = this.searchTerm.toLowerCase();
     return this.users.filter(user => 
-      user.username.toLowerCase().includes(search) ||
+      user.username?.toLowerCase().includes(search) ||
       user.nombres.toLowerCase().includes(search) ||
       user.apellidos.toLowerCase().includes(search) ||
       user.email.toLowerCase().includes(search) ||
@@ -170,12 +192,10 @@ export class UserTableComponent {
     this.userEdit.emit(user);
   }
 
-  onUserDelete(user: Usuario): void {
-    this.userDelete.emit(user);
-  }
+  // Métodos originales removidos - ahora manejados con modales
 
-  onUserToggleStatus(user: Usuario): void {
-    this.userToggleStatus.emit(user);
+  onUserViewProfile(user: Usuario): void {
+    this.userViewProfile.emit(user);
   }
 
   toggleUserSelection(userId: number): void {
@@ -291,6 +311,138 @@ export class UserTableComponent {
       });
     } catch {
       return 'N/A';
+    }
+  }
+
+  getFotoUrl(foto: any): string {
+    if (!foto) return '';
+    if (typeof foto === 'string') {
+      // Si ya es una URL absoluta, usar tal cual
+      if (foto.startsWith('http://') || foto.startsWith('https://') || foto.startsWith('/')) {
+        return foto;
+      }
+    }
+    // Los archivos en public/ se sirven directamente desde la raíz
+    return `/${foto}`;
+  }
+
+  getRoleDisplayName(rol: string): string {
+    switch (rol) {
+      case 'ADMINISTRADOR':
+        return 'Administrador';
+      case 'GESTOR_CONTENIDOS':
+        return 'Gestor';
+      case 'VISUALIZADOR':
+        return 'Visualizador';
+      default:
+        return rol || 'Visualizador';
+    }
+  }
+
+  isCurrentUser(usuario: Usuario): boolean {
+    if (!this.currentUserId || !usuario.id) {
+      return false;
+    }
+    // Comparar tanto como string como number para asegurar compatibilidad
+    return String(this.currentUserId) === String(usuario.id);
+  }
+
+  private getCurrentUserId(): string | null {
+    try {
+      // Intentar obtener el usuario actual del localStorage o sessionStorage
+      const userStr = localStorage.getItem('currentUserClass') || 
+                     localStorage.getItem('currentUser') || 
+                     sessionStorage.getItem('user') || 
+                     sessionStorage.getItem('currentUser');
+      
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        return user.id?.toString() || null;
+      }
+    } catch (error) {
+      console.error('Error getting current user ID:', error);
+    }
+    return null;
+  }
+
+  ngOnInit(): void {
+    // Si no se ha proporcionado currentUserId, intentar obtenerlo del storage
+    if (!this.currentUserId) {
+      this.currentUserId = this.getCurrentUserId();
+    }
+  }
+
+  // ==================== MÉTODOS DE MODAL DE ELIMINACIÓN ====================
+  onUserDelete(user: Usuario): void {
+    this.usuarioAEliminar = user;
+    this.showDeleteModal = true;
+  }
+
+  closeDeleteModal(): void {
+    this.showDeleteModal = false;
+    this.usuarioAEliminar = null;
+  }
+
+  async deleteUser(): Promise<void> {
+    if (this.usuarioAEliminar) {
+      this.isDeleting = true;
+      try {
+        if (this.usuarioAEliminar.id) {
+          await firstValueFrom(this.adminService.deleteUser(this.usuarioAEliminar.id.toString()));
+          const deletedUser = this.usuarioAEliminar;
+          this.userDelete.emit(deletedUser);
+          // Emitir evento de éxito para refrescar la lista
+          this.userDeletedSuccessfully.emit(deletedUser);
+          this.closeDeleteModal();
+        }
+      } catch (error) {
+        console.error('Error deleting user:', error);
+      } finally {
+        this.isDeleting = false;
+      }
+    }
+  }
+
+  // ==================== MÉTODOS DE MODAL DE BLOQUEO ====================
+  onUserToggleStatus(user: Usuario): void {
+    this.usuarioABloquear = user;
+    this.accionBloqueo = user.estado ? 'bloquear' : 'desbloquear';
+    this.showBloqueoModal = true;
+    this.confirmBloqueoStep = 1;
+    this.errorBloqueo = null;
+  }
+
+  cerrarModalBloqueo(): void {
+    this.showBloqueoModal = false;
+    this.usuarioABloquear = null;
+    this.loadingBloqueo = false;
+    this.confirmBloqueoStep = 1;
+    this.errorBloqueo = null;
+  }
+
+  async confirmarBloqueo(): Promise<void> {
+    if (this.usuarioABloquear) {
+      this.loadingBloqueo = true;
+      try {
+        const adminId = this.getCurrentUserId();
+        if (adminId && this.usuarioABloquear.id) {
+          if (this.accionBloqueo === 'bloquear') {
+            await firstValueFrom(this.adminService.bloquearUsuario(this.usuarioABloquear.id.toString(), adminId));
+          } else {
+            await firstValueFrom(this.adminService.desbloquearUsuario(this.usuarioABloquear.id.toString(), adminId));
+          }
+          const toggledUser = this.usuarioABloquear;
+          this.userToggleStatus.emit(toggledUser);
+          // Emitir evento de éxito para refrescar la lista
+          this.userStatusToggledSuccessfully.emit(toggledUser);
+          this.cerrarModalBloqueo();
+        }
+      } catch (error) {
+        console.error('Error toggling user status:', error);
+        this.errorBloqueo = 'Error al cambiar el estado del usuario';
+      } finally {
+        this.loadingBloqueo = false;
+      }
     }
   }
 }
