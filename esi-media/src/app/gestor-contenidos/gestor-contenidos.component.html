@@ -7,6 +7,15 @@
         Consulta y edita todos los contenidos multimedia de la plataforma.
       </p>
     </div>
+    <!-- Panel de filtrado reutilizado para gestores (componente compartido) -->
+    <div class="filter-wrapper">
+      <!-- Forzar 'all' para permitir elegir Vídeo / Audio / Especial en el gestor -->
+      <app-content-filter
+        [contentType]="'all'"
+        (filtersApplied)="onFiltersApplied($event)"
+        (filtersChanged)="onFiltersChanged($event)">
+      </app-content-filter>
+    </div>
     <a routerLink="/gestor-dashboard" class="btn-volver-dashboard">
       Volver al panel de gestor
     </a>
@@ -28,7 +37,13 @@
       <span>Cargando contenidos...</span>
     </div>
 
-    <div *ngIf="!loading" class="contenidos-grid">
+    <!-- Overlay temporal mientras se aplican filtros para evitar mostrar la lista completa brevemente -->
+    <div *ngIf="applyingFilters" class="applying-filters-row">
+      <span class="loading-dot"></span>
+      <span>Aplicando filtros...</span>
+    </div>
+
+    <div *ngIf="!loading && !applyingFilters" class="contenidos-grid">
       <div *ngFor="let c of contenidos" class="contenido-card">
         <div class="contenido-header">
           <div class="contenido-icon" [class.video]="c.tipo === 'VIDEO'" [class.audio]="c.tipo === 'AUDIO'">
