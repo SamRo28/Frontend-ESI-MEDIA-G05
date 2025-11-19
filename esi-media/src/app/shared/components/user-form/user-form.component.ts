@@ -105,7 +105,7 @@ export class UserFormComponent implements OnInit, OnChanges {
     hasNumber: false,
     hasSpecialChar: false,
     passwordsMatch: false,
-    notContainsUsername: false
+    notContainsPersonalData: false
   };
 
   // Estados de visibilidad
@@ -249,9 +249,11 @@ export class UserFormComponent implements OnInit, OnChanges {
     }
 
     const passwordValidation = this.userValidationService.validatePassword(
-      this.user.password || '', 
-      this.user.confirmPassword || '', 
-      this.user.username
+      this.user.password || '',
+      this.user.confirmPassword || '',
+      this.user.username,
+      this.user.nombres,
+      this.user.apellidos
     );
     
     let isValid = true;
@@ -287,56 +289,6 @@ export class UserFormComponent implements OnInit, OnChanges {
     });
 
     return isValid;
-  }
-
-  private validateUsername(): boolean {
-    const username = this.user.username?.trim() ?? '';
-    if (!username) {
-      this.formErrors['username'] = 'El nombre de usuario es requerido';
-      return false;
-    }
-    if (username.length < 3) {
-      this.formErrors['username'] = 'El nombre de usuario debe tener al menos 3 caracteres';
-      return false;
-    }
-    return true;
-  }
-
-  private validateEmail(): boolean {
-    if (!this.userValidationService.validateEmail(this.user.email)) {
-      this.formErrors['email'] = 'Formato de email inválido';
-      return false;
-    }
-    return true;
-  }
-
-  private validatePasswords(): boolean {
-    if (!this.showPassword) {
-      return true;
-    }
-    const passwordValidation = this.userValidationService.validatePassword(
-      this.user.password || '',
-      this.user.confirmPassword || '',
-      this.user.username
-    );
-    let isValid = true;
-    if (!this.userValidationService.isPasswordValid(passwordValidation)) {
-      this.formErrors['password'] = 'La contraseña no cumple con los requisitos de seguridad';
-      isValid = false;
-    }
-    if (!passwordValidation.passwordsMatch) {
-      this.formErrors['confirmPassword'] = 'Las contraseñas no coinciden';
-      isValid = false;
-    }
-    return isValid;
-  }
-
-  private validateRequiredField(field: string, message: string, value: string | null | undefined): boolean {
-    if (!value || value.trim().length === 0) {
-      this.formErrors[field] = message;
-      return false;
-    }
-    return true;
   }
 
   onSubmit(): void {
@@ -639,52 +591,6 @@ export class UserFormComponent implements OnInit, OnChanges {
     return isValid;
   }
 
-  private validateEmailField(): boolean {
-    return this.validateNewUserField('email', this.newUser.email, true, () =>
-      this.isValidEmail(this.newUser.email));
-  }
-
-  private validateRoleSpecificFields(): boolean {
-    switch (this.newUser.rol) {
-      case 'Administrador':
-        return this.validateNewUserField('departamento', this.newUser.departamento);
-      case 'Gestor':
-        return this.validateNewUserField('alias', this.newUser.alias)
-          && this.validateNewUserField('especialidad', this.newUser.especialidad, false)
-          && this.validateNewUserField('tipoContenido', this.newUser.tipoContenido, false)
-          && this.validateNewUserField('foto', this.newUser.foto, false);
-      default:
-        return true;
-    }
-  }
-
-  private validatePasswordFields(): boolean {
-    if (!this.showPassword) {
-      return true;
-    }
-
-    let isValid = true;
-    isValid = this.validateNewUserField('contrasenia', this.newUser.contrasenia) && isValid;
-    isValid = this.validateNewUserField('repetirContrasenia', this.newUser.repetirContrasenia) && isValid;
-    if (this.newUser.contrasenia !== this.newUser.repetirContrasenia) {
-      this.fieldsWithError.push('repetirContrasenia');
-      isValid = false;
-    }
-    return isValid;
-  }
-
-  private validateNewUserField(field: string, value: any, trim: boolean = true, extraCheck?: () => boolean): boolean {
-    if (value == null || (trim && typeof value === 'string' && value.trim().length === 0)) {
-      this.fieldsWithError.push(field);
-      return false;
-    }
-    if (extraCheck && !extraCheck()) {
-      this.fieldsWithError.push(field);
-      return false;
-    }
-    return true;
-  }
-
   private isValidEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
@@ -711,21 +617,27 @@ export class UserFormComponent implements OnInit, OnChanges {
 
   // Métodos adicionales para compatibilidad con template del admin-dashboard
   onRoleChange(role: string): void {
+    // Actualizar el rol en newUser
     this.newUser.rol = role;
+    
+    // Limpiar campos específicos del rol anterior
     this.resetRoleSpecificFields();
-    this.user.rol = this.mapRoleToInternal(role);
+    
+    // También actualizar el modelo del usuario
+    if (role === 'Administrador') {
+      this.user.rol = 'ADMINISTRADOR';
+    } else if (role === 'Gestor') {
+      this.user.rol = 'GESTOR_CONTENIDOS';
+    } else if (role === 'Visualizador') {
+      this.user.rol = 'VISUALIZADOR';
+    }
+    
+    // Limpiar errores de campos
     this.fieldsWithError = [];
+    
+    // Emitir cambio y forzar detección
     this.onInputChange();
     this.cdr.detectChanges();
-  }
-
-  private mapRoleToInternal(role: string): 'ADMINISTRADOR' | 'GESTOR_CONTENIDOS' | 'VISUALIZADOR' {
-    const roleMap: Record<string, 'ADMINISTRADOR' | 'GESTOR_CONTENIDOS' | 'VISUALIZADOR'> = {
-      Administrador: 'ADMINISTRADOR',
-      Gestor: 'GESTOR_CONTENIDOS',
-      Visualizador: 'VISUALIZADOR'
-    };
-    return roleMap[role] || 'VISUALIZADOR';
   }
 
   private resetRoleSpecificFields(): void {
@@ -775,7 +687,11 @@ export class UserFormComponent implements OnInit, OnChanges {
       hasNumber: /\d/.test(password),
       hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
       passwordsMatch: password === repeatPassword && password.length > 0,
-      notContainsUsername: username.length === 0 || !password.toLowerCase().includes(username.toLowerCase())
+      notContainsPersonalData: ((): boolean => {
+        const lower = password.toLowerCase();
+        const parts = [username, this.user.nombres, this.user.apellidos].filter(p => !!p).map(p => p!.toLowerCase()).filter(p => p.length > 2);
+        return parts.length === 0 || !parts.some(part => lower.includes(part));
+      })()
     };
   }
 
