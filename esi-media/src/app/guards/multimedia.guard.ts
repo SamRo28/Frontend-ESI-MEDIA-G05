@@ -12,26 +12,32 @@ export class MultimediaGuard implements CanActivate {
 
   canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean | UrlTree {
     // Evitar errores en SSR
-    const hasWindow = globalThis.window !== undefined;
-    const hasSessionStorage = hasWindow && typeof sessionStorage !== 'undefined';
-
-    let token = hasSessionStorage ? (sessionStorage.getItem('token') || '') : '';
-    // Fallbacks por si el token se guardó en localStorage con otra clave
-    if (!token && hasWindow) {
-      try {
-        token = localStorage.getItem('authToken') || localStorage.getItem('userToken') || localStorage.getItem('currentUserToken') || '';
-      } catch {}
-    }
+    const hasSessionStorage = globalThis.window !== undefined && typeof sessionStorage !== 'undefined';
 
     // Log de depuración eliminado para reducir ruido
     // Verificar si hay información de usuario en sessionStorage
     const hasUser = hasSessionStorage && sessionStorage.getItem('user');
 
-    if (hasUser) {
-      return true;
+    if (!hasUser) {
+      // Redirigir a login y preservar returnUrl para volver tras autenticación
+      return this.router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
     }
-    
-    // Redirigir a login y preservar returnUrl para volver tras autenticación
-    return this.router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
+
+    // Si la ruta especifica un tipo de usuario esperado, comprobarlo
+    const expectedTipo = (route && route.data && (route.data as any).tipoUsuario) ? String((route.data as any).tipoUsuario) : null;
+    if (expectedTipo) {
+      try {
+        const stored = hasSessionStorage ? (sessionStorage.getItem('currentUserClass') || '') : '';
+        if (stored && stored === expectedTipo) {
+          return true;
+        }
+        // Si no coincide el tipo de usuario, denegar acceso y redirigir a home
+        return this.router.parseUrl('/login');
+      } catch (e) {
+        return this.router.parseUrl('/login');
+      }
+    }
+
+    return true;
   }
 }
