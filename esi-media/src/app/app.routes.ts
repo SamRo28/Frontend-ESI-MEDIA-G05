@@ -74,13 +74,13 @@ export const routes: Routes = [
     path: 'audio/subir',
     component: AudioUploadComponent,
     canActivate: [MultimediaGuard],
-    data: { tipoUsuario: 'Gestor' }
+    data: { tipoUsuario: 'GestordeContenido' }
   },
   {
     path: 'video/subir',
     component: VideoUploadComponent,
     canActivate: [MultimediaGuard],
-    data: { tipoUsuario: 'Gestor' }
+    data: { tipoUsuario: 'GestordeContenido' }
   },
   { 
     path: 'forgot-password', 
@@ -122,13 +122,13 @@ export const routes: Routes = [
     path: 'gestor-dashboard',
     component: GestorDashboardComponent,
     canActivate: [MultimediaGuard],
-    data: { tipoUsuario: 'Gestor' }
+    data: { tipoUsuario: 'GestordeContenido' }
   },
   {
     path: 'gestor-dashboard/contenidos',
     component: GestorContenidosComponent,
     canActivate: [MultimediaGuard],
-    data: { tipoUsuario: 'Gestor' }
+    data: { tipoUsuario: 'GestordeContenido' }
   },
   {
     // Ruta legacy eliminada: la vista principal vive en /dashboard.
@@ -171,18 +171,18 @@ export const routes: Routes = [
     path: 'gestor-dashboard/gestion-listas',
     component: GestionListasComponent,
     canActivate: [MultimediaGuard],
-    data: { tipoUsuario: 'Gestor' }
+    data: { tipoUsuario: 'GestordeContenido' }
   },
   {
     path: 'gestor-dashboard/gestion-listas/crear',
     component: CrearListaComponent,
     canActivate: [MultimediaGuard],
-    data: { tipoUsuario: 'Gestor' }
+    data: { tipoUsuario: 'GestordeContenido' }
   },
   {
     path: 'gestor-dashboard/gestion-listas/:id',
     component: ListaDetailComponent,
     canActivate: [MultimediaGuard],
-    data: { tipoUsuario: 'Gestor' }
+    data: { tipoUsuario: 'GestordeContenido' }
   }
 ];
