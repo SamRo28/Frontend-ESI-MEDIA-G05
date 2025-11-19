@@ -978,6 +978,34 @@ body.no-scroll {
   border-radius: 16px;
   margin-top: 20px;
 }
+.favorites-section {
+  padding: 18px;
+  background: rgba(14, 165, 233, 0.2);
+  border-radius: 16px;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  margin-top: 20px;
+}
+.favorites-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.favorites-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+}
+.favorites-loading {
+  color: #93c5fd;
+  font-size: 14px;
+}
+.favorites-empty {
+  margin-top: 16px;
+  color: #fcd34d;
+  font-weight: 600;
+}
 
 /* Animaciones para toast */
 @keyframes slideIn {

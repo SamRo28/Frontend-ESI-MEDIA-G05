@@ -10,10 +10,26 @@
       </div>
 
       <nav class="nav-menu">
-        <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" class="nav-link">Inicio</a>
-        <a routerLink="/dashboard/videos" routerLinkActive="active" class="nav-link">Videos</a>
-        <a routerLink="/dashboard/audios" routerLinkActive="active" class="nav-link">Audios</a>
-        <a routerLink="/dashboard/listas-publicas" routerLinkActive="active" class="nav-link">Listas Públicas</a>
+        <a routerLink="/dashboard" class="nav-link" 
+           [class.active]="activeSection === 'inicio'" 
+           (click)="handleNavSelect('inicio')">Inicio</a>
+        <a routerLink="/dashboard/videos" class="nav-link" 
+           [class.active]="activeSection === 'videos'" 
+           (click)="handleNavSelect('videos')">Videos</a>
+        <a routerLink="/dashboard/audios" class="nav-link" 
+           [class.active]="activeSection === 'audios'" 
+           (click)="handleNavSelect('audios')">Audios</a>
+        <a routerLink="/dashboard/listas-publicas" class="nav-link" 
+           [class.active]="activeSection === 'listas'" 
+           (click)="handleNavSelect('listas')">Listas Públicas</a>
+        <button
+          type="button"
+          class="nav-link nav-button"
+          [class.active]="activeSection === 'favoritos'"
+          (click)="toggleFavoritosView()" 
+          [attr.aria-pressed]="mostrarFavoritos">
+          Mis favoritos
+        </button>
       </nav>
 
       <div class="user-section">
@@ -67,21 +83,36 @@
         </div>
       </div>
       
-      <!-- Lista de listas públicas -->
-      <div *ngIf="mostrarListasPublicas" class="listas-publicas-section">
-        <app-gestion-listas [modo]="'visualizador'" [forceReload]="forceReloadListasPublicas"></app-gestion-listas>
-      </div>
-      
-      <!-- Lista multimedia (cuando no se muestran listas públicas) -->
-      <div *ngIf="!mostrarListasPublicas">
+      <div *ngIf="mostrarFavoritos" class="favorites-section">
+        <div class="favorites-header">
+          <h3 class="favorites-title">Mis favoritos</h3>
+          <span *ngIf="favoritosLoading" class="favorites-loading">Cargando favoritos...</span>
+        </div>
         <app-multimedia-list 
           [showHeader]="false" 
           [showTitle]="false" 
           [tipoForzado]="filtroTipo"
           [tagFilters]="currentTagFilters"
-          [filtersObject]="currentFiltersObject">
+          [filtersObject]="{ specialMode: 'favorites', specialPayload: { contents: favoritos } }">
         </app-multimedia-list>
+        <p *ngIf="!favoritosLoading && favoritos.length === 0" class="favorites-empty">
+          Aún no has añadido ningún favorito. Marca contenido para tenerlo siempre a mano.
+        </p>
       </div>
+      <ng-container *ngIf="!mostrarFavoritos">
+        <div *ngIf="mostrarListasPublicas" class="listas-publicas-section">
+          <app-gestion-listas [modo]="'visualizador'" [forceReload]="forceReloadListasPublicas"></app-gestion-listas>
+        </div>
+        <div *ngIf="!mostrarListasPublicas">
+          <app-multimedia-list 
+            [showHeader]="false" 
+            [showTitle]="false" 
+            [tipoForzado]="filtroTipo"
+            [tagFilters]="currentTagFilters"
+            [filtersObject]="currentFiltersObject">
+          </app-multimedia-list>
+        </div>
+      </ng-container>
     <!-- Panel lateral de listas privadas -->
     <aside class="listas-privadas-panel" *ngIf="mostrarListasPrivadas">
       <div class="panel-header">
