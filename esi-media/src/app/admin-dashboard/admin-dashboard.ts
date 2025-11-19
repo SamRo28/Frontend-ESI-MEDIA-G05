@@ -282,7 +282,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   onEditUser(user: Usuario): void {
     this.editingUser = this.mapToFormData(user);
+    this.userFormData = this.mapToFormData(user);
     this.showUserForm = true;
+    
+    // Forzar detección de cambios para mostrar el modal inmediatamente
+    this.cdr.detectChanges();
   }
 
   onDeleteUser(user: Usuario): void {
@@ -371,7 +375,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   // ==================== GESTIÓN DE CONTENIDOS ====================
 
-  private async loadContenidos(): Promise<void> {
+  async loadContenidos(): Promise<void> {
     const adminId = this.obtenerAdminId();
     if (!adminId) {
       console.warn('No se pudo obtener el ID del administrador');
@@ -379,7 +383,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
 
     try {
-      this.loading = true;
+      this.loadingContenido = true;
+      this.errorContenido = null;
       const contenidosRaw = await firstValueFrom(this.adminService.getContenidos(adminId)) || [];
       
       // Eliminar duplicados basándose en el ID del contenido
@@ -391,10 +396,13 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       });
       
       this.contenidos = Array.from(contenidosUnicos.values());
+      // Actualizar también los contenidos filtrados
+      this.contenidosFiltrados = [...this.contenidos];
     } catch (error) {
       console.error('Error loading content:', error);
+      this.errorContenido = 'Error al cargar los contenidos. Por favor, inténtalo de nuevo.';
     } finally {
-      this.loading = false;
+      this.loadingContenido = false;
     }
   }
 
@@ -562,6 +570,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       this.successMessage = null;
       this.errorMessage = null;
       // isSuccess eliminado - manejado por user-form component
+      
+      // Forzar detección de cambios al abrir formulario
+      this.cdr.detectChanges();
     }
   }
 
@@ -665,25 +676,52 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   // ========= MÉTODOS PARA COMPONENTES REFACTORIZADOS =========
 
   async onUserTableEdit(user: any): Promise<void> {
+    // Prevenir múltiples clics mientras se está cargando
+    if (this.loading || this.isUpdatingUser) {
+      return;
+    }
+
     // Convertir de mappedUser de vuelta a Usuario del AdminService para mapear correctamente
     const usuarioOriginal = this.usuarios.find(u => u.id === user.id);
     if (usuarioOriginal && usuarioOriginal.id) {
+      
+      // PASO 1: Abrir el modal inmediatamente con datos básicos
+      this.editingUser = this.mapToFormData(usuarioOriginal);
+      this.userFormData = this.mapToFormData(usuarioOriginal);
+      this.userProfileData = null; // Resetear datos del perfil
+      this.showUserForm = true;
+      
+      console.log('📂 Modal abierto inmediatamente para usuario:', usuarioOriginal.id);
+      
+      // Forzar detección de cambios para mostrar el modal YA
+      this.cdr.detectChanges();
+      
+      // PASO 2: Cargar datos completos en segundo plano
       try {
-        // Cargar el perfil completo del usuario
+        this.loading = true; // Indicar que se están cargando datos adicionales
+        
         const adminId = this.obtenerAdminId();
+        console.log('🔍 Cargando datos completos para usuario ID:', usuarioOriginal.id);
+        
         const perfilCompleto = await firstValueFrom(this.adminService.obtenerPerfil(usuarioOriginal.id, adminId || ''));
         
-        // Mapear el perfil completo al formato del formulario
+        console.log('✅ Datos completos cargados:', perfilCompleto);
+        
+        // Actualizar con datos completos
         this.editingUser = this.mapProfileToFormData(perfilCompleto);
         this.userFormData = this.mapProfileToFormData(perfilCompleto);
-        this.userProfileData = perfilCompleto; // Guardar datos completos para el componente
-        this.showUserForm = true;
+        this.userProfileData = perfilCompleto; // Guardar datos completos
+        
+        // Forzar detección de cambios con datos actualizados
+        this.cdr.detectChanges();
+        
       } catch (error) {
-        console.error('Error loading user profile:', error);
-        // Fallback al mapeo básico si falla la carga del perfil
-        this.editingUser = this.mapToFormData(usuarioOriginal);
-        this.userFormData = this.mapToFormData(usuarioOriginal);
-        this.showUserForm = true;
+        console.error('⚠️ Error loading user profile, manteniendo datos básicos:', error);
+        // No hacer nada, mantener el modal con los datos básicos
+        
+      } finally {
+        this.loading = false; // Finalizar estado de carga
+        this.cdr.detectChanges();
       }
     }
   }
@@ -804,7 +842,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   // Mapper mejorado
   private mapToFormData(usuario: Usuario): UserFormUser {
     return {
-      id: usuario.id ? parseInt(usuario.id.toString()) : undefined,
+      id: usuario.id ? (typeof usuario.id === 'string' ? parseInt(usuario.id) || undefined : usuario.id) : undefined,
       username: usuario.apodo || '',
       email: usuario.email || '',
       nombres: usuario.nombre || '',
@@ -858,8 +896,25 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
   // Mapear perfil completo del AdminService al formato del UserFormComponent
   private mapProfileToFormData(perfil: any): UserFormUser {
+    // Preservar el ID como string si es un MongoDB ObjectId
+    let idValue: number | undefined = undefined;
+    
+    if (perfil.id) {
+      // Si el ID es una string larga (MongoDB ObjectId), NO intentar convertir a número
+      const idStr = perfil.id.toString();
+      if (idStr.length > 10) {
+        // Es un MongoDB ObjectId, mantener como string en el form pero convertir para compatibilidad
+        console.log('🆔 ID MongoDB detectado:', idStr);
+        // Para compatibilidad con UserFormUser, usar un hash del ID o simplemente 1
+        idValue = 1; // Placeholder, el ID real se mantendrá en otro lugar
+      } else {
+        // Es un ID numérico normal
+        idValue = parseInt(idStr) || undefined;
+      }
+    }
+
     const baseData = {
-      id: perfil.id ? parseInt(perfil.id.toString()) : undefined,
+      id: idValue,
       username: perfil.apodo || perfil.alias || '',
       email: perfil.email || '',
       nombres: perfil.nombre || '',
