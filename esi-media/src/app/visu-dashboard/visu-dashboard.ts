@@ -1,5 +1,5 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, inject, PLATFORM_ID } from '@angular/core';
-import { Router, NavigationEnd, RouterLink, RouterLinkActive, RouterModule, ActivatedRoute } from '@angular/router';
+import { Router, NavigationEnd, RouterLink, RouterModule, ActivatedRoute } from '@angular/router';
 import { MultimediaService, ContenidoResumenDTO } from '../services/multimedia.service';
 import { UserService } from '../services/userService';
 import { FavoritesService } from '../services/favorites.service';
@@ -8,7 +8,6 @@ import { MultimediaListComponent } from '../multimedia-list/multimedia-list';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ListasPrivadas } from '../listas-privadas/listas-privadas';
 import { CrearListaComponent } from '../crear-lista/crear-lista';
-import { PerfilVisualizadorComponent } from '../perfil-visualizador/perfil-visualizador';
 import { ContentFilterComponent } from '../shared/content-filter/content-filter.component';
 import { finalize } from 'rxjs/operators';
 
@@ -22,7 +21,7 @@ interface Star {
   selector: 'app-visu-dashboard',
   standalone: true,
 
-  imports: [CommonModule, RouterLink, RouterLinkActive, RouterModule, ListasPrivadas, CrearListaComponent, GestionListasComponent, MultimediaListComponent, ContentFilterComponent, PerfilVisualizadorComponent],
+  imports: [CommonModule, RouterLink, RouterModule, ListasPrivadas, CrearListaComponent, GestionListasComponent, MultimediaListComponent, ContentFilterComponent],
 
   templateUrl: './visu-dashboard.html',
   styleUrl: './visu-dashboard.css'

@@ -101,7 +101,8 @@ export const routes: Routes = [
   {
     path: 'dashboard/listas/:id',
     component: ListaDetailComponent,
-    canActivate: [MultimediaGuard]
+    canActivate: [MultimediaGuard],
+    data: { prerender: false }
   },
   {
     path: 'perfil',
@@ -141,13 +142,14 @@ export const routes: Routes = [
   {
     path: 'dashboard/:id',
     component: MultimediaDetailComponent,
-    canActivate: [MultimediaGuard]
+    canActivate: [MultimediaGuard],
+    data: { prerender: false }
   },
   // Redirecciones legacy desde /multimedia* a /dashboard*
   { path: 'multimedia', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'multimedia/videos', redirectTo: 'dashboard/videos', pathMatch: 'full' },
   { path: 'multimedia/audios', redirectTo: 'dashboard/audios', pathMatch: 'full' },
-  { path: 'multimedia/:id', redirectTo: 'dashboard/:id', pathMatch: 'full' },
+  { path: 'multimedia/:id', redirectTo: 'dashboard/:id', pathMatch: 'full', data: { prerender: false } },
   {
 
     path: 'gestor-dashboard/gestion-listas',
@@ -162,6 +164,7 @@ export const routes: Routes = [
   {
     path: 'gestor-dashboard/gestion-listas/:id',
     component: ListaDetailComponent,
-    canActivate: [MultimediaGuard]
+    canActivate: [MultimediaGuard],
+    data: { prerender: false }
   }
 ];
