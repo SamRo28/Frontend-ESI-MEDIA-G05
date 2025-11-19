@@ -9,6 +9,8 @@ import { ListaService, ListasResponse } from '../services/lista.service';
 import { environment } from '../../environments/environment.production';
 import { ValoracionService } from '../services/valoracion.service';
 import { ValoracionComponent } from '../shared/valoracion/valoracion.component';
+import { finalize } from 'rxjs/operators';
+import { FavoritesService } from '../services/favorites.service';
 
 interface Notificacion {
   mensaje: string;
@@ -61,6 +63,8 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   ratingInstanceExists: boolean = false;
   // Si creamos o recuperamos la instancia, la guardamos aquí
   valoracionInstance: any | null = null;
+  favoritoLoading = false;
+  isFavoritoDetalle = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -70,6 +74,7 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     private listaService: ListaService,
     private router: Router,
     private valoracionSvc: ValoracionService,
+    private favoritesService: FavoritesService,
     private userService: UserService
   ) {}
 
@@ -163,9 +168,10 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
       }
     }, 8000);
     this.multimedia.detalle(this.id).subscribe({
-      next: (d) => {
-        this.detalle = d;
-        // Para VIDEO: dejamos de mostrar loader general (datos recibidos) pero activamos skeleton hasta ready
+        next: (d) => {
+          this.detalle = d;
+          this.revisarFavorito();
+          // Para VIDEO: dejamos de mostrar loader general (datos recibidos) pero activamos skeleton hasta ready
         if (d.tipo === 'VIDEO') {
           this.cargando = false;
           this.playerReady = false;
@@ -574,6 +580,49 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
    */
   cerrarNotificacion(): void {
     this.notificacion = null;
+  }
+
+  private revisarFavorito(): void {
+    if (!this.detalle) {
+      this.isFavoritoDetalle = false;
+      return;
+    }
+    this.favoritoLoading = true;
+    this.favoritesService.list()
+      .pipe(finalize(() => this.favoritoLoading = false))
+      .subscribe({
+        next: lista => {
+          this.isFavoritoDetalle = Array.isArray(lista) && lista.some(item => item.id === this.detalle?.id);
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.isFavoritoDetalle = false;
+          this.cdr.markForCheck();
+        }
+      });
+  }
+
+  toggleFavoritoDetalle(): void {
+    if (!this.detalle) {
+      return;
+    }
+    this.favoritoLoading = true;
+    const action$ = this.isFavoritoDetalle
+      ? this.favoritesService.remove(this.detalle.id)
+      : this.favoritesService.add(this.detalle.id);
+
+    action$
+      .pipe(finalize(() => this.favoritoLoading = false))
+      .subscribe({
+        next: () => {
+          this.isFavoritoDetalle = !this.isFavoritoDetalle;
+          const mensaje = this.isFavoritoDetalle ? 'Contenido añadido a favoritos' : 'Contenido eliminado de favoritos';
+          this.mostrarNotificacion(mensaje, 'success');
+        },
+        error: () => {
+          this.mostrarNotificacion('No se pudo actualizar favoritos', 'error');
+        }
+      });
   }
 
   /**
