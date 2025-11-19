@@ -2,11 +2,12 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { forkJoin, of } from 'rxjs';
 import { timeout, catchError } from 'rxjs/operators';
 import { ValoracionService } from '../services/valoracion.service';
+import { ContentFilterComponent } from '../shared/content-filter/content-filter.component';
 
 interface ContenidoResumenGestor {
   id: string;
@@ -53,7 +54,7 @@ const VIDEO_TAGS: string[] = [
 @Component({
   selector: 'app-gestor-contenidos',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, ContentFilterComponent],
   templateUrl: './gestor-contenidos.component.html',
   styleUrl: './gestor-contenidos.component.css'
 })
@@ -61,6 +62,8 @@ export class GestorContenidosComponent implements OnInit {
   loading = false;
   errorMessage = '';
   contenidos: ContenidoResumenGestor[] = [];
+  // Indicador para evitar flicker: mientras se aplican filtros (enriquecimiento/consulta de detalle), mostrar overlay
+  applyingFilters = false;
 
   // Estado para el modal de detalle
   mostrarDetalle = false;
@@ -101,6 +104,10 @@ export class GestorContenidosComponent implements OnInit {
   showSaveConfirmation = false;
   gestorTipoContenido: 'AUDIO' | 'VIDEO' | null = null;
 
+  // Filtros desde el componente compartido
+  currentTagFilters: string[] = [];
+  currentFiltersObject: any = null;
+
   constructor(
     private readonly http: HttpClient,
     private readonly cdr: ChangeDetectorRef,
@@ -109,8 +116,10 @@ export class GestorContenidosComponent implements OnInit {
 
   ngOnInit(): void {
     console.log('[GestorContenidos] ngOnInit');
-    this.cargarContenidos();
+    // Cargar primero la info del gestor (tipo de contenido) para que el componente de filtros
+    // reciba el `contentType` correcto desde el primer render.
     this.cargarInfoGestor();
+    this.cargarContenidos();
   }
 
   cargarContenidos(): void {
@@ -123,14 +132,84 @@ export class GestorContenidosComponent implements OnInit {
       size: '50'
     });
 
+    // Intentar obtener token localmente como fallback en caso de fallo (si el interceptor no lo está adjuntando)
+    const token = this.getStoredToken();
+    if (!token) console.warn('[GestorContenidos] No se encontró token en sessionStorage/localStorage (fallback)');
+
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+
     this.http
-      .get<{ content: ContenidoResumenGestor[] }>(`${environment.apiUrl}/gestor/contenidos?${params.toString()}`)
+      .get<{ content: ContenidoResumenGestor[] }>(`${environment.apiUrl}/gestor/contenidos?${params.toString()}`, { headers })
       .subscribe({
         next: (response) => {
           console.log('[GestorContenidos] respuesta OK', response);
-          this.contenidos = response.content || [];
-          this.loading = false;
+          const raw = response.content || [];
+
+          // Normalizar cada item para asegurar campos usados por el filtrado
+          const normalized = raw.map((it: any) => this.normalizeContenidoResumen(it));
+          console.debug('[GestorContenidos] primer item normalizado:', normalized[0]);
+
+          // Si se indica un modo especial que sustituye la lista, devolverlo inmediatamente
+          if (this.handleSpecialModeEarlyReturn()) {
+            this.loading = false;
+            this.cdr.detectChanges();
+            return;
+          }
+
+          // Si no hay filtros activos, asignar la lista normalizada directamente
+          if (this.isFiltersEmpty()) {
+            this.contenidos = normalized as ContenidoResumenGestor[];
+            this.loading = false;
+            this.cdr.detectChanges();
+            return;
+          }
+
+          // Si hay filtros, evitar asignar la lista completa hasta aplicar filtrado/enriquecimiento
+          this.applyingFilters = true;
           this.cdr.detectChanges();
+
+          // Determinar si necesitamos detalles para aplicar los filtros correctamente
+          const f = this.currentFiltersObject;
+          const needTags = Array.isArray(f?.tags) && f.tags.length > 0;
+          const needEdad = true; // siempre requerimos edad para coherencia
+          const needRes = Array.isArray(f?.resoluciones) && f.resoluciones.length > 0;
+
+          const itemsWithoutRequired = normalized.filter((it: any) => {
+            if (needTags && !Array.isArray(it.tags)) return true;
+            if (needEdad && typeof (it as any).edadVisualizacion !== 'number') return true;
+            if (needRes && typeof (it as any).resolucion !== 'string') return true;
+            return false;
+          });
+
+          if (itemsWithoutRequired.length > 0) {
+            const tokenForDetails = this.getStoredToken();
+            const headersForDetails = tokenForDetails ? new HttpHeaders({ Authorization: `Bearer ${tokenForDetails}` }) : undefined;
+            const calls = itemsWithoutRequired.map(i => this.http.get<any>(`${environment.apiUrl}/multimedia/${i.id}`, { headers: headersForDetails }).pipe(timeout(10000), catchError(err => of(null))));
+            forkJoin(calls).subscribe({
+              next: (details) => {
+                // aplicar detalles sobre la copia normalizada
+                this.applyDetailsToItems(details, normalized as any);
+                // aplicar filtros y asignar el resultado visible
+                this.contenidos = this.applyFilteringCombined(normalized as any) as ContenidoResumenGestor[];
+                this.applyingFilters = false;
+                this.loading = false;
+                this.cdr.detectChanges();
+              },
+              error: (err) => {
+                // Si fallan las peticiones de detalle, aplicar filtrado con lo que tenemos
+                this.contenidos = this.applyFilteringCombined(normalized as any) as ContenidoResumenGestor[];
+                this.applyingFilters = false;
+                this.loading = false;
+                this.cdr.detectChanges();
+              }
+            });
+          } else {
+            // No se necesitan detalles: filtrar directamente y asignar
+            this.contenidos = this.applyFilteringCombined(normalized as any) as ContenidoResumenGestor[];
+            this.applyingFilters = false;
+            this.loading = false;
+            this.cdr.detectChanges();
+          }
         },
         error: (error) => {
           console.error('[GestorContenidos] error HTTP', error);
@@ -139,6 +218,25 @@ export class GestorContenidosComponent implements OnInit {
           this.cdr.detectChanges();
         }
       });
+  }
+
+  /**
+   * Intenta leer el token del sessionStorage o de localStorage como fallback.
+   */
+  private getStoredToken(): string | null {
+    try {
+      const s = sessionStorage.getItem('token');
+      if (s) return s;
+    } catch (e) {
+      // ignore
+    }
+    try {
+      const l1 = localStorage.getItem('authToken') || localStorage.getItem('userToken') || localStorage.getItem('currentUserToken');
+      if (l1) return l1;
+    } catch (e) {
+      // ignore
+    }
+    return null;
   }
 
   // Ahora acepta un parámetro opcional para controlar el modo de edición
@@ -155,7 +253,7 @@ export class GestorContenidosComponent implements OnInit {
     // Para obtener el detalle reutilizamos el endpoint general de multimedia,
     // que ya construye la referencia de reproducción y aplica validaciones.
     this.http
-      .get<ContenidoDetalleGestor>(`${environment.apiUrl}/multimedia/${contenido.id}`)
+      .get<ContenidoDetalleGestor>(`${environment.apiUrl}/multimedia/${contenido.id}`, { headers: this.getStoredToken() ? new HttpHeaders({ Authorization: `Bearer ${this.getStoredToken()}` }) : undefined })
       .subscribe({
         next: (detalle) => {
           console.log('[GestorContenidos] detalle OK', detalle);
@@ -239,7 +337,7 @@ export class GestorContenidosComponent implements OnInit {
     this.estadisticasData = null;
     this.cdr.detectChanges();
 
-    const detalle$ = this.http.get<any>(`${environment.apiUrl}/multimedia/${contenido.id}`).pipe(
+    const detalle$ = this.http.get<any>(`${environment.apiUrl}/multimedia/${contenido.id}`, { headers: this.getStoredToken() ? new HttpHeaders({ Authorization: `Bearer ${this.getStoredToken()}` }) : undefined }).pipe(
       timeout(15000),
       catchError(err => {
         console.error('[GestorContenidos] detalle error', err);
@@ -543,6 +641,310 @@ export class GestorContenidosComponent implements OnInit {
           this.cdr.detectChanges();
         }
       });
+  }
+
+  // --- INTEGRACIÓN: Handlers para el componente de filtro compartido ---
+  onFiltersApplied(selectedTags: string[]): void {
+    this.currentTagFilters = Array.isArray(selectedTags) ? [...selectedTags] : [];
+    // Para evitar inconsistencias por ausencia de campos en los resúmenes,
+    // recargamos la lista y dejamos que `cargarContenidos` normalice y obtenga detalles si es necesario.
+    this.currentFiltersObject = { tags: this.currentTagFilters };
+    if (!this.loading) this.cargarContenidos();
+  }
+
+  onFiltersChanged(filters: any): void {
+    if (!filters) return;
+    this.currentFiltersObject = filters;
+    this.currentTagFilters = Array.isArray(filters.tags) ? [...filters.tags] : [];
+    // Para consistencia (y para poder solicitar detalles si faltan), recargar contenidos.
+    if (!this.loading) this.cargarContenidos();
+  }
+
+  get contentFilterType(): 'all' | 'video' | 'audio' {
+    if (this.gestorTipoContenido === 'VIDEO') return 'video';
+    if (this.gestorTipoContenido === 'AUDIO') return 'audio';
+    return 'all';
+  }
+
+  private handleSpecialModeEarlyReturn(): boolean {
+    const f = this.currentFiltersObject;
+    if (!f) return false;
+    if (f.specialMode === 'top-contents' || f.specialMode === 'top-rated') {
+      const contents = f.specialPayload?.contents ?? [];
+      if (Array.isArray(contents)) {
+        // Mapear a la forma mínima esperada por el gestor
+        this.contenidos = contents.map((it: any) => ({
+          id: it.id ?? it._id ?? it.idContenido ?? String(Math.random()),
+          titulo: it.titulo ?? it.title ?? it.nombre ?? '',
+          tipo: (it.tipo || it.type || 'VIDEO').toString().toUpperCase() === 'AUDIO' ? 'AUDIO' : 'VIDEO',
+          vip: !!it.vip,
+          resolucion: it.resolucion ?? it.resolution ?? null
+        } as ContenidoResumenGestor));
+        this.loading = false;
+        this.cdr.detectChanges();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private isFiltersEmpty(): boolean {
+    const tagsEmpty = !Array.isArray(this.currentTagFilters) || this.currentTagFilters.length === 0;
+    if (!this.currentFiltersObject) return tagsEmpty;
+    const obj = this.currentFiltersObject;
+    const objEmpty = (!Array.isArray(obj.tags) || obj.tags.length === 0) &&
+                     (!obj.suscripcion || obj.suscripcion === 'ANY') &&
+                     (!obj.edad) &&
+                     (!Array.isArray(obj.resoluciones) || obj.resoluciones.length === 0);
+    return tagsEmpty && objEmpty;
+  }
+
+  private applyFilteringCombined(items: any[]): any[] {
+    const fObj = this.currentFiltersObject;
+    let tags: string[] = [];
+    if (fObj && Array.isArray(fObj.tags)) tags = fObj.tags;
+    else if (Array.isArray(this.currentTagFilters)) tags = this.currentTagFilters;
+
+    const filters = {
+      tags: tags,
+      suscripcion: fObj ? (fObj.suscripcion || 'ANY') : 'ANY',
+      edad: fObj ? fObj.edad : null,
+      resoluciones: fObj && Array.isArray(fObj.resoluciones) ? fObj.resoluciones : [],
+      specialMode: fObj ? fObj.specialMode : undefined,
+      specialPayload: fObj ? fObj.specialPayload : undefined
+    };
+
+    const noFilters = filters.tags.length === 0 && filters.suscripcion === 'ANY' && !filters.edad && filters.resoluciones.length === 0;
+    if (noFilters) return items;
+
+    return items.filter(item => this.matchesAllFilters(item, filters));
+  }
+
+  private matchesAllFilters(item: any, filters: any): boolean {
+    if (filters?.specialMode === 'top-tags') {
+      return this.matchesTags(item, filters.tags, filters);
+    }
+    return this.matchesTags(item, filters.tags, filters) &&
+           this.matchesSuscripcion(item, filters.suscripcion) &&
+           this.matchesEdad(item, filters.edad) &&
+           this.matchesResolucion(item, filters.resoluciones);
+  }
+
+  private matchesTags(item: any, tags: string[], _filters?: any): boolean {
+    if (!Array.isArray(tags) || tags.length === 0) return true;
+    const itemTags = item.tags || (item as any).tag_list || (item as any).tags_list;
+    if (!Array.isArray(itemTags)) return false;
+    return tags.every((tag: string) => itemTags.includes(tag));
+  }
+
+  private matchesSuscripcion(item: any, suscripcion: string): boolean {
+    if (suscripcion === 'ANY') return true;
+    if (suscripcion === 'VIP') return item.vip === true;
+    if (suscripcion === 'STANDARD') return item.vip === false;
+    return true;
+  }
+
+  private matchesEdad(item: any, edad: string | null): boolean {
+    if (!edad) return true;
+    let itemEdad: any = undefined;
+    if (typeof (item as any).edadVisualizacion === 'number') itemEdad = (item as any).edadVisualizacion;
+    else if (typeof (item as any).edadvisualizacion === 'number') itemEdad = (item as any).edadvisualizacion;
+    else if (typeof (item as any).edad === 'number') itemEdad = (item as any).edad;
+    else if (typeof (item as any).edadVisualizacion === 'string') {
+      const n = parseInt((item as any).edadVisualizacion, 10);
+      if (!Number.isNaN(n)) itemEdad = n;
+    } else if (typeof (item as any).edadvisualizacion === 'string') {
+      const s = (item as any).edadvisualizacion.trim();
+      if (s.toUpperCase() === 'TP') itemEdad = 0;
+      else {
+        const n = parseInt(s, 10);
+        if (!Number.isNaN(n)) itemEdad = n;
+      }
+    } else if (typeof (item as any).edad === 'string') {
+      const s = (item as any).edad.trim();
+      if (s.toUpperCase() === 'TP') itemEdad = 0;
+      else {
+        const n = parseInt(s, 10);
+        if (!Number.isNaN(n)) itemEdad = n;
+      }
+    }
+
+    if (typeof itemEdad !== 'number') return false;
+    if (edad === 'TP') return itemEdad === 0;
+    if (edad === '18') return itemEdad >= 18;
+    return true;
+  }
+
+  private matchesResolucion(item: any, resoluciones: string[]): boolean {
+    if (!resoluciones || resoluciones.length === 0) return true;
+    // Si hay filtros de resolución, solo deben pasar los VIDEOS.
+    const tipoRaw = (item as any).tipo ?? (item as any).type ?? '';
+    const tipoUp = String(tipoRaw).toUpperCase();
+    if (tipoUp && tipoUp !== 'VIDEO') return false;
+    let itemResolucion = (item as any).resolucion ?? (item as any).resolution ?? (item as any).resolucion_video;
+    if (itemResolucion == null) return false;
+    if (typeof itemResolucion !== 'string') itemResolucion = String(itemResolucion);
+    const norm = this.normalizeResolutionRaw(itemResolucion);
+    const toCompare = norm ?? itemResolucion.trim();
+    return resoluciones.includes(toCompare);
+  }
+
+  private applyDetailsToItems(details: any[], items: any[]): void {
+    for (const d of details) {
+      if (!d) continue;
+      const match = items.find(i => i.id === d.id || i.id === d._id || i.id === d.idContenido);
+      if (!match) continue;
+
+      // Aplicar tags
+      const tagsFromDetail = this.extractTagsFromDetail(d);
+      if (Array.isArray(tagsFromDetail)) {
+        match.tags = tagsFromDetail;
+      }
+
+      // Edad
+      const edadFromDetail = this.extractEdadFromDetail(d);
+      if (typeof edadFromDetail === 'number') {
+        match.edadVisualizacion = edadFromDetail;
+        match.edadvisualizacion = edadFromDetail;
+      }
+
+      // Resolución
+      const resolFromDetail = this.extractResolucionFromDetail(d);
+      if (resolFromDetail) {
+        match.resolucion = resolFromDetail;
+      }
+    }
+  }
+
+  private extractTagsFromDetail(d: any): string[] | undefined {
+    if (Array.isArray(d.tags)) return d.tags;
+    if (Array.isArray(d.tag_list)) return d.tag_list;
+    if (Array.isArray(d.tags_list)) return d.tags_list;
+    if (typeof d.tags === 'string') return d.tags.split(',').map((s: string) => s.trim()).filter(Boolean);
+    return undefined;
+  }
+
+  private extractEdadFromDetail(d: any): number | undefined {
+    // Aceptar números o cadenas como 'TP' / '0' / '18'
+    if (typeof d.edadvisualizacion === 'number') return d.edadvisualizacion;
+    if (typeof d.edad === 'number') return d.edad;
+    if (typeof d.edadVisualizacion === 'number') return d.edadVisualizacion;
+    if (typeof d.edadvisualizacion === 'string') {
+      const s = d.edadvisualizacion.trim();
+      if (s.toUpperCase() === 'TP') return 0;
+      const n = parseInt(s, 10);
+      if (!Number.isNaN(n)) return n;
+    }
+    if (typeof d.edad === 'string') {
+      const s = d.edad.trim();
+      if (s.toUpperCase() === 'TP') return 0;
+      const n = parseInt(s, 10);
+      if (!Number.isNaN(n)) return n;
+    }
+    if (typeof d.edadVisualizacion === 'string') {
+      const s = d.edadVisualizacion.trim();
+      if (s.toUpperCase() === 'TP') return 0;
+      const n = parseInt(s, 10);
+      if (!Number.isNaN(n)) return n;
+    }
+    return undefined;
+  }
+
+  private extractResolucionFromDetail(d: any): string | undefined {
+    const raw = (d.resolucion ?? d.resolution ?? d.resolucion_video);
+    if (typeof raw === 'string') return this.normalizeResolutionRaw(raw);
+    if (typeof raw === 'number') return this.normalizeResolutionRaw(String(raw));
+    return undefined;
+  }
+
+  /** Normaliza un objeto de resumen de contenido recibido del backend */
+  private normalizeContenidoResumen(raw: any): ContenidoResumenGestor {
+    const id = raw.id ?? raw._id ?? raw.idContenido ?? String(Math.random());
+    const titulo = raw.titulo ?? raw.title ?? raw.nombre ?? raw.name ?? '';
+    const tipoRaw = (raw.tipo ?? raw.type ?? raw.tipoContenido ?? 'VIDEO').toString();
+    const tipo = tipoRaw.toUpperCase().startsWith('A') ? 'AUDIO' : 'VIDEO';
+    const vip = raw.vip === true || raw.esVip === true || raw.vip === 'true' || false;
+
+    // Extraer tags en múltiples formatos
+    let tags: string[] = [];
+    if (Array.isArray(raw.tags)) tags = raw.tags;
+    else if (Array.isArray(raw.tag_list)) tags = raw.tag_list;
+    else if (Array.isArray(raw.tags_list)) tags = raw.tags_list;
+    else if (typeof raw.tags === 'string') tags = raw.tags.split(',').map((s: string) => s.trim()).filter(Boolean);
+    else if (typeof raw.tag === 'string') tags = raw.tag.split(',').map((s: string) => s.trim()).filter(Boolean);
+
+    // Edad de visualización
+    let edad: number | undefined = undefined;
+    if (typeof raw.edadvisualizacion === 'number') edad = raw.edadvisualizacion;
+    else if (typeof raw.edadVisualizacion === 'number') edad = raw.edadVisualizacion;
+    else if (typeof raw.edad === 'number') edad = raw.edad;
+    // Aceptar también cadenas 'TP' o '0'/'18'
+    else if (typeof raw.edadvisualizacion === 'string') {
+      const s = raw.edadvisualizacion.trim();
+      if (s.toUpperCase() === 'TP') edad = 0;
+      else {
+        const n = parseInt(s, 10);
+        if (!Number.isNaN(n)) edad = n;
+      }
+    } else if (typeof raw.edadVisualizacion === 'string') {
+      const s = raw.edadVisualizacion.trim();
+      if (s.toUpperCase() === 'TP') edad = 0;
+      else {
+        const n = parseInt(s, 10);
+        if (!Number.isNaN(n)) edad = n;
+      }
+    } else if (typeof raw.edad === 'string') {
+      const s = raw.edad.trim();
+      if (s.toUpperCase() === 'TP') edad = 0;
+      else {
+        const n = parseInt(s, 10);
+        if (!Number.isNaN(n)) edad = n;
+      }
+    }
+
+    // Resolución (normalizar a formatos conocidos: 720p/1080p/2160p cuando sea posible)
+    let resolucion: string | null = null;
+    const rawRes = raw.resolucion ?? raw.resolution ?? raw.resolucion_video ?? null;
+    if (rawRes != null) {
+      const norm = this.normalizeResolutionRaw(rawRes);
+      resolucion = norm ?? null;
+    }
+
+    return {
+      id,
+      titulo,
+      tipo,
+      vip: !!vip,
+      resolucion: resolucion ?? null,
+      // attach normalized tags/edad for filtering convenience
+      ...(tags.length ? { tags } : {}),
+      ...(typeof edad === 'number' ? { edadVisualizacion: edad } : {})
+    } as any;
+  }
+
+  /** Normaliza variantes de resolución a los tokens usados por el UI: '720p','1080p','2160p' cuando es posible. */
+  private normalizeResolutionRaw(raw: any): string | undefined {
+    if (raw == null) return undefined;
+    const s = String(raw).trim().toLowerCase();
+    // numérico '1080' -> '1080p'
+    const onlyDigits = s.replace(/[^0-9]/g, '');
+    if (onlyDigits.length >= 3) {
+      // map common heights
+      if (onlyDigits === '2160' || onlyDigits === '4' || onlyDigits === '2160p') return '2160p';
+      if (onlyDigits === '1080' || onlyDigits === '1080p') return '1080p';
+      if (onlyDigits === '720' || onlyDigits === '720p') return '720p';
+      // fallback: if it's a number like 480/360, keep as e.g. '480p'
+      return `${onlyDigits}p`;
+    }
+    // common textual variants
+    if (s.includes('4k') || s.includes('2160') || s.includes('uhd')) return '2160p';
+    if (s.includes('full') && s.includes('hd')) return '1080p';
+    if (s.includes('hd') && !s.includes('full')) return '720p';
+    if (s.includes('720')) return '720p';
+    if (s.includes('1080')) return '1080p';
+    if (s.includes('2160')) return '2160p';
+    // unknown format, return original trimmed string to allow direct compares
+    return String(raw).trim();
   }
 
   /**
