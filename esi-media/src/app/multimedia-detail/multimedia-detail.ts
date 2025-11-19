@@ -155,7 +155,6 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   cargar(): void {
     this.cargando = true;
     this.error = null;
-    console.log('[MultimediaDetail] Iniciando carga detalle id=', this.id);
     this.clearDetalleTimeoutSafely();
     // Fallback de seguridad: si en 8s no llega respuesta, apagamos loader y mostramos error genérico
     this.detalleTimeout = setTimeout(() => {
@@ -415,7 +414,6 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
 
   // --- Eventos del reproductor de VIDEO ---
   onIframeLoaded(): void {
-    console.log('[MultimediaDetail] iframe load');
     this.schedule(() => { this.playerReady = true; this.buffering = false; this.cdr.markForCheck(); });
   }
 
@@ -431,19 +429,15 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   }
   onVideoLoaded(): void {
     // loadedmetadata: ya tenemos duración, podemos mostrar el player
-    console.log('[MultimediaDetail] video loadedmetadata');
     this.schedule(() => { this.playerReady = true; this.cdr.markForCheck(); });
   }
   onVideoCanPlay(): void {
-    console.log('[MultimediaDetail] video canplay');
     this.schedule(() => { this.playerReady = true; this.buffering = false; this.cdr.markForCheck(); });
   }
   onVideoWaiting(): void {
-    console.log('[MultimediaDetail] video waiting');
     this.schedule(() => { if (this.playerReady) { this.buffering = true; this.cdr.markForCheck(); } });
   }
   onVideoPlaying(): void {
-    console.log('[MultimediaDetail] video playing');
     this.schedule(() => { this.buffering = false; this.cdr.markForCheck(); });
   }
 

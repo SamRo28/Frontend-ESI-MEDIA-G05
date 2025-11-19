@@ -18,7 +18,7 @@ export class MultimediaGuard implements CanActivate {
       } catch {}
     }
 
-    try { console.debug('[MultimediaGuard] token presente?', !!token, token ? token.slice(0,8)+'...' : ''); } catch {}
+    // Log de depuración eliminado para reducir ruido
 
     if (token && token.trim().length > 0) {
       return true;

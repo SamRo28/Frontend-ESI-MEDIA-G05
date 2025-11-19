@@ -241,7 +241,7 @@ export class ContentService {
       page: '0'
     });
 
-    console.log('Realizando búsqueda en backend:', query.trim());
+    // Log de búsqueda eliminado para reducir ruido en consola
 
     // El interceptor se encarga del Authorization header automáticamente
     return this.http.get<any>(`${environment.apiUrl}/multimedia?${params}`).pipe(

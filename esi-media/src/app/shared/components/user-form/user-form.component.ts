@@ -895,10 +895,8 @@ export class UserFormComponent implements OnInit, OnChanges {
       // Si está bloqueado actualmente, desbloquear; si no está bloqueado, bloquear
       if (currentlyBlocked) {
         await firstValueFrom(this.adminService.desbloquearUsuario(userId, effectiveAdminId));
-        console.log('Usuario desbloqueado exitosamente');
       } else {
         await firstValueFrom(this.adminService.bloquearUsuario(userId, effectiveAdminId));
-        console.log('Usuario bloqueado exitosamente');
       }
       
       // Emitir evento específico para el cambio de estado
@@ -933,7 +931,6 @@ export class UserFormComponent implements OnInit, OnChanges {
   private async executeUserDeletion(userId: string): Promise<void> {
     try {
       await firstValueFrom(this.adminService.deleteUser(userId));
-      console.log('Usuario eliminado exitosamente');
       
       // Emitir evento específico para eliminación
       this.userDeleted.emit(userId);

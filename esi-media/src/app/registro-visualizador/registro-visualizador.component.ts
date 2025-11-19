@@ -318,14 +318,12 @@ export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
     // Llamar al servicio con el objeto JSON
     this.svc.register(payload).subscribe({
       next: (response) => {
-        console.log('Registro exitoso:', response);
         this.ensureSessionUserFromForm();
         // Empezar a escuchar la activación
         this.startPollingActivation(val.email);
       },
       error: (err) => {
         console.error('Error en registro:', err);
-        console.log('Detalles completos del error:', JSON.stringify(err, null, 2));
         this.waitingActivation = false;
         this.processRegistrationError(err);
       }
@@ -475,7 +473,6 @@ export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
          e.message.toLowerCase().includes('ya registrado') || 
          e.message.toLowerCase().includes('unicidad'))))) {
       
-      console.log('Detectado error de email duplicado:', e.message);
       this.setEmailDuplicateError();
       this.ensureGeneralEmailError();
       this.emailErrorAdded = true;
@@ -505,8 +502,6 @@ export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
         typeof errorMsg === 'string' && 
         this.isEmailRelatedError(errorMsg) && 
         this.isDuplicateError(errorMsg)) {
-      
-      console.log('Detectado error de email duplicado en errores generales:', errorMsg);
       
       this.setEmailDuplicateError();
       this.ensureGeneralEmailError();
@@ -609,10 +604,8 @@ export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
     if (typeof document !== 'undefined' && document.hidden) {
       this.pendingShow2FA = true;
       this.waitingActivation = false;
-      console.debug(`[Registro] Activación detectada en segundo plano (${source}), se mostrará confirm al volver el foco`);
       return;
     }
-    console.debug(`[Registro] Activación detectada por ${source}, mostrando confirm 2FA`);
     this.activationFinalized = true;
     this.waitingActivation = false;
     this.prompt2FAAndNavigate();
