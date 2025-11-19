@@ -1,7 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { UserService } from '../../userService';
+import { UserService } from '../services/userService';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 
@@ -120,7 +120,7 @@ export class Fa2Qr implements OnInit {
             this.router.navigate(['/3verification'], { state: { allowFa3Code: true } });
           } else {
               sessionStorage.setItem('token', res);
-              this.router.navigate(['/dashboard']);
+              this.router.navigate(['/perfil']);
           }
       }
     },

@@ -1,6 +1,7 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, inject, PLATFORM_ID } from '@angular/core';
 import { Router, NavigationEnd, RouterLink, RouterLinkActive, RouterModule } from '@angular/router';
 import { MultimediaService } from '../services/multimedia.service';
+import { UserService } from '../services/userService';
 import { GestionListasComponent } from '../gestion-listas/gestion-listas';
 import { MultimediaListComponent } from '../multimedia-list/multimedia-list';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
@@ -49,6 +50,7 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
 
 
   private multimedia = inject(MultimediaService);
+  private userService = inject(UserService);
   constructor(private router: Router) {
     this.isBrowser = isPlatformBrowser(this.platformId);
   }
@@ -371,21 +373,55 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-
-
   /**
-   * Cierra la sesión del usuario, limpia sessionStorage y navega al login
+   * Inicia el proceso de eliminación de la cuenta del usuario.
+   * Muestra una confirmación antes de proceder.
    */
+  handleDeleteAccount(): void {
+    if (!this.isBrowser) return;
+
+    const confirmation = window.confirm(
+      '¿Estás seguro de que quieres eliminar tu cuenta? Esta acción es irreversible. ' +
+      'Se eliminarán tus datos personales, pero el contenido que hayas creado permanecerá en la plataforma.'
+    );
+
+    if (confirmation) {
+      this.userService.deleteMyAccount().subscribe({
+        next: () => {
+          this.showToast('Tu cuenta ha sido eliminada.');
+          // Forzar logout y redirección
+          setTimeout(() => this.logout(), 1500);
+        },
+        error: (err: any) => {
+          console.error('Error al eliminar la cuenta:', err);
+          const message = err?.error?.mensaje || 'No se pudo eliminar la cuenta. Inténtalo de nuevo más tarde.';
+          // Usar alert para errores críticos
+          alert(`Error: ${message}`);
+        }
+      });
+    }
+  }
+
+
+
   logout(): void {
-    console.log('Cerrando sesión...');
-    // Limpiar token sesión y cache multimedia
-    try { sessionStorage.removeItem('token'); 
-      sessionStorage.removeItem('user');
-      sessionStorage.removeItem('currentUserClass');
-      sessionStorage.removeItem('email');
-    } catch {}
-    this.multimedia.clearCache();
-    this.router.navigate(['/login']);
+    // Llamar al servicio de logout
+    this.userService.logout().subscribe({
+      next: () => {
+        try {
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+          sessionStorage.removeItem('currentUserClass');
+          sessionStorage.removeItem('email');
+        } catch {}
+        this.multimedia.clearCache();
+        this.router.navigate(['/home']);
+      },
+      error: (err) => {
+        console.error('Error al cerrar sesión:', err);
+        alert('Error al cerrar sesión');
+      }
+    });
   }
 
   /**

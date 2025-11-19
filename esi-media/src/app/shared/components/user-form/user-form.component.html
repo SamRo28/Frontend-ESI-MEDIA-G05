@@ -1,0 +1,236 @@
+<form class="user-form" (ngSubmit)="onSubmit()" #userForm="ngForm">
+  <div class="form-container">
+    
+    <!-- Información básica -->
+    <div class="form-section">
+      <h3 class="section-title">Información Básica</h3>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="username" class="field-label">
+            Nombre de Usuario <span class="required-indicator">*</span>
+          </label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            [(ngModel)]="user.username"
+            (ngModelChange)="onInputChange()"
+            [disabled]="disabled || isEditMode"
+            [class]="getFieldClass('username')"
+            placeholder="Ingrese el nombre de usuario"
+            required>
+          <div *ngIf="hasError('username')" class="error-message">
+            {{ getErrorMessage('username') }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="email" class="field-label">
+            Email <span class="required-indicator">*</span>
+          </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            [(ngModel)]="user.email"
+            (ngModelChange)="onInputChange()"
+            [disabled]="disabled"
+            [class]="getFieldClass('email')"
+            placeholder="usuario@ejemplo.com"
+            required>
+          <div *ngIf="hasError('email')" class="error-message">
+            {{ getErrorMessage('email') }}
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="nombres" class="field-label">
+            Nombres <span class="required-indicator">*</span>
+          </label>
+          <input
+            type="text"
+            id="nombres"
+            name="nombres"
+            [(ngModel)]="user.nombres"
+            (ngModelChange)="onInputChange()"
+            [disabled]="disabled"
+            [class]="getFieldClass('nombres')"
+            placeholder="Ingrese los nombres"
+            required>
+          <div *ngIf="hasError('nombres')" class="error-message">
+            {{ getErrorMessage('nombres') }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="apellidos" class="field-label">
+            Apellidos <span class="required-indicator">*</span>
+          </label>
+          <input
+            type="text"
+            id="apellidos"
+            name="apellidos"
+            [(ngModel)]="user.apellidos"
+            (ngModelChange)="onInputChange()"
+            [disabled]="disabled"
+            [class]="getFieldClass('apellidos')"
+            placeholder="Ingrese los apellidos"
+            required>
+          <div *ngIf="hasError('apellidos')" class="error-message">
+            {{ getErrorMessage('apellidos') }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Información personal -->
+    <div class="form-section">
+      <h3 class="section-title">Información Personal</h3>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="fechaNacimiento" class="field-label">
+            Fecha de Nacimiento <span class="required-indicator">*</span>
+          </label>
+          <input
+            type="date"
+            id="fechaNacimiento"
+            name="fechaNacimiento"
+            [(ngModel)]="user.fechaNacimiento"
+            (ngModelChange)="onInputChange()"
+            [disabled]="disabled"
+            [class]="getFieldClass('fechaNacimiento')"
+            required>
+          <div *ngIf="hasError('fechaNacimiento')" class="error-message">
+            {{ getErrorMessage('fechaNacimiento') }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="genero" class="field-label">
+            Género <span class="required-indicator">*</span>
+          </label>
+          <select
+            id="genero"
+            name="genero"
+            [(ngModel)]="user.genero"
+            (ngModelChange)="onInputChange()"
+            [disabled]="disabled"
+            [class]="getFieldClass('genero')"
+            required>
+            <option value="" disabled>Seleccione género</option>
+            <option value="M">Masculino</option>
+            <option value="F">Femenino</option>
+            <option value="Otro">Otro</option>
+            <option value="Prefiero no decir">Prefiero no decir</option>
+          </select>
+          <div *ngIf="hasError('genero')" class="error-message">
+            {{ getErrorMessage('genero') }}
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="telefono" class="field-label">
+            Teléfono <span class="required-indicator">*</span>
+          </label>
+          <input
+            type="tel"
+            id="telefono"
+            name="telefono"
+            [(ngModel)]="user.telefono"
+            (ngModelChange)="onInputChange()"
+            [disabled]="disabled"
+            [class]="getFieldClass('telefono')"
+            placeholder="+34 123 456 789"
+            required>
+          <div *ngIf="hasError('telefono')" class="error-message">
+            {{ getErrorMessage('telefono') }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="rol" class="field-label">
+            Rol <span class="required-indicator">*</span>
+          </label>
+          <select
+            id="rol"
+            name="rol"
+            [(ngModel)]="user.rol"
+            (ngModelChange)="onInputChange()"
+            [disabled]="disabled"
+            class="form-field"
+            required>
+            <option value="VISUALIZADOR">Visualizador</option>
+            <option value="GESTOR_CONTENIDOS">Gestor de Contenidos</option>
+            <option value="ADMINISTRADOR">Administrador</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configuración de contraseña -->
+    <div *ngIf="showPassword" class="form-section">
+      <h3 class="section-title">{{ isEditMode ? 'Cambiar Contraseña' : 'Configuración de Contraseña' }}</h3>
+      
+      <app-password-validator
+        [(password)]="user.password"
+        [(confirmPassword)]="user.confirmPassword"
+        [disabled]="disabled"
+        [showLabels]="false"
+        [inline]="true"
+        (passwordChange)="onPasswordChange($event)"
+        (confirmPasswordChange)="onConfirmPasswordChange($event)">
+      </app-password-validator>
+      
+      <div *ngIf="hasError('password')" class="error-message">
+        {{ getErrorMessage('password') }}
+      </div>
+      <div *ngIf="hasError('confirmPassword')" class="error-message">
+        {{ getErrorMessage('confirmPassword') }}
+      </div>
+    </div>
+
+    <!-- Estado del usuario -->
+    <div *ngIf="isEditMode" class="form-section">
+      <h3 class="section-title">Estado de la Cuenta</h3>
+      
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            [(ngModel)]="user.estado"
+            (ngModelChange)="onInputChange()"
+            [disabled]="disabled"
+            name="estado"
+            class="checkbox-input">
+          <span class="checkbox-text">Cuenta activa</span>
+        </label>
+        <p class="helper-text">
+          {{ user.estado ? 'El usuario puede acceder al sistema' : 'El usuario no puede acceder al sistema' }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Botones de acción -->
+    <div class="form-actions">
+      <button 
+        type="button" 
+        (click)="onCancel()"
+        [disabled]="disabled"
+        class="btn btn-secondary">
+        Cancelar
+      </button>
+      <button 
+        type="submit" 
+        [disabled]="disabled || !userForm.valid"
+        class="btn btn-primary">
+        {{ isEditMode ? 'Actualizar Usuario' : 'Crear Usuario' }}
+      </button>
+    </div>
+  </div>
+</form>
