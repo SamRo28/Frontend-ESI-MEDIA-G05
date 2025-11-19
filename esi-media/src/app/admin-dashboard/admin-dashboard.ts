@@ -155,12 +155,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   isCreatingUser = false;
   isUpdatingUser = false;
   loadingContenido = false;
-  userService!: UserService;
 
   constructor(
     private readonly adminService: AdminService,
     private readonly userValidationService: UserValidationService,
     private readonly modalService: ModalService,
+    private readonly userService: UserService,
     private readonly cdr: ChangeDetectorRef,
     private readonly router: Router,
     @Inject(PLATFORM_ID) private readonly platformId: Object
