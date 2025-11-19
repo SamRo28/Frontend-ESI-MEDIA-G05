@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { ContentService } from '../services/content.service';
-import { UserService } from '../../userService';
+import { UserService } from '../services/userService';
 import { GestionListasComponent } from '../gestion-listas/gestion-listas';
 import { CrearListaComponent } from '../crear-lista/crear-lista';
 

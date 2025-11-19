@@ -1,7 +1,13 @@
 import { Injectable } from '@angular/core';
+<<<<<<< HEAD:esi-media/src/userService.ts
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable, tap, throwError } from 'rxjs';
 import { environment } from './environments/environment';
+=======
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
+>>>>>>> origin/main:esi-media/src/app/services/userService.ts
 
 @Injectable({
   providedIn: 'root'
