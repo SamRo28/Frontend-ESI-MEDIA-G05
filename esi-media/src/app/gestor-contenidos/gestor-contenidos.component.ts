@@ -362,7 +362,7 @@ export class GestorContenidosComponent implements OnInit {
     // Unimos los tags predefinidos con los que ya tiene el contenido (por si hay alguno antiguo)
     // y eliminamos duplicados para tener una lista única.
     const tagSet = new Set([...predefinedTags, ...this.editForm.tags]);
-    this.allTags = Array.from(tagSet).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+    this.allTags = Array.from(tagSet).sort((a, b) => a.localeCompare(b));
     this.cdr.detectChanges();
   }
 

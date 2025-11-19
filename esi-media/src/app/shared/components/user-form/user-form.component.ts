@@ -58,6 +58,10 @@ export class UserFormComponent implements OnInit, OnChanges {
   @Output() confirmationRequest = new EventEmitter<Usuario>();
   @Output() userDeleted = new EventEmitter<string>();
   @Output() userStatusToggled = new EventEmitter<{ userId: string, blocked: boolean }>();
+  
+  // Nuevos eventos específicos para evitar duplicación
+  @Output() userCreatedSuccessfully = new EventEmitter<void>();
+  @Output() userUpdatedSuccessfully = new EventEmitter<Usuario>();
 
   formErrors: { [key: string]: string } = {};
   
@@ -68,6 +72,12 @@ export class UserFormComponent implements OnInit, OnChanges {
   isUpdating = false;
   updateSuccess = false;
   updateError: string | null = null;
+  
+  // Estados para creación
+  isCreating = false;
+  createSuccess = false;
+  createError: string | null = null;
+  createdUserType: string = '';
 
   // Propiedades adicionales para el formulario completo
   newUser: any = {
@@ -187,6 +197,7 @@ export class UserFormComponent implements OnInit, OnChanges {
 
   validateForm(): boolean {
     this.formErrors = {};
+<<<<<<< HEAD
     let isValid = true;
     isValid = this.validateUsername() && isValid;
     isValid = this.validateEmail() && isValid;
@@ -195,6 +206,88 @@ export class UserFormComponent implements OnInit, OnChanges {
     isValid = this.validateRequiredField('apellidos', 'Los apellidos son requeridos', this.user.apellidos) && isValid;
     isValid = this.validateRequiredField('fechaNacimiento', 'La fecha de nacimiento es requerida', this.user.fechaNacimiento) && isValid;
     this.validationChange.emit(isValid);
+=======
+    
+    const validationResults = [
+      this.validateUsername(),
+      this.validateEmail(),
+      this.validatePasswords(),
+      this.validateRequiredFields()
+    ];
+
+    const isValid = validationResults.every(result => result);
+    this.validationChange.emit(isValid);
+    return isValid;
+  }
+
+  private validateUsername(): boolean {
+    const username = this.user.username?.trim();
+    
+    if (!username) {
+      this.formErrors['username'] = 'El nombre de usuario es requerido';
+      return false;
+    }
+    
+    if (username.length < 3) {
+      this.formErrors['username'] = 'El nombre de usuario debe tener al menos 3 caracteres';
+      return false;
+    }
+
+    return true;
+  }
+
+  private validateEmail(): boolean {
+    if (!this.userValidationService.validateEmail(this.user.email)) {
+      this.formErrors['email'] = 'Formato de email inválido';
+      return false;
+    }
+    return true;
+  }
+
+  private validatePasswords(): boolean {
+    if (!this.showPassword) {
+      return true;
+    }
+
+    const passwordValidation = this.userValidationService.validatePassword(
+      this.user.password || '', 
+      this.user.confirmPassword || '', 
+      this.user.username
+    );
+    
+    let isValid = true;
+
+    if (!this.userValidationService.isPasswordValid(passwordValidation)) {
+      this.formErrors['password'] = 'La contraseña no cumple con los requisitos de seguridad';
+      isValid = false;
+    }
+
+    if (!passwordValidation.passwordsMatch) {
+      this.formErrors['confirmPassword'] = 'Las contraseñas no coinciden';
+      isValid = false;
+    }
+
+    return isValid;
+  }
+
+  private validateRequiredFields(): boolean {
+    const requiredFields = [
+      { field: 'nombres', message: 'Los nombres son requeridos' },
+      { field: 'apellidos', message: 'Los apellidos son requeridos' },
+      { field: 'fechaNacimiento', message: 'La fecha de nacimiento es requerida' }
+    ];
+
+    let isValid = true;
+
+    requiredFields.forEach(({ field, message }) => {
+      const value = this.user[field as keyof Usuario];
+      if (!value || (typeof value === 'string' && value.trim().length === 0)) {
+        this.formErrors[field] = message;
+        isValid = false;
+      }
+    });
+
+>>>>>>> origin/main
     return isValid;
   }
 
@@ -263,8 +356,8 @@ export class UserFormComponent implements OnInit, OnChanges {
         // Si estamos editando, ejecutar actualización directamente
         this.executeUpdate();
       } else {
-        // Si estamos creando, emitir evento para que lo maneje el componente padre
-        this.formSubmit.emit(this.getFormData());
+        // Si estamos creando, ejecutar creación directamente con manejo de éxito
+        this.executeCreate();
       }
     }
   }
@@ -320,8 +413,8 @@ export class UserFormComponent implements OnInit, OnChanges {
       this.updateSuccess = true;
       this.updateError = null;
       
-      // Emitir evento de éxito
-      this.formSubmit.emit(this.getFormData());
+      // Emitir evento específico de actualización exitosa
+      this.userUpdatedSuccessfully.emit(this.user);
       
     } catch (error) {
       console.error('Error updating user:', error);
@@ -329,6 +422,34 @@ export class UserFormComponent implements OnInit, OnChanges {
       this.updateSuccess = false;
     } finally {
       this.isUpdating = false;
+    }
+  }
+
+  private async executeCreate(): Promise<void> {
+    try {
+      this.isCreating = true;
+      this.createError = null;
+      
+      // Mapear los datos del formulario al formato correcto para creación
+      const createData = this.mapFormToCreateData();
+      
+      // Determinar el tipo de usuario para el mensaje de éxito
+      this.createdUserType = this.getUserTypeDisplayName(this.newUser.rol);
+      
+      await firstValueFrom(this.adminService.crearUsuario(createData));
+      
+      this.createSuccess = true;
+      this.createError = null;
+      
+      // Emitir evento específico de creación exitosa (NO formSubmit para evitar duplicación)
+      this.userCreatedSuccessfully.emit();
+      
+    } catch (error) {
+      console.error('Error creating user:', error);
+      this.createError = 'Error al crear el usuario. Por favor, inténtelo de nuevo.';
+      this.createSuccess = false;
+    } finally {
+      this.isCreating = false;
     }
   }
 
@@ -358,6 +479,47 @@ export class UserFormComponent implements OnInit, OnChanges {
     return updateData;
   }
 
+  private mapFormToCreateData(): any {
+    const createData: any = {
+      nombre: this.newUser.nombre,
+      apellidos: this.newUser.apellidos,
+      email: this.newUser.email,
+      contrasenia: this.newUser.contrasenia,
+      rol: this.newUser.rol
+    };
+
+    // Campos específicos según el rol
+    switch (this.newUser.rol) {
+      case 'Administrador':
+        createData.departamento = this.newUser.departamento;
+        if (this.newUser.foto) {
+          createData.foto = this.newUser.foto;
+        }
+        break;
+
+      case 'Gestor':
+        createData.alias = this.newUser.alias;
+        createData.especialidad = this.newUser.especialidad;
+        createData.tipoContenido = this.newUser.tipoContenido;
+        createData.foto = this.newUser.foto; // Obligatorio para gestores
+        if (this.newUser.descripcion) {
+          createData.descripcion = this.newUser.descripcion;
+        }
+        break;
+
+      case 'Visualizador':
+        if (this.newUser.fechaNacimiento) {
+          createData.fechaNacimiento = this.newUser.fechaNacimiento;
+        }
+        if (this.newUser.foto) {
+          createData.foto = this.newUser.foto;
+        }
+        break;
+    }
+
+    return createData;
+  }
+
   private determineUserTypeFromRole(role: string): string {
     switch (role) {
       case 'ADMINISTRADOR':
@@ -372,13 +534,114 @@ export class UserFormComponent implements OnInit, OnChanges {
 
   private validateFormFields(): boolean {
     this.fieldsWithError = [];
+    
+    const validationResults = [
+      this.validateBasicFields(),
+      this.validateRoleSpecificFields(),
+      this.validatePasswordFields()
+    ];
+
+    return validationResults.every(result => result);
+  }
+
+  private validateBasicFields(): boolean {
+    const basicFields = [
+      { field: 'nombre', value: this.newUser.nombre },
+      { field: 'apellidos', value: this.newUser.apellidos }
+    ];
+
     let isValid = true;
 
+<<<<<<< HEAD
     isValid = this.validateNewUserField('nombre', this.newUser.nombre) && isValid;
     isValid = this.validateNewUserField('apellidos', this.newUser.apellidos) && isValid;
     isValid = this.validateEmailField() && isValid;
     isValid = this.validateRoleSpecificFields() && isValid;
     isValid = this.validatePasswordFields() && isValid;
+=======
+    basicFields.forEach(({ field, value }) => {
+      if (!value || !value.trim()) {
+        this.fieldsWithError.push(field);
+        isValid = false;
+      }
+    });
+
+    if (!this.isEmailValid()) {
+      this.fieldsWithError.push('email');
+      isValid = false;
+    }
+
+    return isValid;
+  }
+
+  private isEmailValid(): boolean {
+    const email = this.newUser.email;
+    return email && email.trim() && this.isValidEmail(email);
+  }
+
+  private validateRoleSpecificFields(): boolean {
+    const roleValidators = {
+      'Administrador': () => this.validateAdministradorFields(),
+      'Gestor': () => this.validateGestorFields(),
+      'Visualizador': () => true // No requiere campos adicionales
+    };
+
+    const validator = roleValidators[this.newUser.rol as keyof typeof roleValidators];
+    return validator ? validator() : true;
+  }
+
+  private validateAdministradorFields(): boolean {
+    if (!this.newUser.departamento || !this.newUser.departamento.trim()) {
+      this.fieldsWithError.push('departamento');
+      return false;
+    }
+    return true;
+  }
+
+  private validateGestorFields(): boolean {
+    const gestorFields = [
+      { field: 'alias', value: this.newUser.alias },
+      { field: 'especialidad', value: this.newUser.especialidad },
+      { field: 'tipoContenido', value: this.newUser.tipoContenido },
+      { field: 'foto', value: this.newUser.foto }
+    ];
+
+    let isValid = true;
+
+    gestorFields.forEach(({ field, value }) => {
+      if (!value || (typeof value === 'string' && !value.trim())) {
+        this.fieldsWithError.push(field);
+        isValid = false;
+      }
+    });
+
+    return isValid;
+  }
+
+  private validatePasswordFields(): boolean {
+    if (!this.showPassword) {
+      return true;
+    }
+
+    const passwordChecks = [
+      { field: 'contrasenia', value: this.newUser.contrasenia },
+      { field: 'repetirContrasenia', value: this.newUser.repetirContrasenia }
+    ];
+
+    let isValid = true;
+
+    passwordChecks.forEach(({ field, value }) => {
+      if (!value || !value.trim()) {
+        this.fieldsWithError.push(field);
+        isValid = false;
+      }
+    });
+
+    if (this.newUser.contrasenia !== this.newUser.repetirContrasenia) {
+      this.fieldsWithError.push('repetirContrasenia');
+      isValid = false;
+    }
+>>>>>>> origin/main
 
     return isValid;
   }
@@ -608,54 +871,93 @@ export class UserFormComponent implements OnInit, OnChanges {
   private initializeFormFromUser(): void {
     if (!this.user) return;
     
-    // Usar profileData si está disponible, si no, usar user básico
     const data = this.profileData || this.user;
+    const mappedRole = this.mapUserRoleToFormRole(this.user.rol);
     
-    // Mapear el rol al formato esperado por newUser
-    let mappedRole = 'Visualizador';
-    switch (this.user.rol) {
-      case 'ADMINISTRADOR':
-        mappedRole = 'Administrador';
-        break;
-      case 'GESTOR_CONTENIDOS':
-        mappedRole = 'Gestor';
-        break;
-      case 'VISUALIZADOR':
-        mappedRole = 'Visualizador';
-        break;
-    }
-
     this.newUser = {
+      ...this.createBaseUserForm(mappedRole, data),
+      ...this.createRoleSpecificFields(data),
+      ...this.createPasswordFields()
+    };
+
+    this.showPassword = false;
+  }
+
+  private mapUserRoleToFormRole(userRole: string): string {
+    const roleMapping = {
+      'ADMINISTRADOR': 'Administrador',
+      'GESTOR_CONTENIDOS': 'Gestor',
+      'VISUALIZADOR': 'Visualizador'
+    };
+
+    return roleMapping[userRole as keyof typeof roleMapping] || 'Visualizador';
+  }
+
+  private createBaseUserForm(mappedRole: string, data: any) {
+    return {
       rol: mappedRole,
       nombre: this.user.nombres || '',
       apellidos: this.user.apellidos || '',
       email: this.user.email || '',
       apodo: this.user.username || '',
-      alias: data.alias || this.user.username || '',
-      departamento: data.departamento || '', // Para administradores
-      contrasenia: '',
-      repetirContrasenia: '',
       telefono: this.user.telefono || '',
-      genero: this.user.genero || '',
-      fechaNacimiento: data.fechaNacimiento ? data.fechaNacimiento.toString().split('T')[0] : this.user.fechaNacimiento || '',
-      especialidad: data.especialidad || '', // Para gestores
-      descripcion: data.descripcion || '', // Para gestores
-      tipoContenido: data.tipoContenido || '', // Para gestores
+      genero: this.user.genero || ''
+    };
+  }
+
+  private createRoleSpecificFields(data: any) {
+    const fechaNacimiento = this.formatFechaNacimiento(data.fechaNacimiento || this.user.fechaNacimiento);
+    
+    return {
+      alias: data.alias || this.user.username || '',
+      departamento: data.departamento || '',
+      fechaNacimiento,
+      especialidad: data.especialidad || '',
+      descripcion: data.descripcion || '',
+      tipoContenido: data.tipoContenido || '',
       foto: data.foto || null
     };
+  }
 
-    // No mostrar contraseñas por defecto en modo edición
-    this.showPassword = false;
+  private createPasswordFields() {
+    return {
+      contrasenia: '',
+      repetirContrasenia: ''
+    };
+  }
+
+  private formatFechaNacimiento(fecha: any): string {
+    if (!fecha) return '';
+    
+    try {
+      return fecha.toString().split('T')[0];
+    } catch {
+      return '';
+    }
   }
 
   closeSuccessModal(): void {
     this.updateSuccess = false;
-    // Emitir evento para notificar al componente padre que el usuario fue actualizado
-    this.formSubmit.emit(this.user);
+    // Emitir evento específico para notificar que el usuario fue actualizado
+    this.userUpdatedSuccessfully.emit(this.user);
   }
 
   closeErrorModal(): void {
     this.updateError = null;
+  }
+
+  closeCreateSuccessModal(): void {
+    this.createSuccess = false;
+    // Limpiar el formulario después de crear exitosamente
+    this.initializeNewUser();
+    this.formTouched = false;
+    this.fieldsWithError = [];
+    // Notificar al componente padre
+    this.formCancel.emit();
+  }
+
+  closeCreateErrorModal(): void {
+    this.createError = null;
   }
 
   // ==================== FUNCIONES DE BLOQUEO Y ELIMINACIÓN ====================
