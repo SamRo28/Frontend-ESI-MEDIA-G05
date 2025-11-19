@@ -284,20 +284,20 @@
  
                <!-- VIP -->
                <div class="detalle-item">
-                 <label class="detalle-label">Contenido VIP</label>
+                 <span class="detalle-label">Contenido VIP</span>
                  <span *ngIf="!editMode" class="detalle-value">{{ detalleSeleccionado.vip ? 'Sí' : 'No' }}</span>
-                 <label *ngIf="editMode" class="toggle-label">
-                   <input type="checkbox" name="vip" [(ngModel)]="editForm.vip">
+                 <label *ngIf="editMode" class="toggle-label" [attr.for]="vipToggleId">
+                   <input [id]="vipToggleId" type="checkbox" name="vip" [(ngModel)]="editForm.vip">
                    <span>Marcar como VIP</span>
                  </label>
                </div>
- 
+
                <!-- Estado -->
                <div class="detalle-item">
-                 <label class="detalle-label">Estado</label>
+                 <span class="detalle-label">Estado</span>
                  <span *ngIf="!editMode" class="detalle-value">{{ detalleSeleccionado.estado ? 'Visible' : 'No visible' }}</span>
-                 <label *ngIf="editMode" class="toggle-label">
-                   <input type="checkbox" name="estado" [(ngModel)]="editForm.estado">
+                 <label *ngIf="editMode" class="toggle-label" [attr.for]="estadoToggleId">
+                   <input [id]="estadoToggleId" type="checkbox" name="estado" [(ngModel)]="editForm.estado">
                    <span>{{ editForm.estado ? 'Visible' : 'No visible' }}</span>
                  </label>
                </div>
