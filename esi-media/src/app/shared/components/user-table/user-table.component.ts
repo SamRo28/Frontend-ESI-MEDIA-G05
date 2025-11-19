@@ -188,8 +188,25 @@ export class UserTableComponent implements OnInit {
     this.userSelect.emit(user);
   }
 
+  // Estado para prevenir doble clic
+  isLoadingEdit = false;
+
   onUserEdit(user: Usuario): void {
+    // Prevenir múltiples clics mientras se está cargando
+    if (this.isLoadingEdit) {
+      console.log('⏳ Edición ya en progreso, ignorando clic adicional');
+      return;
+    }
+    
+    console.log('✏️ Iniciando edición de usuario:', user.id);
+    this.isLoadingEdit = true;
     this.userEdit.emit(user);
+    
+    // Resetear el estado después de un delay más corto
+    setTimeout(() => {
+      this.isLoadingEdit = false;
+      console.log('✅ Estado de edición reseteado');
+    }, 1000);
   }
 
   // Métodos originales removidos - ahora manejados con modales

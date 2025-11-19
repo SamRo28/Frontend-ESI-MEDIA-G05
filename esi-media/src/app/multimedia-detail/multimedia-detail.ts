@@ -42,8 +42,7 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   isYoutube = false;
   youtubeSafeUrl: SafeResourceUrl | null = null;
   private youtubeVideoId: string | null = null;
-  // Token para uso en query (evitar sessionStorage directo en plantilla)
-  token: string = '';
+  // Ya no necesitamos token, las cookies lo gestionan automáticamente
   // Datos para el header unificado
   showUserMenu = false;
   userName: string = 'Usuario';
@@ -97,21 +96,9 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
-    // Capturamos token una sola vez (evita acceso global en plantilla)
-    try {
-      this.token = sessionStorage.getItem('token') || '';
-      try {
-        const keys = Object.keys(sessionStorage || {});
-        const possible = ['token','access_token','authToken','Authorization'];
-        for (const k of possible) {
-        }
-        
-      } catch (e) {
-      }
-    } catch (e) {
-      this.token = '';
-      console.error('[MultimediaDetail] error accessing sessionStorage for token', e);
-    }
+    // Ya no necesitamos capturar el token manualmente
+    // El navegador enviará automáticamente la cookie HttpOnly
+    
     // Cargar listas privadas del usuario
     this.cargarListasPrivadas();
 
@@ -330,11 +317,9 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   }
 
   private reproducirElemento(element: HTMLAudioElement | HTMLVideoElement): void {
-    try {
-      element.play();
-    } catch {
+    element.play()?.catch(() => {
       // Silenciar errores de reproducción
-    }
+    });
   }
 
   descargarAudio(): void {
@@ -372,9 +357,8 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     }
     // Evitar duplicar protocolo si accidentalmente ya contiene http://http://
     base = base.replace(/^(https?:\/\/)+(https?:\/\/)/i, '$1');
-    const sep = base.includes('?') ? '&' : '?';
-    const tokenParam = this.token ? 'auth=' + encodeURIComponent(this.token) : '';
-    return tokenParam ? (base + sep + tokenParam) : base;
+    // Ya no añadimos el token como parámetro de query, el navegador envía la cookie
+    return base;
   }
 
   onAudioError(ev: Event): void {
@@ -711,7 +695,7 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     this.userService.logout().subscribe({
       next: () => {
         try {
-          sessionStorage.removeItem('token');
+          // Ya no necesitamos eliminar el token, el backend invalida la cookie
           sessionStorage.removeItem('user');
           sessionStorage.removeItem('currentUserClass');
           sessionStorage.removeItem('email');

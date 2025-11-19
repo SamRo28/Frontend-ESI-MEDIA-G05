@@ -44,31 +44,11 @@ export class AdminService {
 
   constructor(private readonly http: HttpClient) {}
 
-  // Obtener headers con token de autorización
+  // Ya no es necesario añadir headers manualmente.
+  // El interceptor configura withCredentials para todas las peticiones al backend.
   private getAuthHeaders(): any {
-    let token = sessionStorage.getItem('authToken');
-    
-    if (!token) {
-      // Intentar obtener token de otras fuentes posibles
-      token = localStorage.getItem('authToken') || 
-              sessionStorage.getItem('token') || 
-              localStorage.getItem('token') ||
-              sessionStorage.getItem('userToken') ||
-              localStorage.getItem('userToken');
-      
-      if (!token) {
-        // Por ahora, continuar sin token para ver si algunos endpoints funcionan sin auth
-        return {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        };
-      }
-    }
-    
     return {
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     };
@@ -191,12 +171,23 @@ export class AdminService {
   updateUser(id: string, userData: any, tipo: string): Observable<any> {
     const url = `${this.apiUrl}/users/${id}/profile`;
     
+    console.log('🔄 AdminService.updateUser llamado con:');
+    console.log('  📌 ID:', id, '(longitud:', id.length, ')');
+    console.log('  📌 URL completa:', url);
+    console.log('  📌 userData:', userData);
+    console.log('  📌 tipo:', tipo);
+    
     // El backend espera el formato {userData, tipo}
     const payload = { userData, tipo };
     
     // IMPORTANTE: NO usar headers de autorización para estos endpoints
     return this.http.put<any>(url, payload).pipe(
-      catchError(this.handleError)
+      catchError((error) => {
+        console.error('❌ Error en AdminService.updateUser:', error);
+        console.error('  📌 ID usado:', id);
+        console.error('  📌 URL intentada:', url);
+        return this.handleError(error);
+      })
     );
   }
 

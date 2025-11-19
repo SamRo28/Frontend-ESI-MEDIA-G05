@@ -149,17 +149,26 @@ export class UserFormComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
+    console.log('🔄 UserFormComponent.ngOnChanges:', changes);
+    
     // Si profileData cambia, reinicializar el formulario
-    if (changes['profileData'] && this.profileData) {
-      this.initializeFormFromUser();
+    if (changes['profileData']) {
+      console.log('📊 ProfileData cambió:', changes['profileData']);
+      if (this.profileData) {
+        this.initializeFormFromUser();
+        this.cdr.detectChanges(); // Forzar detección después de cambiar profileData
+      }
     }
     
     // Si cambia el modo de edición o el usuario, reinicializar
     if (changes['isEditMode'] || changes['user']) {
+      console.log('👤 Usuario o modo de edición cambió');
       if (this.isEditMode && this.user) {
         this.initializeFormFromUser();
+        this.cdr.detectChanges(); // Forzar detección después de cambiar usuario
       } else if (!this.isEditMode) {
         this.initializeNewUser();
+        this.cdr.detectChanges(); // Forzar detección para nuevo usuario
       }
     }
   }
@@ -334,7 +343,10 @@ export class UserFormComponent implements OnInit, OnChanges {
   }
 
   private async executeUpdate(): Promise<void> {
-    if (!this.user.id) {
+    // Usar el ID del profileData si está disponible, sino el del user
+    const userId = this.profileData?.id || this.user.id;
+    
+    if (!userId) {
       this.updateError = 'ID de usuario no disponible';
       return;
     }
@@ -347,9 +359,9 @@ export class UserFormComponent implements OnInit, OnChanges {
       const updateData = this.mapFormToUpdateData();
       const tipo = this.determineUserTypeFromRole(this.user.rol);
       
-
+      console.log('🔄 Actualizando usuario:', userId, 'con datos:', updateData, 'tipo:', tipo);
       
-      await firstValueFrom(this.adminService.updateUser(this.user.id.toString(), updateData, tipo));
+      await firstValueFrom(this.adminService.updateUser(userId.toString(), updateData, tipo));
       
       this.updateSuccess = true;
       this.updateError = null;
@@ -770,6 +782,12 @@ export class UserFormComponent implements OnInit, OnChanges {
     
     const data = this.profileData || this.user;
     const mappedRole = this.mapUserRoleToFormRole(this.user.rol);
+    
+    console.log('🔧 Inicializando formulario con datos:', {
+      user: this.user,
+      profileData: this.profileData,
+      mappedRole
+    });
     
     this.newUser = {
       ...this.createBaseUserForm(mappedRole, data),

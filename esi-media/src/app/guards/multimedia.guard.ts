@@ -1,13 +1,18 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, UrlTree, Router } from '@angular/router';
 
+/**
+ * Guard simplificado. La autenticación ahora se gestiona mediante cookies HttpOnly.
+ * El backend validará automáticamente la cookie en cada petición.
+ * Este guard ahora solo verifica que exista información de usuario en sessionStorage.
+ */
 @Injectable({ providedIn: 'root' })
 export class MultimediaGuard implements CanActivate {
-  constructor(private router: Router) {}
+  constructor(private readonly router: Router) {}
 
   canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean | UrlTree {
-    // Evitar errores en SSR: sessionStorage solo existe en navegador
-    const hasWindow = typeof window !== 'undefined';
+    // Evitar errores en SSR
+    const hasWindow = globalThis.window !== undefined;
     const hasSessionStorage = hasWindow && typeof sessionStorage !== 'undefined';
 
     let token = hasSessionStorage ? (sessionStorage.getItem('token') || '') : '';
@@ -19,10 +24,13 @@ export class MultimediaGuard implements CanActivate {
     }
 
     // Log de depuración eliminado para reducir ruido
+    // Verificar si hay información de usuario en sessionStorage
+    const hasUser = hasSessionStorage && sessionStorage.getItem('user');
 
-    if (token && token.trim().length > 0) {
+    if (hasUser) {
       return true;
     }
+    
     // Redirigir a login y preservar returnUrl para volver tras autenticación
     return this.router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
   }

@@ -99,7 +99,7 @@ export class Login {
           this.router.navigate(['/2fa'], { state: { allowFa2: true } });
         }
         else{
-          sessionStorage.setItem('token', response.token);
+          // El token ya está en la cookie HttpOnly, no necesitamos guardarlo
           this.router.navigate(['/dashboard']);
         }
       },
