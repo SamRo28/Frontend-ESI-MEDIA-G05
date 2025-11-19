@@ -21,7 +21,7 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
   }
 
   // Solo agregar el token a peticiones hacia nuestro backend que requieren auth
-  if (req.url.includes(`${environment.apiUrl}/gestor`) || req.url.includes(`${environment.apiUrl}/users/listar`) || req.url.includes(`${environment.apiUrl}/listas`) || req.url.includes(`${environment.apiUrl}/contenidos/buscar`) || req.url.includes(`${environment.apiUrl}/listas/usuario`) || req.url.includes(`${environment.apiUrl}/listas/gestor`) || req.url.includes(`${environment.apiUrl}/multimedia`) || req.url.includes(`${environment.apiUrl}/api/valoraciones`)) {
+  if (req.url.includes(`${environment.apiUrl}/gestor`) || req.url.includes(`${environment.apiUrl}/users/listar`) || req.url.includes(`${environment.apiUrl}/listas`) || req.url.includes(`${environment.apiUrl}/contenidos/buscar`) || req.url.includes(`${environment.apiUrl}/listas/usuario`) || req.url.includes(`${environment.apiUrl}/listas/gestor`) || req.url.includes(`${environment.apiUrl}/multimedia`) || req.url.includes(`${environment.apiUrl}/api/valoraciones`) || req.url.includes(`${environment.apiUrl}/api/favoritos`)) {
 
 
     let token = '';

@@ -168,6 +168,14 @@
 .info-list li.desc .desc-text::-webkit-scrollbar-thumb{background:rgba(168,85,247,.35);border-radius:8px}
 .info-list li.desc .desc-text::-webkit-scrollbar-track{background:transparent}
 
+.favorite-actions{margin-top:1.2rem;display:flex;justify-content:center}
+.favorite-btn{width:100%;border:none;padding:0.85rem 1.4rem;border-radius:999px;font-weight:700;font-size:.95rem;text-transform:uppercase;letter-spacing:.05em;color:#0f172a;box-shadow:0 14px 28px rgba(59,130,246,.35);transition:transform .25s ease,box-shadow .25s ease,opacity .25s ease;display:flex;align-items:center;justify-content:center;gap:.5rem;background:linear-gradient(135deg,#fcd34d,#fbbf24)}
+.favorite-btn.adding{background:linear-gradient(135deg,#facc15,#fcd34d);box-shadow:0 16px 32px rgba(250,204,21,.35)}
+.favorite-btn.removing{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;box-shadow:0 16px 32px rgba(37,99,235,.35)}
+.favorite-btn:hover:not(:disabled){transform:translateY(-2px)}
+.favorite-btn:disabled{opacity:.65;cursor:not-allowed}
+.favorite-icon{font-size:1.2rem}
+
 /* Compactar el card lateral en pantallas pequeñas */
 @media (max-width: 900px){
   .info-list li{grid-template-columns:120px 1fr}

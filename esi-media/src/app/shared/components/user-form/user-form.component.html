@@ -1,236 +1,683 @@
-<form class="user-form" (ngSubmit)="onSubmit()" #userForm="ngForm">
-  <div class="form-container">
-    
-    <!-- Información básica -->
-    <div class="form-section">
-      <h3 class="section-title">Información Básica</h3>
-      
-      <div class="form-row">
-        <div class="form-group">
-          <label for="username" class="field-label">
-            Nombre de Usuario <span class="required-indicator">*</span>
-          </label>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            [(ngModel)]="user.username"
-            (ngModelChange)="onInputChange()"
-            [disabled]="disabled || isEditMode"
-            [class]="getFieldClass('username')"
-            placeholder="Ingrese el nombre de usuario"
-            required>
-          <div *ngIf="hasError('username')" class="error-message">
-            {{ getErrorMessage('username') }}
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="email" class="field-label">
-            Email <span class="required-indicator">*</span>
-          </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            [(ngModel)]="user.email"
-            (ngModelChange)="onInputChange()"
-            [disabled]="disabled"
-            [class]="getFieldClass('email')"
-            placeholder="usuario@ejemplo.com"
-            required>
-          <div *ngIf="hasError('email')" class="error-message">
-            {{ getErrorMessage('email') }}
-          </div>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="nombres" class="field-label">
-            Nombres <span class="required-indicator">*</span>
-          </label>
-          <input
-            type="text"
-            id="nombres"
-            name="nombres"
-            [(ngModel)]="user.nombres"
-            (ngModelChange)="onInputChange()"
-            [disabled]="disabled"
-            [class]="getFieldClass('nombres')"
-            placeholder="Ingrese los nombres"
-            required>
-          <div *ngIf="hasError('nombres')" class="error-message">
-            {{ getErrorMessage('nombres') }}
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="apellidos" class="field-label">
-            Apellidos <span class="required-indicator">*</span>
-          </label>
-          <input
-            type="text"
-            id="apellidos"
-            name="apellidos"
-            [(ngModel)]="user.apellidos"
-            (ngModelChange)="onInputChange()"
-            [disabled]="disabled"
-            [class]="getFieldClass('apellidos')"
-            placeholder="Ingrese los apellidos"
-            required>
-          <div *ngIf="hasError('apellidos')" class="error-message">
-            {{ getErrorMessage('apellidos') }}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Información personal -->
-    <div class="form-section">
-      <h3 class="section-title">Información Personal</h3>
-      
-      <div class="form-row">
-        <div class="form-group">
-          <label for="fechaNacimiento" class="field-label">
-            Fecha de Nacimiento <span class="required-indicator">*</span>
-          </label>
-          <input
-            type="date"
-            id="fechaNacimiento"
-            name="fechaNacimiento"
-            [(ngModel)]="user.fechaNacimiento"
-            (ngModelChange)="onInputChange()"
-            [disabled]="disabled"
-            [class]="getFieldClass('fechaNacimiento')"
-            required>
-          <div *ngIf="hasError('fechaNacimiento')" class="error-message">
-            {{ getErrorMessage('fechaNacimiento') }}
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="genero" class="field-label">
-            Género <span class="required-indicator">*</span>
-          </label>
-          <select
-            id="genero"
-            name="genero"
-            [(ngModel)]="user.genero"
-            (ngModelChange)="onInputChange()"
-            [disabled]="disabled"
-            [class]="getFieldClass('genero')"
-            required>
-            <option value="" disabled>Seleccione género</option>
-            <option value="M">Masculino</option>
-            <option value="F">Femenino</option>
-            <option value="Otro">Otro</option>
-            <option value="Prefiero no decir">Prefiero no decir</option>
-          </select>
-          <div *ngIf="hasError('genero')" class="error-message">
-            {{ getErrorMessage('genero') }}
-          </div>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="telefono" class="field-label">
-            Teléfono <span class="required-indicator">*</span>
-          </label>
-          <input
-            type="tel"
-            id="telefono"
-            name="telefono"
-            [(ngModel)]="user.telefono"
-            (ngModelChange)="onInputChange()"
-            [disabled]="disabled"
-            [class]="getFieldClass('telefono')"
-            placeholder="+34 123 456 789"
-            required>
-          <div *ngIf="hasError('telefono')" class="error-message">
-            {{ getErrorMessage('telefono') }}
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="rol" class="field-label">
-            Rol <span class="required-indicator">*</span>
-          </label>
-          <select
-            id="rol"
-            name="rol"
-            [(ngModel)]="user.rol"
-            (ngModelChange)="onInputChange()"
-            [disabled]="disabled"
-            class="form-field"
-            required>
-            <option value="VISUALIZADOR">Visualizador</option>
-            <option value="GESTOR_CONTENIDOS">Gestor de Contenidos</option>
-            <option value="ADMINISTRADOR">Administrador</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <!-- Configuración de contraseña -->
-    <div *ngIf="showPassword" class="form-section">
-      <h3 class="section-title">{{ isEditMode ? 'Cambiar Contraseña' : 'Configuración de Contraseña' }}</h3>
-      
-      <app-password-validator
-        [(password)]="user.password"
-        [(confirmPassword)]="user.confirmPassword"
-        [disabled]="disabled"
-        [showLabels]="false"
-        [inline]="true"
-        (passwordChange)="onPasswordChange($event)"
-        (confirmPasswordChange)="onConfirmPasswordChange($event)">
-      </app-password-validator>
-      
-      <div *ngIf="hasError('password')" class="error-message">
-        {{ getErrorMessage('password') }}
-      </div>
-      <div *ngIf="hasError('confirmPassword')" class="error-message">
-        {{ getErrorMessage('confirmPassword') }}
-      </div>
-    </div>
-
-    <!-- Estado del usuario -->
-    <div *ngIf="isEditMode" class="form-section">
-      <h3 class="section-title">Estado de la Cuenta</h3>
-      
-      <div class="form-group">
-        <label class="checkbox-label">
-          <input
-            type="checkbox"
-            [(ngModel)]="user.estado"
-            (ngModelChange)="onInputChange()"
-            [disabled]="disabled"
-            name="estado"
-            class="checkbox-input">
-          <span class="checkbox-text">Cuenta activa</span>
-        </label>
-        <p class="helper-text">
-          {{ user.estado ? 'El usuario puede acceder al sistema' : 'El usuario no puede acceder al sistema' }}
-        </p>
-      </div>
-    </div>
-
-    <!-- Botones de acción -->
-    <div class="form-actions">
-      <button 
-        type="button" 
-        (click)="onCancel()"
-        [disabled]="disabled"
-        class="btn btn-secondary">
-        Cancelar
+<!-- Formulario completo copiado exactamente del admin-dashboard -->
+<div>
+  <!-- Selección de rol -->
+  <div class="mb-4" *ngIf="!isEditMode">
+    <p class="block text-sm font-medium text-gray-700 mb-2">TIPO de Usuario</p>
+    <div class="grid grid-cols-2 gap-2">
+      <button type="button" 
+        (click)="onRoleChange('Administrador')"
+        [ngClass]="newUser.rol === 'Administrador' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'"
+        class="px-3 py-2 rounded text-sm font-medium">
+        Administrador
       </button>
-      <button 
-        type="submit" 
-        [disabled]="disabled || !userForm.valid"
-        class="btn btn-primary">
-        {{ isEditMode ? 'Actualizar Usuario' : 'Crear Usuario' }}
+      <button type="button"
+        (click)="onRoleChange('Gestor')"
+        [ngClass]="newUser.rol === 'Gestor' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'"
+        class="px-3 py-2 rounded text-sm font-medium">
+        Gestor de contenido
       </button>
     </div>
   </div>
-</form>
+
+  <!-- Mostrar tipo de usuario solo en modo edición -->
+  <div class="mb-4" *ngIf="isEditMode">
+    <p class="block text-sm font-medium text-gray-700 mb-2">Editando Usuario: 
+      <span class="font-semibold text-blue-600">{{ getUserTypeDisplayName(newUser.rol) }}</span>
+    </p>
+  </div>
+
+  <!-- Formulario para Administrador -->
+  <form *ngIf="newUser.rol === 'Administrador'" (ngSubmit)="onSubmit(); $event.preventDefault()" class="space-y-5">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="form-group">
+        <label for="nombre" class="block text-sm font-semibold text-gray-700 mb-2">
+          Nombre <span class="text-red-500">*</span>
+        </label>
+        <input type="text" id="nombre" [(ngModel)]="newUser.nombre" name="nombre"
+          (focus)="onFieldInteraction()" (input)="onFieldInteraction()"
+          [class]="'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('nombre') ? 'field-error' : 'border-gray-300 focus:ring-blue-500')"
+          placeholder="Juan" required />
+      </div>
+
+      <div class="form-group">
+        <label for="apellidos" class="block text-sm font-semibold text-gray-700 mb-2">
+          Apellidos <span class="text-red-500">*</span>
+        </label>
+        <input type="text" id="apellidos" [(ngModel)]="newUser.apellidos" name="apellidos"
+          (focus)="onFieldInteraction()" (input)="onFieldInteraction()"
+          [class]="'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('apellidos') ? 'field-error' : 'border-gray-300 focus:ring-blue-500')"
+          placeholder="Pérez García" required />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="email" class="block text-sm font-semibold text-gray-700 mb-2">
+        Correo Electrónico <span class="text-red-500">*</span>
+      </label>
+      <div class="relative">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h4a2 2 0 002-2z"></path>
+          </svg>
+        </div>
+        <input type="email" id="email" [(ngModel)]="newUser.email" name="email"
+          (focus)="onFieldInteraction()" (input)="onFieldInteraction()"
+          [class]="'w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('email') ? 'field-error' : 'border-gray-300 focus:ring-blue-500')"
+          placeholder="usuario@ejemplo.com" required />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="departamento" class="block text-sm font-semibold text-gray-700 mb-2">
+        Departamento <span class="text-red-500">*</span>
+      </label>
+      <input type="text" id="departamento" [(ngModel)]="newUser.departamento" name="departamento"
+        (focus)="onFieldInteraction()" (input)="onFieldInteraction()"
+        [class]="'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all ' + (hasFieldError('departamento') ? 'field-error' : 'border-gray-300 focus:ring-blue-500')"
+        placeholder="Desarrollo" required />
+    </div>
+
+    <!-- Selección de foto de perfil -->
+    <div class="form-group">
+      <label for="fotoPerfilOpcional" class="block text-sm font-semibold text-gray-700 mb-2">
+        Foto de Perfil (Opcional)
+      </label>
+      <p class="text-xs text-gray-500 mb-2">Haz clic para seleccionar, clic nuevamente para deseleccionar</p>
+      <div class="grid grid-cols-4 gap-3">
+        <button type="button" 
+          *ngFor="let foto of fotosDisponibles" 
+          (click)="selectFoto(foto.id)"
+          [class]="'w-full cursor-pointer rounded-lg border-2 p-2 transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 ' + (newUser.foto === foto.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300')"
+          [attr.aria-label]="'Seleccionar ' + foto.nombre">
+          <img [src]="'/' + foto.id" [alt]="foto.nombre" class="w-full h-16 object-cover rounded">
+          <p class="text-xs text-center mt-1 text-gray-600">{{ foto.nombre }}</p>
+        </button>
+      </div>
+    </div>
+
+    <!-- Contraseñas usando PasswordValidatorComponent -->
+    <div *ngIf="showPassword" class="form-section">
+      <app-password-validator
+        [(password)]="newUser.contrasenia"
+        [(confirmPassword)]="newUser.repetirContrasenia"
+        [username]="newUser.apodo"
+        [disabled]="disabled"
+        [showLabels]="true"
+        [inline]="false"
+        (validationChange)="onPasswordValidationChange($event)">
+      </app-password-validator>
+    </div>
+
+    <!-- Botones -->
+    <div class="flex items-center justify-end gap-3 pt-4 border-t">
+      <button type="button" (click)="onCancel()" 
+        class="px-6 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-all">
+        Cancelar
+      </button>
+      <button type="button" (click)="isEditMode ? showConfirmationModal() : onSubmit()"
+        [disabled]="isCreating || isUpdating"
+        class="px-6 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-all flex items-center gap-2">
+        <!-- Spinner de carga -->
+        <svg *ngIf="isCreating || isUpdating" class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <!-- Icono normal -->
+        <svg *ngIf="!isCreating && !isUpdating" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        {{ (isCreating || isUpdating) ? 'Procesando...' : (isEditMode ? 'Actualizar' : 'Crear') }} {{ isCreating || isUpdating ? '' : 'Administrador' }}
+      </button>
+    </div>
+  </form>
+
+  <!-- Formulario para GESTOR de Contenido -->
+  <form *ngIf="newUser.rol === 'Gestor'" (ngSubmit)="onSubmit(); $event.preventDefault()" class="space-y-6">
+
+    <!-- Campos básicos -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="space-y-2">
+        <label for="GESTORNombre" class="block text-sm font-medium text-gray-700">Nombre *</label>
+        <input
+          type="text"
+          id="GESTORNombre"
+          [(ngModel)]="newUser.nombre"
+          name="GESTORNombre"
+          required
+          [class.border-red-500]="fieldsWithError.includes('nombre')"
+          [class.border-green-500]="newUser.nombre && !fieldsWithError.includes('nombre')"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+          placeholder="Nombre del Gestor">
+        <div *ngIf="fieldsWithError.includes('nombre')" class="text-red-600 text-sm flex items-center">
+          <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm8-8a8 8 0 11-16 0 8 8 0 0116 0zM10 8a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2a1 1 0 01-1-1V8z" clip-rule="evenodd"></path>
+          </svg>
+          El nombre es obligatorio
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <label for="GESTORApellidos" class="block text-sm font-medium text-gray-700">Apellidos *</label>
+        <input
+          type="text"
+          id="GESTORApellidos"
+          [(ngModel)]="newUser.apellidos"
+          name="GESTORApellidos"
+          required
+          [class.border-red-500]="fieldsWithError.includes('apellidos')"
+          [class.border-green-500]="newUser.apellidos && !fieldsWithError.includes('apellidos')"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+          placeholder="Apellidos del Gestor">
+        <div *ngIf="fieldsWithError.includes('apellidos')" class="text-red-600 text-sm flex items-center">
+          <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 000 2v4a1 1 0 002 0V7a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+          </svg>
+          Los apellidos son obligatorios
+        </div>
+      </div>
+    </div>
+
+    <!-- Selección de foto de perfil (OBLIGATORIO para GESTOR) -->
+    <div class="space-y-2">
+      <label for="GESTORFotoPerfil" class="block text-sm font-medium text-gray-700">
+        Foto de Perfil <span class="text-red-500">*</span>
+      </label>
+      <div class="grid grid-cols-4 gap-3">
+        <button type="button"
+          *ngFor="let foto of fotosDisponibles" 
+          (click)="selectFoto(foto.id)"
+          [class]="'w-full cursor-pointer rounded-lg border-2 p-2 transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 ' + (newUser.foto === foto.id ? 'border-blue-500 bg-blue-50' : (hasFieldError('foto') ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:border-gray-300'))"
+          [attr.aria-label]="'Seleccionar ' + foto.nombre">
+          <img [src]="'/' + foto.id" [alt]="foto.nombre" class="w-full h-16 object-cover rounded">
+          <p class="text-xs text-center mt-1 text-gray-600">{{ foto.nombre }}</p>
+        </button>
+      </div>
+      <div *ngIf="fieldsWithError.includes('foto')" class="text-red-600 text-sm flex items-center">
+        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 000 2v4a1 1 0 002 0V7a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+        </svg>
+        Selecciona una foto de perfil
+      </div>
+    </div>
+
+    <!-- Email -->
+    <div class="space-y-2">
+      <label for="GESTOREmail" class="block text-sm font-medium text-gray-700">Email *</label>
+      <input
+        type="email"
+        id="GESTOREmail"
+        [(ngModel)]="newUser.email"
+        name="GESTOREmail"
+        required
+        [class.border-red-500]="fieldsWithError.includes('email')"
+        [class.border-green-500]="newUser.email && !fieldsWithError.includes('email')"
+        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+        placeholder="email@ejemplo.com">
+      <div *ngIf="fieldsWithError.includes('email')" class="text-red-600 text-sm flex items-center">
+        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 000 2v4a1 1 0 002 0V7a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+        </svg>
+        Email inválido
+      </div>
+    </div>
+
+    <!-- Alias único -->
+    <div class="space-y-2">
+      <label for="GESTORAlias" class="block text-sm font-medium text-gray-700">Alias único *</label>
+      <div class="relative">
+        <input
+          type="text"
+          id="GESTORAlias"
+          [(ngModel)]="newUser.alias"
+          name="GESTORAlias"
+          required
+          [class.border-red-500]="fieldsWithError.includes('alias')"
+          [class.border-green-500]="newUser.alias && !fieldsWithError.includes('alias')"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 pl-10"
+          placeholder="@alias_unico">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clip-rule="evenodd"></path>
+        </svg>
+        </div>
+      </div>
+      <div *ngIf="fieldsWithError.includes('alias')" class="text-red-600 text-sm flex items-center">
+        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 000 2v4a1 1 0 002 0V7a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+        </svg>
+        El alias es obligatorio y debe ser único
+      </div>
+      <p class="text-sm text-gray-600">El alias será usado como identificador público único</p>
+    </div>
+
+    <!-- Descripción -->
+    <div class="space-y-2">
+      <label for="GESTORDescripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
+      <textarea
+        id="GESTORDescripcion"
+        [(ngModel)]="newUser.descripcion"
+        name="GESTORDescripcion"
+        rows="3"
+        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 resize-none"
+        placeholder="Describe la experiencia y enfoque del GESTOR de contenido..."></textarea>
+      <p class="text-sm text-gray-600">Opcional: Breve descripción del perfil profesional</p>
+    </div>
+
+    <!-- Especialidad -->
+    <div class="space-y-2">
+      <label for="GESTOREspecialidad" class="block text-sm font-medium text-gray-700">Especialidad *</label>
+      <select
+        id="GESTOREspecialidad"
+        [(ngModel)]="newUser.especialidad"
+        name="GESTOREspecialidad"
+        required
+        [class.border-red-500]="fieldsWithError.includes('especialidad')"
+        [class.border-green-500]="newUser.especialidad && !fieldsWithError.includes('especialidad')"
+        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+        <option value="">Selecciona una especialidad</option>
+        <option value="Música">Música</option>
+        <option value="Películas">Películas y Cinema</option>
+        <option value="Documentales">Documentales</option>
+        <option value="Podcasts">Podcasts</option>
+        <option value="Series">Series de TV</option>
+        <option value="Entretenimiento">Entretenimiento General</option>
+        <option value="Educativo">Contenido Educativo</option>
+        <option value="Deportes">Deportes</option>
+        <option value="Noticias">Noticias y Actualidad</option>
+        <option value="Tecnología">Tecnología</option>
+      </select>
+      <div *ngIf="fieldsWithError.includes('especialidad')" class="text-red-600 text-sm flex items-center">
+        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 000 2v4a1 1 0 002 0V7a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+        </svg>
+        Selecciona una especialidad
+      </div>
+    </div>
+
+    <!-- TIPO de contenido -->
+    <fieldset class="space-y-2">
+      <legend class="block text-sm font-medium text-gray-700">TIPO de contenido preferido *</legend>
+      <div class="flex gap-4">
+        <label for="gestorTipoAudio" class="flex items-center space-x-2 cursor-pointer">
+          <input
+            type="radio"
+            [(ngModel)]="newUser.tipoContenido"
+            name="gestorTipoContenido"
+            value="audio"
+            required
+            class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+          <span class="text-sm font-medium text-gray-700">Audio</span>
+          <svg class="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.797l-4.266-3.199a.5.5 0 00-.294-.098H2a1 1 0 01-1-1V7.5a1 1 0 011-1h1.823a.5.5 0 00.294-.098L8.383 3.076zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+          </svg>
+        </label>
+        <label for="gestorTipoVideo" class="flex items-center space-x-2 cursor-pointer">
+          <input
+            type="radio"
+            [(ngModel)]="newUser.tipoContenido"
+            name="gestorTipoContenido"
+            value="video"
+            required
+            class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+          <span class="text-sm font-medium text-gray-700">Video</span>
+          <svg class="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"></path>
+          </svg>
+        </label>
+      </div>
+      <div *ngIf="fieldsWithError.includes('tipoContenido')" class="text-red-600 text-sm flex items-center">
+        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 000 2v4a1 1 0 002 0V7a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+        </svg>
+        Selecciona un TIPO de contenido
+      </div>
+    </fieldset>
+
+    <!-- Contraseñas usando PasswordValidatorComponent -->
+    <div *ngIf="showPassword" class="form-section">
+      <app-password-validator
+        [(password)]="newUser.contrasenia"
+        [(confirmPassword)]="newUser.repetirContrasenia"
+        [username]="newUser.alias"
+        [disabled]="disabled"
+        [showLabels]="true"
+        [inline]="false"
+        (validationChange)="onPasswordValidationChange($event)">
+      </app-password-validator>
+    </div>
+
+    <!-- Botones -->
+    <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
+      <button type="button" (click)="onCancel()" 
+        class="px-6 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-all">
+        Cancelar
+      </button>
+      <button type="button" (click)="isEditMode ? showConfirmationModal() : onSubmit()"
+        [disabled]="isCreating || isUpdating"
+        class="px-6 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-all flex items-center gap-2">
+        <!-- Spinner de carga -->
+        <svg *ngIf="isCreating || isUpdating" class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <!-- Icono normal -->
+        <svg *ngIf="!isCreating && !isUpdating" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        {{ (isCreating || isUpdating) ? 'Procesando...' : (isEditMode ? 'Actualizar' : 'Crear') }} {{ isCreating || isUpdating ? '' : 'Gestor' }}
+      </button>
+    </div>
+  </form>
+
+  <!-- Formulario para VISUALIZADOR -->
+  <form *ngIf="newUser.rol === 'Visualizador'" (ngSubmit)="onSubmit(); $event.preventDefault()" class="space-y-6">
+
+    <!-- Campos básicos del visualizador -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="space-y-2">
+        <label for="VISUNombre" class="block text-sm font-medium text-gray-700">Nombre *</label>
+        <input
+          type="text"
+          id="VISUNombre"
+          [(ngModel)]="newUser.nombre"
+          name="VISUNombre"
+          required
+          [class.border-red-500]="fieldsWithError.includes('nombre')"
+          [class.border-green-500]="newUser.nombre && !fieldsWithError.includes('nombre')"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+          placeholder="Nombre del Usuario">
+        <div *ngIf="fieldsWithError.includes('nombre')" class="text-red-600 text-sm flex items-center">
+          <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm8-8a8 8 0 11-16 0 8 8 0 0116 0zM10 8a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2a1 1 0 01-1-1V8z" clip-rule="evenodd"></path>
+          </svg>
+          El nombre es obligatorio
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <label for="VISUApellidos" class="block text-sm font-medium text-gray-700">Apellidos *</label>
+        <input
+          type="text"
+          id="VISUApellidos"
+          [(ngModel)]="newUser.apellidos"
+          name="VISUApellidos"
+          required
+          [class.border-red-500]="fieldsWithError.includes('apellidos')"
+          [class.border-green-500]="newUser.apellidos && !fieldsWithError.includes('apellidos')"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+          placeholder="Apellidos del Usuario">
+        <div *ngIf="fieldsWithError.includes('apellidos')" class="text-red-600 text-sm flex items-center">
+          <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 000 2v4a1 1 0 002 0V7a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+          </svg>
+          Los apellidos son obligatorios
+        </div>
+      </div>
+    </div>
+
+    <!-- Email -->
+    <div class="space-y-2">
+      <label for="VISUEmail" class="block text-sm font-medium text-gray-700">Email *</label>
+      <input
+        type="email"
+        id="VISUEmail"
+        [(ngModel)]="newUser.email"
+        name="VISUEmail"
+        required
+        [class.border-red-500]="fieldsWithError.includes('email')"
+        [class.border-green-500]="newUser.email && !fieldsWithError.includes('email')"
+        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+        placeholder="email@ejemplo.com">
+      <div *ngIf="fieldsWithError.includes('email')" class="text-red-600 text-sm flex items-center">
+        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 000 2v4a1 1 0 002 0V7a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+        </svg>
+        Email inválido
+      </div>
+    </div>
+
+    <!-- Fecha de nacimiento -->
+    <div class="space-y-2">
+      <label for="VISUFechaNacimiento" class="block text-sm font-medium text-gray-700">Fecha de Nacimiento</label>
+      <input
+        type="date"
+        id="VISUFechaNacimiento"
+        [(ngModel)]="newUser.fechaNacimiento"
+        name="VISUFechaNacimiento"
+        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+    </div>
+
+    <!-- Selección de foto de perfil (Opcional para visualizador) -->
+    <div class="space-y-2">
+      <label for="VISUFotoPerfil" class="block text-sm font-medium text-gray-700">
+        Foto de Perfil (Opcional)
+      </label>
+      <div class="grid grid-cols-4 gap-3">
+        <button type="button"
+          *ngFor="let foto of fotosDisponibles" 
+          (click)="selectFoto(foto.id)"
+          [class]="'w-full cursor-pointer rounded-lg border-2 p-2 transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 ' + (newUser.foto === foto.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300')"
+          [attr.aria-label]="'Seleccionar ' + foto.nombre">
+          <img [src]="'/' + foto.id" [alt]="foto.nombre" class="w-full h-16 object-cover rounded">
+          <p class="text-xs text-center mt-1 text-gray-600">{{ foto.nombre }}</p>
+        </button>
+      </div>
+    </div>
+
+    <!-- Contraseñas usando PasswordValidatorComponent (solo si se está creando o cambiando contraseña) -->
+    <div *ngIf="showPassword" class="form-section">
+      <app-password-validator
+        [(password)]="newUser.contrasenia"
+        [(confirmPassword)]="newUser.repetirContrasenia"
+        [username]="newUser.email"
+        [disabled]="disabled"
+        [showLabels]="true"
+        [inline]="false"
+        (validationChange)="onPasswordValidationChange($event)">
+      </app-password-validator>
+    </div>
+
+    <!-- Botones -->
+    <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
+      <button type="button" (click)="onCancel()" 
+        class="px-6 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-all">
+        Cancelar
+      </button>
+      <button type="button" (click)="isEditMode ? showConfirmationModal() : onSubmit()"
+        [disabled]="isCreating || isUpdating"
+        class="px-6 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-all flex items-center gap-2">
+        <!-- Spinner de carga -->
+        <svg *ngIf="isCreating || isUpdating" class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <!-- Icono normal -->
+        <svg *ngIf="!isCreating && !isUpdating" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        {{ (isCreating || isUpdating) ? 'Procesando...' : (isEditMode ? 'Actualizar' : 'Crear') }} {{ isCreating || isUpdating ? '' : 'Usuario' }}
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Modal de confirmación para actualización -->
+<div *ngIf="showConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
+    <div class="p-6">
+      <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+          <svg class="w-6 h-6 text-amber-600 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+          </svg>
+          <div>
+            <h4 class="text-lg font-semibold text-amber-800 mb-2">¿Confirmar cambios en el usuario?</h4>
+            <p class="text-amber-700 text-sm mb-4">
+              Estás a punto de actualizar los datos de <strong>{{ newUser.nombre }} {{ newUser.apellidos }}</strong>. 
+              Esta acción modificará la información del usuario en el sistema.
+            </p>
+            
+            <div class="bg-white rounded-lg p-3 border border-amber-200">
+              <h5 class="font-medium text-amber-800 mb-2">Resumen de cambios:</h5>
+              <div class="space-y-1 text-sm">
+                <div><span class="text-gray-600">Nombre:</span> <span class="font-medium">{{ newUser.nombre }}</span></div>
+                <div><span class="text-gray-600">Apellidos:</span> <span class="font-medium">{{ newUser.apellidos }}</span></div>
+                <div><span class="text-gray-600">Email:</span> <span class="font-medium">{{ newUser.email }}</span></div>
+                <div><span class="text-gray-600">Rol:</span> <span class="font-medium text-blue-600">{{ getUserTypeDisplayName(newUser.rol) }}</span></div>
+                <div *ngIf="newUser.departamento"><span class="text-gray-600">Departamento:</span> <span class="font-medium">{{ newUser.departamento }}</span></div>
+                <div *ngIf="newUser.alias"><span class="text-gray-600">Alias:</span> <span class="font-medium">{{ newUser.alias }}</span></div>
+                <div *ngIf="newUser.especialidad"><span class="text-gray-600">Especialidad:</span> <span class="font-medium">{{ newUser.especialidad }}</span></div>
+                <div *ngIf="newUser.tipoContenido"><span class="text-gray-600">Tipo de Contenido:</span> <span class="font-medium">{{ newUser.tipoContenido }}</span></div>
+                <div *ngIf="newUser.foto" class="md:col-span-2">
+                  <span class="text-gray-600">Foto de perfil:</span>
+                  <div class="mt-2 flex items-center gap-3">
+                    <img [src]="'/' + newUser.foto" alt="Foto de perfil" class="w-16 h-16 rounded-full object-cover border-2 border-gray-200">
+                    <p class="font-medium text-gray-900">{{ newUser.foto }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 mt-6">
+        <button 
+          type="button"
+          (click)="cancelUpdate()"
+          class="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
+          Cancelar
+        </button>
+        <button 
+          type="button"
+          (click)="confirmUpdate()"
+          class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          Sí, Guardar Cambios
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de éxito para actualización -->
+<div *ngIf="updateSuccess" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full">
+    <div class="p-6">
+      <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+          <svg class="w-8 h-8 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div>
+            <h4 class="text-lg font-semibold text-green-800 mb-2">¡Usuario actualizado exitosamente!</h4>
+            <p class="text-green-700 text-sm">
+              Los datos del usuario han sido modificados correctamente en el sistema.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 mt-6">
+        <button 
+          type="button"
+          (click)="closeSuccessModal()"
+          class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+          Entendido
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de error para actualización -->
+<div *ngIf="updateError" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full">
+    <div class="p-6">
+      <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+          <svg class="w-8 h-8 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div>
+            <h4 class="text-lg font-semibold text-red-800 mb-2">Error al actualizar usuario</h4>
+            <p class="text-red-700 text-sm">
+              {{ updateError || 'Ocurrió un error inesperado al intentar actualizar el usuario. Por favor, inténtelo de nuevo.' }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 mt-6">
+        <button 
+          type="button"
+          (click)="closeErrorModal()"
+          class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de éxito para creación -->
+<div *ngIf="createSuccess" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full">
+    <div class="p-6">
+      <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+          <svg class="w-8 h-8 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div>
+            <h4 class="text-lg font-semibold text-green-800 mb-2">¡{{ createdUserType }} creado exitosamente!</h4>
+            <p class="text-green-700 text-sm">
+              El {{ createdUserType.toLowerCase() }} ha sido registrado correctamente en el sistema y ya puede acceder a la plataforma.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 mt-6">
+        <button 
+          type="button"
+          (click)="closeCreateSuccessModal()"
+          class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+          Entendido
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de error para creación -->
+<div *ngIf="createError" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full">
+    <div class="p-6">
+      <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+          <svg class="w-8 h-8 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div>
+            <h4 class="text-lg font-semibold text-red-800 mb-2">Error al crear {{ createdUserType.toLowerCase() }}</h4>
+            <p class="text-red-700 text-sm">
+              {{ createError || 'Ocurrió un error inesperado al intentar crear el usuario. Por favor, inténtelo de nuevo.' }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 mt-6">
+        <button 
+          type="button"
+          (click)="closeCreateErrorModal()"
+          class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
