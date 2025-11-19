@@ -282,10 +282,11 @@
                     [disabled]="isCreatingUser || isUpdatingUser"
                     [profileData]="userProfileData"
                     (validationChange)="onUserFormValidationChange($event)"
-                    (formSubmit)="onUserFormSubmitEvent($event)"
                     (formCancel)="onUserFormCancelEvent()"
                     (userDeleted)="onUserDeleted($event)"
-                    (userStatusToggled)="onUserStatusToggled($event)">
+                    (userStatusToggled)="onUserStatusToggled($event)"
+                    (userCreatedSuccessfully)="onUserCreatedSuccessfully()"
+                    (userUpdatedSuccessfully)="onUserUpdatedSuccessfully($event)">
                   </app-user-form>
                 </div>
 

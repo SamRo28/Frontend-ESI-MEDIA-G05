@@ -280,25 +280,55 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
 
   private iniciarPlayback(): void {
     if (!this.detalle) return;
-    if (this.detalle.tipo === 'AUDIO') {
-      const el = document.querySelector('audio');
-      if (el) {
-        try { (el as HTMLAudioElement).play(); } catch {}
-      }
-      return;
+    
+    const playbackHandlers = {
+      'AUDIO': () => this.iniciarPlaybackAudio(),
+      'VIDEO': () => this.iniciarPlaybackVideo()
+    };
+
+    const handler = playbackHandlers[this.detalle.tipo as keyof typeof playbackHandlers];
+    if (handler) {
+      handler();
     }
-    if (this.detalle.tipo === 'VIDEO') {
-      if (this.isYoutube && this.youtubeVideoId) {
-        // Forzar autoplay reconstruyendo la URL del iframe
-        const url = `https://www.youtube.com/embed/${this.youtubeVideoId}?autoplay=1`;
-        this.youtubeSafeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
-        this.cdr.markForCheck();
-      } else {
-        const v = document.querySelector('video');
-        if (v) {
-          try { (v as HTMLVideoElement).play(); } catch {}
-        }
-      }
+  }
+
+  private iniciarPlaybackAudio(): void {
+    const audioElement = document.querySelector('audio');
+    if (audioElement) {
+      this.reproducirElemento(audioElement as HTMLAudioElement);
+    }
+  }
+
+  private iniciarPlaybackVideo(): void {
+    if (this.shouldPlayYoutubeVideo()) {
+      this.iniciarPlaybackYoutube();
+    } else {
+      this.iniciarPlaybackVideoNativo();
+    }
+  }
+
+  private shouldPlayYoutubeVideo(): boolean {
+    return this.isYoutube && !!this.youtubeVideoId;
+  }
+
+  private iniciarPlaybackYoutube(): void {
+    const url = `https://www.youtube.com/embed/${this.youtubeVideoId}?autoplay=1`;
+    this.youtubeSafeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    this.cdr.markForCheck();
+  }
+
+  private iniciarPlaybackVideoNativo(): void {
+    const videoElement = document.querySelector('video');
+    if (videoElement) {
+      this.reproducirElemento(videoElement as HTMLVideoElement);
+    }
+  }
+
+  private reproducirElemento(element: HTMLAudioElement | HTMLVideoElement): void {
+    try {
+      element.play();
+    } catch {
+      // Silenciar errores de reproducción
     }
   }
 
@@ -632,7 +662,6 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   irAMisListasPrivadas(): void {
     this.router.navigate(['/dashboard'], { queryParams: { listas: 'privadas' } });
   }
-  mostrarNotificacionDummy(): void { }
 
   logout(): void {
     // Llamar al servicio de logout

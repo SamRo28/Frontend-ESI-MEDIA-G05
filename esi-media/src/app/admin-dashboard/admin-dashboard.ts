@@ -748,6 +748,37 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Nuevos métodos para manejar los eventos específicos del user-form
+  async onUserCreatedSuccessfully(): Promise<void> {
+    console.log('Usuario creado exitosamente por user-form, refrescando lista...');
+    try {
+      this.showUserForm = false; // Cerrar el formulario
+      this.editingUser = null;
+      this.userProfileData = null;
+      // Recargar la lista de usuarios
+      await this.loadUsuarios();
+      this.applyUserFilters();
+      this.cdr.detectChanges();
+    } catch (error) {
+      console.error('Error al refrescar la lista después de crear usuario:', error);
+    }
+  }
+
+  async onUserUpdatedSuccessfully(user: any): Promise<void> {
+    console.log('Usuario actualizado exitosamente por user-form, refrescando lista...', user);
+    try {
+      this.showUserForm = false; // Cerrar el formulario
+      this.editingUser = null;
+      this.userProfileData = null;
+      // Recargar la lista de usuarios
+      await this.loadUsuarios();
+      this.applyUserFilters();
+      this.cdr.detectChanges();
+    } catch (error) {
+      console.error('Error al refrescar la lista después de actualizar usuario:', error);
+    }
+  }
+
   onUserFormValidationChange(isValid: boolean): void {
     this.isUserFormValid = isValid;
   }
