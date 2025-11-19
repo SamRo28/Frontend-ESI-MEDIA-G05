@@ -14,6 +14,8 @@ export class PasswordValidatorComponent implements OnInit, OnChanges {
   @Input() password = '';
   @Input() confirmPassword = '';
   @Input() username = '';
+  @Input() firstName = '';
+  @Input() lastName = '';
   @Input() disabled = false;
   @Input() showLabels = true;
   @Input() inline = false;
@@ -33,7 +35,7 @@ export class PasswordValidatorComponent implements OnInit, OnChanges {
     hasSpecialChar: false,
     noStartsWithUpperCase: false,
     passwordsMatch: false,
-    notContainsUsername: true
+    notContainsPersonalData: true
   };
 
   passwordRules: Array<{key: keyof PasswordValidation, label: string, isValid: boolean}> = [];
@@ -74,9 +76,11 @@ export class PasswordValidatorComponent implements OnInit, OnChanges {
 
   private validatePasswords() {
     this.validation = this.userValidationService.validatePassword(
-      this.password, 
-      this.confirmPassword, 
-      this.username
+      this.password,
+      this.confirmPassword,
+      this.username,
+      this.firstName,
+      this.lastName
     );
     
     // Actualizar reglas con estados actuales
@@ -98,10 +102,10 @@ export class PasswordValidatorComponent implements OnInit, OnChanges {
       return `${baseClass} border-gray-300 focus:ring-blue-500`;
     }
     
-    const hasErrors = !this.validation.minLength || !this.validation.hasUpperCase || 
-                     !this.validation.hasLowerCase || !this.validation.hasNumber || 
-                     !this.validation.hasSpecialChar || !this.validation.noStartsWithUpperCase ||
-                     !this.validation.notContainsUsername;
+    const hasErrors = !this.validation.minLength || !this.validation.hasUpperCase ||
+             !this.validation.hasLowerCase || !this.validation.hasNumber ||
+             !this.validation.hasSpecialChar || !this.validation.noStartsWithUpperCase ||
+             !this.validation.notContainsPersonalData;
     
     return hasErrors 
       ? `${baseClass} border-red-500 bg-red-50 focus:ring-red-500`

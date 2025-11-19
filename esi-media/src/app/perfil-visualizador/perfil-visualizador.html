@@ -110,7 +110,7 @@
               <div *ngIf="!passwordVerified" class="pw-step">
                 <div class="pw-helper-text">Para cambiar tu contraseña es necesario ingresar la contraseña actual.</div>
                 <!-- Campo oculto para evitar auto-relleno del navegador -->
-                <input type="password" style="display:none" aria-hidden="true">
+                <input type="password" style="display:none" tabindex="-1">
                 <div class="input-group with-icon">
                   <input [type]="passwordVisibility['current'] ? 'text' : 'password'" class="input" placeholder="Contraseña actual" [(ngModel)]="form.currentPassword" name="currentPassword" autocomplete="off" autocapitalize="off" spellcheck="false" />
                   <button type="button" class="icon-btn pw-icon-btn" (click)="togglePasswordVisibility('current')">
@@ -130,56 +130,20 @@
               </div>
               <!-- Paso 2: Nueva contraseña -->
               <div *ngIf="passwordVerified" class="pw-section">
-                <div class="input-group with-icon">
-                  <input [type]="passwordVisibility['new'] ? 'text' : 'password'" class="input" placeholder="Nueva contraseña" [(ngModel)]="form.newPassword" name="newPassword" (input)="onPasswordInput()" />
-                  <button type="button" class="icon-btn pw-icon-btn" (click)="togglePasswordVisibility('new')">
-                    <!-- Ojo abierto -->
-                    <svg *ngIf="!passwordVisibility['new']" class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639l4.433-7.447A1.012 1.012 0 017.447 4h9.106a1.012 1.012 0 01.97.734l4.433 7.447a1.012 1.012 0 010 .639l-4.433 7.447A1.012 1.012 0 0116.553 20H7.447a1.012 1.012 0 01-.97-.734L2.036 12.322z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                    <!-- Ojo cerrado -->
-                    <svg *ngIf="passwordVisibility['new']" class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
-                  </button>
-                </div>
-                <div class="input-group with-icon">
-                  <input [type]="passwordVisibility['repeat'] ? 'text' : 'password'" class="input" placeholder="Repetir contraseña" [(ngModel)]="form.repeatPassword" name="repeatPassword" (input)="onPasswordInput()" />
-                  <button type="button" class="icon-btn pw-icon-btn" (click)="togglePasswordVisibility('repeat')">
-                    <!-- Ojo abierto -->
-                    <svg *ngIf="!passwordVisibility['repeat']" class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639l4.433-7.447A1.012 1.012 0 017.447 4h9.106a1.012 1.012 0 01.97.734l4.433 7.447a1.012 1.012 0 010 .639l-4.433 7.447A1.012 1.012 0 0116.553 20H7.447a1.012 1.012 0 01-.97-.734L2.036 12.322z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                    <!-- Ojo cerrado -->
-                    <svg *ngIf="passwordVisibility['repeat']" class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
-                  </button>
-                </div>
+                <app-password-validator
+                  [password]="form.newPassword"
+                  [confirmPassword]="form.repeatPassword"
+                  [username]="email"
+                  [firstName]="form.nombre"
+                  [lastName]="form.apellidos"
+                  (passwordChange)="form.newPassword = $event; onPasswordInput()"
+                  (confirmPasswordChange)="form.repeatPassword = $event; onPasswordInput()"
+                  (validationChange)="onPwPolicyChange($event)"
+                  (isValidChange)="onPwPolicyValidChange($event)"></app-password-validator>
                 <ul class="pw-rules">
-                  <li class="pw-rule" [class.ok]="passwordRules.minLength">
-                    <span class="pw-ic" [class.on]="passwordRules.minLength"></span>
-                    Al menos 8 caracteres
-                  </li>
-                  <li class="pw-rule" [class.ok]="passwordRules.upper">
-                    <span class="pw-ic" [class.on]="passwordRules.upper"></span>
-                    Al menos una letra mayúscula
-                  </li>
-                  <li class="pw-rule" [class.ok]="passwordRules.lower">
-                    <span class="pw-ic" [class.on]="passwordRules.lower"></span>
-                    Al menos una letra minúscula
-                  </li>
-                  <li class="pw-rule" [class.ok]="passwordRules.number">
-                    <span class="pw-ic" [class.on]="passwordRules.number"></span>
-                    Al menos un número
-                  </li>
-                  <li class="pw-rule" [class.ok]="passwordRules.special">
-                    <span class="pw-ic" [class.on]="passwordRules.special"></span>
-                    Al menos un carácter especial
-                  </li>
-                  <li class="pw-rule" [class.ok]="passwordRules.noPersonal">
-                    <span class="pw-ic" [class.on]="passwordRules.noPersonal"></span>
-                    Sin datos personales
-                  </li>
                   <li class="pw-rule" [class.ok]="passwordRules.notCurrent">
                     <span class="pw-ic" [class.on]="passwordRules.notCurrent"></span>
                     No usada recientemente
-                  </li>
-                  <li class="pw-rule" [class.ok]="passwordRules.match">
-                    <span class="pw-ic" [class.on]="passwordRules.match"></span>
-                    Coinciden
                   </li>
                 </ul>
                 <div class="btn-row pw-btn-row">

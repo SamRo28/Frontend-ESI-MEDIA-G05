@@ -60,6 +60,8 @@ const VIDEO_TAGS: string[] = [
 })
 export class GestorContenidosComponent implements OnInit {
   loading = false;
+  readonly vipToggleId = `vip-toggle-${Math.random().toString(36).slice(2, 7)}`;
+  readonly estadoToggleId = `estado-toggle-${Math.random().toString(36).slice(2, 7)}`;
   errorMessage = '';
   contenidos: ContenidoResumenGestor[] = [];
   // Indicador para evitar flicker: mientras se aplican filtros (enriquecimiento/consulta de detalle), mostrar overlay
@@ -350,7 +352,7 @@ export class GestorContenidosComponent implements OnInit {
     forkJoin([detalle$, avg$]).subscribe({
       next: ([detalle, avg]) => {
         const nvisualizaciones = typeof detalle?.nvisualizaciones === 'number' ? detalle.nvisualizaciones : (detalle?.nvisualizaciones ?? undefined);
-        const fechaHasta = detalle?.fechaDisponibleHasta || detalle?.fechaDisponibleHasta || null;
+        const fechaHasta = detalle?.fechaDisponibleHasta ?? detalle?.fechadisponiblehasta ?? null;
 
         let daysRemaining: number | string = '-';
         if (fechaHasta) {

@@ -47,8 +47,6 @@ export class Fa2Qr implements OnInit {
           this.rawQrUrl = mensaje.toString();
           // Angular puede bloquear URLs externas; marcaremos la URL como segura
           const sanitized = this.sanitizer.bypassSecurityTrustUrl(this.rawQrUrl);
-          console.log('QR URL (raw):', this.rawQrUrl);
-          console.log('QR URL (sanitized):', sanitized);
           // Reset load state: ocultar imagen hasta que termine la carga
           this.qrVisible = false;
           this.qrLoadError = null;
@@ -66,7 +64,6 @@ export class Fa2Qr implements OnInit {
   }
 
   onQrLoad(): void {
-    console.log('QR image loaded successfully');
     this.qrVisible = true;
   this.cdr.detectChanges();
   }
@@ -102,8 +99,6 @@ export class Fa2Qr implements OnInit {
     alert('Introduce el código de verificación antes de enviar.');
     return;
   }
-
-  console.log('Verificando código:', this.verificationCode, 'para', email);
 
   this.userService.verify2FACode(email, this.verificationCode).subscribe({
     next: (res: any) => {
