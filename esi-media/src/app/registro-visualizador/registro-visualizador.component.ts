@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { VisualizadorService } from '../services/visualizador.service';
+import { PasswordValidatorComponent } from '../shared/components/password-validator/password-validator.component';
 
 @Component({
   selector: 'app-registro-visualizador',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, PasswordValidatorComponent],
   templateUrl: './registro-visualizador.component.html',
   styleUrl: './registro-visualizador.component.css'
 })
@@ -30,19 +31,8 @@ export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
   minAllowedBirthStr: string; // fecha mínima permitida (limite inferior) - no usada estrictamente aquí
   maxBirthForFourYearsStr: string; // fecha máxima para que el usuario tenga al menos 4 años
 
-  // Validación de contraseña en tiempo real
-  passwordValidation = {
-    minLength: false,
-    hasUpperCase: false,
-    hasLowerCase: false,
-    hasNumber: false,
-    hasSpecialChar: false,
-    hasPersonalData: false // Controla si la contraseña contiene datos personales
-  };
-
-  // Control para mostrar/ocultar las contraseñas
-  showPassword = false;
-  showConfirmPassword = false;
+  // Estado de validación del password-validator
+  private passwordIsValid = false;
 
   form!: FormGroup;
   submitted = false;
@@ -102,16 +92,12 @@ export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
       email: ['', [Validators.required, Validators.email]],
       alias: ['', [Validators.maxLength(12)]],
       fecha_nac: ['', [Validators.required, this.birthDateValidator(4)]],
-      password: ['', [Validators.required, this.passwordValidator()]],
+      password: ['', [Validators.required]],
       passwordConfirm: ['', [Validators.required]],
       vip: [false],
       avatar: [null] // Para almacenar la ruta del avatar seleccionado
     }, { validators: this.passwordsMatchValidator });
-    
-    // Suscribirse a cambios en el campo de contraseña para validar en tiempo real
-    this.form.get('password')?.valueChanges.subscribe(value => {
-      this.validatePassword(value);
-    });
+
 
     // Escuchar foco/visibilidad para comprobar activación al volver a la app
     if (typeof document !== 'undefined') {
@@ -135,90 +121,30 @@ export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
     };
   }
 
-  // Validador de contraseña que verifica criterios individuales
-  passwordValidator(): ValidatorFn {
-    return (control: AbstractControl): ValidationErrors | null => {
-      const value = control.value;
-      if (!value) return null; // required lo maneja aparte
-      
-      // Verificar todos los criterios básicos
-      const hasMinLength = value.length >= 8;
-      const hasUpperCase = /[A-Z]/.test(value);
-      const hasLowerCase = /[a-z]/.test(value);
-      const hasNumber = /[0-9]/.test(value);
-      const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value);
-      
-      // Verificar que no contenga datos personales (se comprobará más a fondo en validatePassword)
-      // Aquí solo verificamos si el formulario existe y tiene los campos necesarios
-      let hasPersonalData = false;
-      const form = control.parent;
-      if (form) {
-        const nombre = form.get('nombre')?.value?.toLowerCase() || '';
-        const apellidos = form.get('apellidos')?.value?.toLowerCase() || '';
-        
-        if (nombre && apellidos && value) {
-          const lowerValue = value.toLowerCase();
-          // Comprobar si la contraseña contiene el nombre o apellidos
-          hasPersonalData = (nombre.length > 2 && lowerValue.includes(nombre.toLowerCase())) || 
-                           (apellidos.length > 2 && lowerValue.includes(apellidos.toLowerCase()));
-        }
+  // Callbacks del componente compartido de contraseñas
+  onPasswordValidationChange(validation: any): void {
+    const passCtrl = this.form.get('password');
+    const confirmCtrl = this.form.get('passwordConfirm');
+    // Gestionar error de política en el control password
+    const hasPolicyError = !validation.minLength || !validation.hasUpperCase || !validation.hasLowerCase ||
+                 !validation.hasNumber || !validation.hasSpecialChar || !validation.noStartsWithUpperCase ||
+                 !validation.notContainsPersonalData;
+    if (passCtrl) {
+      const current = { ...(passCtrl.errors || {}) } as Record<string, boolean>;
+      if (hasPolicyError) {
+        current['passwordPolicy'] = true;
+        passCtrl.setErrors(current);
+      } else {
+        delete current['passwordPolicy'];
+        passCtrl.setErrors(Object.keys(current).length ? current : null);
       }
-      
-      // Si todos los criterios pasan, devolver null (válido)
-      if (hasMinLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar && !hasPersonalData) {
-        return null;
-      }
-      
-      // Sino, devolver un objeto con los criterios que fallaron
-      return {
-        passwordPolicy: {
-          hasMinLength,
-          hasUpperCase,
-          hasLowerCase,
-          hasNumber,
-          hasSpecialChar,
-          hasPersonalData
-        }
-      };
-    };
-  }
-  
-  // Método para validar la contraseña y actualizar el estado de validación
-  validatePassword(value: string): void {
-    if (!value) {
-      this.resetPasswordValidation();
-      return;
     }
-    
-    // Comprobar si contiene datos personales
-    const nombre = this.form?.get('nombre')?.value?.toLowerCase() || '';
-    const apellidos = this.form?.get('apellidos')?.value?.toLowerCase() || '';
-    const lowerValue = value.toLowerCase();
-    
-    const hasPersonalData = (nombre && nombre.length > 2 && lowerValue.includes(nombre)) || 
-                          (apellidos && apellidos.length > 2 && lowerValue.includes(apellidos));
-    
-    // Actualizar estado de validación
-    this.passwordValidation = {
-      minLength: value.length >= 8,
-      hasUpperCase: /[A-Z]/.test(value),
-      hasLowerCase: /[a-z]/.test(value),
-      hasNumber: /[0-9]/.test(value),
-      hasSpecialChar: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value),
-      hasPersonalData: hasPersonalData
-    };
+    // Forzar revalidación de coincidencia
+    if (confirmCtrl) confirmCtrl.updateValueAndValidity({ onlySelf: false, emitEvent: false });
   }
-  
-  // Resetear el estado de validación de contraseña
-  resetPasswordValidation(): void {
-    this.passwordValidation = {
-      minLength: false,
-      hasUpperCase: false,
-      hasLowerCase: false,
-      hasNumber: false,
-      hasSpecialChar: false,
-      hasPersonalData: false
-    };
+
+  onPasswordIsValidChange(isValid: boolean): void {
+    this.passwordIsValid = isValid;
   }
 
   //Lo tengo ya en el servicio del back, pero en el front hago comprobaciones inmediatas
@@ -278,7 +204,11 @@ export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
       case 'tooYoung': 
         return `Debes tener al menos 4 años`;
       case 'passwordPolicy':
-        return this.buildPasswordPolicyMessage(control.errors['passwordPolicy']);
+        const policy = control.errors['passwordPolicy'];
+        if (!policy || typeof policy !== 'object') {
+          return 'La contraseña no cumple la política mínima';
+        }
+        return this.buildPasswordPolicyMessage(policy);
       case 'pattern': 
         return 'La contraseña no cumple la política mínima';
       case 'duplicate': 

@@ -105,7 +105,7 @@ export class UserFormComponent implements OnInit, OnChanges {
     hasNumber: false,
     hasSpecialChar: false,
     passwordsMatch: false,
-    notContainsUsername: false
+    notContainsPersonalData: false
   };
 
   // Estados de visibilidad
@@ -249,9 +249,11 @@ export class UserFormComponent implements OnInit, OnChanges {
     }
 
     const passwordValidation = this.userValidationService.validatePassword(
-      this.user.password || '', 
-      this.user.confirmPassword || '', 
-      this.user.username
+      this.user.password || '',
+      this.user.confirmPassword || '',
+      this.user.username,
+      this.user.nombres,
+      this.user.apellidos
     );
     
     let isValid = true;
@@ -685,7 +687,11 @@ export class UserFormComponent implements OnInit, OnChanges {
       hasNumber: /\d/.test(password),
       hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
       passwordsMatch: password === repeatPassword && password.length > 0,
-      notContainsUsername: username.length === 0 || !password.toLowerCase().includes(username.toLowerCase())
+      notContainsPersonalData: ((): boolean => {
+        const lower = password.toLowerCase();
+        const parts = [username, this.user.nombres, this.user.apellidos].filter(p => !!p).map(p => p!.toLowerCase()).filter(p => p.length > 2);
+        return parts.length === 0 || !parts.some(part => lower.includes(part));
+      })()
     };
   }
 
