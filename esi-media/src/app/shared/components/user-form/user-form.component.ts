@@ -197,16 +197,6 @@ export class UserFormComponent implements OnInit, OnChanges {
 
   validateForm(): boolean {
     this.formErrors = {};
-<<<<<<< HEAD
-    let isValid = true;
-    isValid = this.validateUsername() && isValid;
-    isValid = this.validateEmail() && isValid;
-    isValid = this.validatePasswords() && isValid;
-    isValid = this.validateRequiredField('nombres', 'Los nombres son requeridos', this.user.nombres) && isValid;
-    isValid = this.validateRequiredField('apellidos', 'Los apellidos son requeridos', this.user.apellidos) && isValid;
-    isValid = this.validateRequiredField('fechaNacimiento', 'La fecha de nacimiento es requerida', this.user.fechaNacimiento) && isValid;
-    this.validationChange.emit(isValid);
-=======
     
     const validationResults = [
       this.validateUsername(),
@@ -287,7 +277,6 @@ export class UserFormComponent implements OnInit, OnChanges {
       }
     });
 
->>>>>>> origin/main
     return isValid;
   }
 
@@ -552,13 +541,6 @@ export class UserFormComponent implements OnInit, OnChanges {
 
     let isValid = true;
 
-<<<<<<< HEAD
-    isValid = this.validateNewUserField('nombre', this.newUser.nombre) && isValid;
-    isValid = this.validateNewUserField('apellidos', this.newUser.apellidos) && isValid;
-    isValid = this.validateEmailField() && isValid;
-    isValid = this.validateRoleSpecificFields() && isValid;
-    isValid = this.validatePasswordFields() && isValid;
-=======
     basicFields.forEach(({ field, value }) => {
       if (!value || !value.trim()) {
         this.fieldsWithError.push(field);
@@ -641,7 +623,6 @@ export class UserFormComponent implements OnInit, OnChanges {
       this.fieldsWithError.push('repetirContrasenia');
       isValid = false;
     }
->>>>>>> origin/main
 
     return isValid;
   }
