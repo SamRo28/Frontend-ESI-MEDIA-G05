@@ -78,6 +78,10 @@
             <img *ngFor="let img of preloadedImages; index as i" 
                 [src]="'/' + img" 
                 (click)="selectPreloaded(i)" 
+                (keydown.enter)="selectPreloaded(i)" 
+                (keydown.space)="selectPreloaded(i); $event.preventDefault()" 
+                role="button" 
+                tabindex="0" 
                 [ngClass]="{'selected-avatar': selectedAvatar === i}" 
                 class="thumb" 
                 alt="avatar" />
