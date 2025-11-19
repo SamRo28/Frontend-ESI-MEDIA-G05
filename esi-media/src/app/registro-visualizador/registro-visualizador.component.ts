@@ -56,7 +56,7 @@ export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
   private emailForPolling: string | null = null;
   private activationFinalized = false; // evita repetir confirm tras manejar activación
   private pendingShow2FA = false; // activación detectada con pestaña oculta
-  private lastActivationToken: string | null = null;
+  // Ya no necesitamos lastActivationToken, el backend gestiona los tokens mediante cookies
 
   constructor(private fb: FormBuilder, private router: Router, private svc: VisualizadorService) {
     
@@ -648,16 +648,7 @@ export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
     } catch {}
   }
 
-  private persistToken(token: string): void {
-    try {
-      sessionStorage.setItem('token', token);
-      // Duplicado defensivo por si algún punto lee de localStorage
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('userToken', token);
-      localStorage.setItem('currentUserToken', token);
-    } catch {}
-    this.lastActivationToken = token;
-  }
+  // Ya no necesitamos persistToken, el backend gestiona los tokens mediante cookies
 
   private prompt2FAAndNavigate(): void {
     const wants2fa = window.confirm(RegistroVisualizadorComponent.CONFIRM_2FA_MESSAGE);
@@ -671,9 +662,7 @@ export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
   private handleActivationResponse(res: any, source: 'polling' | 'focus'): void {
     if (!res?.activated || this.activationFinalized) return;
     this.stopPollingActivation();
-    if (res?.token) {
-      this.persistToken(res.token);
-    }
+    // Ya no necesitamos persistir el token, el backend lo gestiona mediante cookies
     this.ensureSessionUserFromForm();
     // Si la pestaña está oculta, posponer el diálogo hasta focus/visibility
     if (typeof document !== 'undefined' && document.hidden) {

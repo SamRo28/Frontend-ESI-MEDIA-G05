@@ -607,6 +607,48 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
 
 
 
+ logout(): void {
+    // Llamar al servicio de logout
+    this.userService.logout().subscribe({
+      next: () => {
+        try {
+          // Ya no necesitamos eliminar el token, el backend invalida la cookie
+          sessionStorage.removeItem('user');
+          sessionStorage.removeItem('currentUserClass');
+          sessionStorage.removeItem('email');
+        } catch {}
+        this.router.navigate(['/login']);
+      },
+      error: (err) => {
+        console.error('Error al cerrar sesión:', err);
+        alert('Error al cerrar sesión');
+      }
+    });
+  }
+
+  // MÃ©todos para la eliminaciÃ³n de usuarios
+  openDeleteModal(usuario: Usuario) {
+    this.usuarioAEliminar = usuario;
+    this.showDeleteModal = true;
+  }
+
+  closeDeleteModal() {
+    this.showDeleteModal = false;
+    this.usuarioAEliminar = null;
+    this.isDeleting = false; // Asegurar que el flag de eliminaciÃ³n se resetea
+    
+    // Forzar la detecciÃ³n de cambios para asegurar que Angular actualiza la vista
+    this.cdr.detectChanges();
+    
+    // Doble comprobaciÃ³n para asegurar que el modal se cierra
+    setTimeout(() => {
+      if (this.showDeleteModal) {
+        console.log("Forzando cierre del modal");
+        this.showDeleteModal = false;
+        this.cdr.detectChanges();
+      }
+    }, 100);
+  }
 
 
   // Métodos de modales removidos - ahora manejados por user-table component
@@ -734,6 +776,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  // ============================================
+  // MÉTODO PARA VERIFICAR TOKEN DE AUTENTICACIÓN
+  // ============================================
+  private checkAuthToken() {
+    // Ya no es necesario verificar el token manualmente.
+    // La autenticación se gestiona mediante cookies HttpOnly.
+    if (isPlatformBrowser(this.platformId)) {
+      console.log('✅ Autenticación gestionada mediante cookies HttpOnly');
   onUserTableToggleStatus(user: any): void {
     // Convertir de mappedUser de vuelta a Usuario del AdminService
     const usuarioOriginal = this.usuarios.find(u => u.id === user.id);

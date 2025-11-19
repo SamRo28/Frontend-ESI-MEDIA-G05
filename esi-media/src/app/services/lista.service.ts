@@ -175,12 +175,9 @@ export class ListaService {
    * @returns Observable con la respuesta que contiene las listas del usuario
    */
   obtenerListasUsuario(userId: string): Observable<ListasResponse> {
-    const token = sessionStorage.getItem('currentUserToken');
-    const headers = { Authorization: `Bearer ${token}` };
-    
+    // Ya no necesitamos añadir headers manualmente, el interceptor gestiona withCredentials
     return this.http.get<ListasResponse>(
-      `${this.baseUrl}/usuario/mias`,
-      { headers }
+      `${this.baseUrl}/usuario/mias`
     );
   }
 
@@ -191,12 +188,9 @@ export class ListaService {
    * @returns Observable con la respuesta que contiene las listas del gestor
    */
   obtenerListasGestor(): Observable<ListasResponse> {
-    const token = sessionStorage.getItem('currentUserToken');
-    const headers = { Authorization: `Bearer ${token}` };
-    
+    // Ya no necesitamos añadir headers manualmente, el interceptor gestiona withCredentials
     return this.http.get<ListasResponse>(
-      `${this.baseUrl}/gestor/mias`,
-      { headers }
+      `${this.baseUrl}/gestor/mias`
     );
   }
 

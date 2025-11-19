@@ -10,37 +10,52 @@ export class UserService {
 
   constructor(private client: HttpClient) {}
 
-  login(email: string, password: string): Observable<any> {
-    return this.client.post<any>(`${environment.apiUrl}/users/login`, { email, password });
-  }
+    /**
+     * Login del usuario. El backend ahora devuelve el token en una cookie HttpOnly.
+     * Solo recibimos el objeto usuario en el body de la respuesta.
+     */
+    login(email: string, password: string): Observable<any> {
+        return this.client.post<any>(`${environment.apiUrl}/users/login`, { email, password });
+    }
 
-  loadQRCode(): Observable<any> {
-    const email = sessionStorage.getItem('email');
-    return this.client.post<any>(`${environment.apiUrl}/api/visualizador/activate2FA`, { email }).pipe(
-      tap(data => console.log('QR Code Data:', data))
-    );
-  }
+    loadQRCode(): Observable<any> {
+        let email = sessionStorage.getItem('email');
+        return this.client.post<any>(`${environment.apiUrl}/api/visualizador/activate2FA`, { email }).pipe(
+            tap(data => {
+                console.log('QR Code Data:', data);
+            })
+        );
+    }
 
   send3AVerificationCode(email: string): Observable<any> {
     return this.client.post<any>(`${environment.apiUrl}/users/login3Auth`, { email });
   }
 
-  logout() {
-    const token = sessionStorage.getItem('token');
-    return this.client.post(`${environment.apiUrl}/users/logout`, { token }, { responseType: 'text' });
-  }
+    /**
+     * Logout del usuario. El backend invalida la cookie automáticamente.
+     * Ya no es necesario enviar el token ni eliminarlo del localStorage.
+     */
+    logout(): Observable<any> {
+        return this.client.post(`${environment.apiUrl}/users/logout`, {}, { responseType: 'text' });
+    }
 
-  verify3ACode(id: string, code: string): Observable<any> {
-    return this.client.post<any>(`${environment.apiUrl}/users/verify3AuthCode`, { id, code });
-  }
+    /**
+     * Verifica el código 3FA. El backend establece la cookie tras la verificación exitosa.
+     */
+    verify3ACode(id: string, code: string): Observable<any> {
+        return this.client.post<any>(`${environment.apiUrl}/users/verify3AuthCode`, { id, code });
+    }
 
-  verify2FACode(email: string, code: string) {
-    return this.client.post(
-      `${environment.apiUrl}/users/verify2FACode`,
-      { email, code },
-      { responseType: 'text' }
-    );
-  }
+    /**
+     * Verifica el código 2FA. El backend establece la cookie tras la verificación exitosa.
+     */
+    verify2FACode(email: string, code: string): Observable<string> {
+        return this.client.post(
+            `${environment.apiUrl}/users/verify2FACode`,
+            { email, code },
+            { responseType: 'text' }
+        );
+    }
 
   // Password Recovery
   requestPasswordReset(email: string): Observable<any> {

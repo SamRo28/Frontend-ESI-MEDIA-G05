@@ -476,7 +476,7 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
     this.userService.logout().subscribe({
       next: () => {
         try {
-          sessionStorage.removeItem('token');
+          // Ya no necesitamos eliminar el token, el backend invalida la cookie
           sessionStorage.removeItem('user');
           sessionStorage.removeItem('currentUserClass');
           sessionStorage.removeItem('email');
