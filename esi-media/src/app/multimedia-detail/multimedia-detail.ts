@@ -318,11 +318,9 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   }
 
   private reproducirElemento(element: HTMLAudioElement | HTMLVideoElement): void {
-    try {
-      element.play();
-    } catch {
+    element.play()?.catch(() => {
       // Silenciar errores de reproducción
-    }
+    });
   }
 
   descargarAudio(): void {
