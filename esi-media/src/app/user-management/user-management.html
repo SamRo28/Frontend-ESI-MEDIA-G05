@@ -275,8 +275,8 @@
 </div>
 
 <!-- Modal de confirmación de cambio de estado (Bloquear/Desbloquear) -->
-<div *ngIf="showToggleStatusModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" (click)="closeToggleStatusModal()">
-  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md" (click)="$event.stopPropagation()">
+<div *ngIf="showToggleStatusModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" tabindex="-1" (click)="closeToggleStatusModal()" (keydown.escape)="closeToggleStatusModal()">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md" tabindex="0" (click)="$event.stopPropagation()" (keydown.escape)="closeToggleStatusModal()">
     <!-- Header del modal -->
     <div 
       [class]="userToToggleStatus?.bloqueado 
@@ -328,8 +328,8 @@
 </div>
 
 <!-- Modal de edición -->
-<div *ngIf="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" (click)="closeEditModal()">
-  <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+<div *ngIf="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" tabindex="-1" (click)="closeEditModal()" (keydown.escape)="closeEditModal()">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" tabindex="0" (click)="$event.stopPropagation()" (keydown.escape)="closeEditModal()">
     <!-- Header del modal -->
     <div class="flex items-center justify-between p-6 border-b border-gray-200">
       <div>
@@ -449,8 +449,8 @@
 </div>
 
 <!-- Modal de confirmación de eliminación -->
-<div *ngIf="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" (click)="closeDeleteModal()">
-  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md" (click)="$event.stopPropagation()">
+<div *ngIf="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" tabindex="-1" (click)="closeDeleteModal()" (keydown.escape)="closeDeleteModal()">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md" tabindex="0" (click)="$event.stopPropagation()" (keydown.escape)="closeDeleteModal()">
     <!-- Header del modal -->
     <div class="bg-red-600 text-white p-6 rounded-t-xl">
       <h3 class="text-lg font-semibold">Confirmar Eliminación</h3>

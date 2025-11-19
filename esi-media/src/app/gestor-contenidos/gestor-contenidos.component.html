@@ -148,10 +148,10 @@
   </div>
 
   <!-- Modal de detalle -->
-  <div class="detalle-backdrop" *ngIf="mostrarDetalle" (click)="cerrarDetalle()"></div>
+  <div class="detalle-backdrop" *ngIf="mostrarDetalle" tabindex="-1" (click)="cerrarDetalle()" (keydown.escape)="cerrarDetalle()"></div>
   <div class="detalle-modal" *ngIf="mostrarDetalle">
     <div class="detalle-header">
-      <div class="detalle-title-group">
+      <div class="detalle-title-group" tabindex="0" (keydown.escape)="cerrarDetalle()">
         <h2 class="detalle-title">
           {{ detalleSeleccionado?.titulo || 'Detalle de contenido' }}
         </h2>
@@ -348,7 +348,7 @@
   </div>
 
   <!-- Modal de estadísticas -->
-  <div class="detalle-backdrop" *ngIf="mostrarEstadisticas" (click)="cerrarEstadisticas()"></div>
+  <div class="detalle-backdrop" *ngIf="mostrarEstadisticas" tabindex="-1" (click)="cerrarEstadisticas()" (keydown.escape)="cerrarEstadisticas()"></div>
   <div class="detalle-modal estadisticas-modal" *ngIf="mostrarEstadisticas">
     <div class="detalle-header">
       <div class="detalle-title-group">
