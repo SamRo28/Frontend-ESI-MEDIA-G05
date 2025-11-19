@@ -373,6 +373,35 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  /**
+   * Inicia el proceso de eliminación de la cuenta del usuario.
+   * Muestra una confirmación antes de proceder.
+   */
+  handleDeleteAccount(): void {
+    if (!this.isBrowser) return;
+
+    const confirmation = window.confirm(
+      '¿Estás seguro de que quieres eliminar tu cuenta? Esta acción es irreversible. ' +
+      'Se eliminarán tus datos personales, pero el contenido que hayas creado permanecerá en la plataforma.'
+    );
+
+    if (confirmation) {
+      this.userService.deleteMyAccount().subscribe({
+        next: () => {
+          this.showToast('Tu cuenta ha sido eliminada.');
+          // Forzar logout y redirección
+          setTimeout(() => this.logout(), 1500);
+        },
+        error: (err: any) => {
+          console.error('Error al eliminar la cuenta:', err);
+          const message = err?.error?.mensaje || 'No se pudo eliminar la cuenta. Inténtalo de nuevo más tarde.';
+          // Usar alert para errores críticos
+          alert(`Error: ${message}`);
+        }
+      });
+    }
+  }
+
 
 
   logout(): void {

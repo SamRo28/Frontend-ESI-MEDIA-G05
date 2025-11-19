@@ -1,11 +1,12 @@
-import { Component, OnInit, Inject, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { FormsModule, NgForm } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
 import { AdminService } from '../services/admin.service';
 import { environment } from '../../environments/environment';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { timeout, finalize } from 'rxjs';
+import { UserService } from '../../userService';
 
 @Component({
   selector: 'app-perfil-visualizador',
@@ -19,6 +20,8 @@ export class PerfilVisualizadorComponent implements OnInit {
   errorMessage = '';
   successMessage = '';
   showConfirm = false;
+  showDeleteConfirm = false; // Para el nuevo modal de borrado
+  isDeleting = false; // Para el estado del botón de borrado
   activeSection: 'info' | 'suscripcion' | 'seguridad' | 'dispositivos' = 'info';
 
   // Datos
@@ -67,6 +70,7 @@ export class PerfilVisualizadorComponent implements OnInit {
   pendingVip: boolean | null = null;
   lastSubscriptionChange?: string;
   subscriberSince?: string | null;
+  accountAgeLabel?: string | null;
   selectedPlan: 'STD' | 'VIP' | null = null;
   get isVip(): boolean { return !!this.form.vip; }
   vipBenefits: string[] = ['Contenido VIP', 'Novedades destacadas', 'Mejor experiencia'];
@@ -80,7 +84,9 @@ export class PerfilVisualizadorComponent implements OnInit {
     private readonly adminService: AdminService,
     private readonly http: HttpClient,
     @Inject(PLATFORM_ID) private readonly platformId: Object,
-    private readonly cdr: ChangeDetectorRef
+    private readonly cdr: ChangeDetectorRef,
+    private readonly userService: UserService,
+    private readonly router: Router
   ) { }
 
   private getAuthContext(): void {
@@ -138,7 +144,13 @@ export class PerfilVisualizadorComponent implements OnInit {
           this.form.vip = !!u?.vip;
           // Para "Suscriptor desde", usamos la fecha de registro original.
           const registrationDate = (u?.fechaRegistro || u?.fechaAlta || u?.createdAt || null);
-          this.subscriberSince = registrationDate ? new Date(registrationDate).toISOString() : null;
+          if (registrationDate) {
+            const dReg = new Date(registrationDate);
+            if (!isNaN(dReg.getTime())) {
+              this.subscriberSince = dReg.toLocaleDateString('es-ES');
+              this.accountAgeLabel = this.computeAccountAgeLabel(dReg);
+            }
+          }
           this.captureOriginal();
           this.loading = false;
           this.loadSubscription();
@@ -208,6 +220,24 @@ export class PerfilVisualizadorComponent implements OnInit {
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
+  }
+
+  private computeAccountAgeLabel(registrationDate: Date): string {
+    const now = new Date();
+    const diffMs = now.getTime() - registrationDate.getTime();
+    if (diffMs <= 0) {
+      return 'Recién creada';
+    }
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays < 30) {
+      return diffDays === 1 ? '1 día' : `${diffDays} días`;
+    }
+    const diffMonths = Math.floor(diffDays / 30);
+    if (diffMonths < 12) {
+      return diffMonths === 1 ? '1 mes' : `${diffMonths} meses`;
+    }
+    const diffYears = Math.floor(diffMonths / 12);
+    return diffYears === 1 ? '1 año' : `${diffYears} años`;
   }
   private captureOriginal(): void { this.originalForm = { ...this.form }; }
   private restoreOriginal(): void {
@@ -458,4 +488,67 @@ export class PerfilVisualizadorComponent implements OnInit {
       }
     });
   }
+
+  /**
+   * Inicia el proceso de eliminación de la cuenta del usuario.
+   * Muestra una confirmación antes de proceder.
+   */
+   handleDeleteAccount(): void {
+    this.showDeleteConfirm = true;
+  }
+
+  /**
+   * Cancela la eliminación de la cuenta y cierra el modal.
+   */
+  cancelDeleteAccount(): void {
+    this.showDeleteConfirm = false;
+    this.isDeleting = false;
+  }
+
+  /**
+   * Confirma y ejecuta la eliminación de la cuenta.
+   */
+  confirmDeleteAccount(): void {
+    this.isDeleting = true;
+    this.userService.deleteMyAccount().subscribe({
+      next: () => {
+        alert('Tu cuenta ha sido eliminada correctamente.');
+        // Limpiar cualquier rastro de sesi��n en el cliente
+        try {
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+          sessionStorage.removeItem('currentUserClass');
+          sessionStorage.removeItem('email');
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('userToken');
+          localStorage.removeItem('currentUserToken');
+          localStorage.removeItem('currentUser');
+        } catch {}
+        // Redirigir a la pǭgina de inicio
+        this.router.navigate(['/home']);
+      },
+      error: (err: any) => {
+  console.error('Error al eliminar la cuenta:', err);
+
+  const backendMsg: string = err?.error?.mensaje || err?.error?.message || '';
+
+  // Caso especial: backend indica que no está autorizado -> falta activar 2FA
+  if (err?.status === 403 && backendMsg === 'No autorizado para eliminar la cuenta') {
+    alert('Para eliminar tu cuenta necesitas tener activado el segundo factor de autenticación (2FA). Te llevamos a la página de activación.');
+    this.cancelDeleteAccount();
+    // Ir a la página de activación 2FA respetando el guard
+    this.router.navigate(['/2fa'], { state: { allowFa2: true } });
+    return;
+  }
+
+  // Resto de errores: genérico
+  const message = backendMsg || 'No se pudo eliminar la cuenta. Inténtalo de nuevo más tarde.';
+  alert(`Error: ${message}`);
+  this.cancelDeleteAccount();
+}
+
+    });
+  }
+
+  cancelar() { this.restoreOriginal(); }
 }

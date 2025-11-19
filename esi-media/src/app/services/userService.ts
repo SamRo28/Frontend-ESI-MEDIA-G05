@@ -1,7 +1,13 @@
 import { Injectable } from '@angular/core';
+<<<<<<< HEAD:esi-media/src/userService.ts
+import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
+import { Observable, tap, throwError } from 'rxjs';
+import { environment } from './environments/environment';
+=======
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
+>>>>>>> origin/main:esi-media/src/app/services/userService.ts
 
 @Injectable({
   providedIn: 'root'
@@ -57,6 +63,25 @@ export class UserService {
 
   resetPassword(token: string, newPassword: string): Observable<any> {
     return this.client.post<any>(`${environment.apiUrl}/users/password-reset/confirm`, { token, newPassword });
+  }
+
+  /**
+   * Elimina la cuenta del usuario autenticado.
+   * Requiere que el token esté en sessionStorage.
+   */
+  deleteMyAccount(): Observable<any> {
+    const token = sessionStorage.getItem('token');
+    if (!token) {
+      return throwError(() => new Error('No hay token de sesión'));
+    }
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+
+    const url = `${environment.apiUrl}/api/perfil/me`;
+
+    return this.client.delete(url, { headers });
   }
 
 }
