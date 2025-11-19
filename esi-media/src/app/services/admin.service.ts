@@ -200,9 +200,13 @@ export class AdminService {
   updateUser(id: string, userData: any, tipo: string): Observable<any> {
     const url = `${this.apiUrl}/users/${id}/profile`;
     
+    // El backend espera el formato {userData, tipo}
+    const payload = { userData, tipo };
+    
     // IMPORTANTE: NO usar headers de autorización para estos endpoints
-    return this.http.put<any>(url, {userData, tipo});
-      
+    return this.http.put<any>(url, payload).pipe(
+      catchError(this.handleError)
+    );
   }
 
   /** Desbloquea un usuario */
