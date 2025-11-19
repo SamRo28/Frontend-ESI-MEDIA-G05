@@ -44,16 +44,6 @@ export class AdminService {
 
   constructor(private readonly http: HttpClient) {}
 
-  // Ya no es necesario añadir headers manualmente.
-  // El interceptor configura withCredentials para todas las peticiones al backend.
-  private getAuthHeaders(): any {
-    return {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    };
-  }
-
   getUsuarios(): Observable<Usuario[]> {
     return this.http.post<Usuario[]>(`${this.apiUrl}/users/listar`, {}).pipe(
       catchError(this.handleError)

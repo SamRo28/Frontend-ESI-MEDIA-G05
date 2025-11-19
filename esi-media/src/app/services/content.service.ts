@@ -151,7 +151,7 @@ export class ContentService {
       formData.append('caratula', audioData.caratula);
     }
 
-    // El interceptor authInterceptor se encarga automáticamente del header Authorization
+    // El interceptor gestiona automáticamente withCredentials
     const headers = new HttpHeaders();
     return this.http.post<UploadResponse>(`${this.baseUrl}/audio/subir`, formData, { headers });
   }
@@ -198,7 +198,7 @@ export class ContentService {
       caratula: videoData.caratulaBase64 || null
     };
 
-    // El interceptor authInterceptor se encarga automáticamente del header Authorization
+    // El interceptor gestiona automáticamente withCredentials
     const headers = new HttpHeaders({
       'Content-Type': 'application/json'
     });
@@ -243,7 +243,7 @@ export class ContentService {
 
     console.log('Realizando búsqueda en backend:', query.trim());
 
-    // El interceptor se encarga del Authorization header automáticamente
+    // El interceptor gestiona automáticamente withCredentials
     return this.http.get<any>(`${environment.apiUrl}/multimedia?${params}`).pipe(
       catchError(error => {
         console.error('Error en búsqueda de contenidos:', error);

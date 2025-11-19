@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
-import { Observable, tap, throwError } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -8,7 +8,7 @@ import { environment } from '../../environments/environment';
 })
 export class UserService {
 
-  constructor(private client: HttpClient) {}
+  constructor(private readonly client: HttpClient) {}
 
     /**
      * Login del usuario. El backend ahora devuelve el token en una cookie HttpOnly.
@@ -73,19 +73,10 @@ export class UserService {
 
   /**
    * Elimina la cuenta del usuario autenticado.
-   * Requiere que el token esté en sessionStorage.
+   * El interceptor gestiona automáticamente la autenticación mediante cookies.
    */
   deleteMyAccount(): Observable<any> {
-    const token = sessionStorage.getItem('token');
-    if (!token) {
-      return throwError(() => new Error('No hay token de sesión'));
-    }
-
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${token}`
-    });
-
     const url = `${environment.apiUrl}/api/perfil/me`;
-    return this.client.delete(url, { headers });
+    return this.client.delete(url);
   }
 }

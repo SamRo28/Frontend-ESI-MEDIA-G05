@@ -61,7 +61,7 @@ describe('GestorDashboardComponent', () => {
     
     component.logout();
     
-    expect(sessionStorage.removeItem).toHaveBeenCalledWith('token');
+    expect(sessionStorage.removeItem).toHaveBeenCalledWith('user');
     expect(sessionStorage.removeItem).toHaveBeenCalledWith('email');
     expect(sessionStorage.removeItem).toHaveBeenCalledWith('currentUserClass');
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);

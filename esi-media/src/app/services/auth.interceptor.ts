@@ -21,12 +21,14 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
   // Añadir withCredentials a todas las peticiones hacia nuestro backend
   // Esto permite que el navegador envíe automáticamente las cookies HttpOnly
   if (req.url.includes(environment.apiUrl)) {
+    console.log('[AuthInterceptor] Interceptando petición:', req.url, '| withCredentials: true');
     const authReq = req.clone({ 
       withCredentials: true 
     });
     return next(authReq);
   }
   
+  console.log('[AuthInterceptor] Petición externa, sin withCredentials:', req.url);
   // Para otras peticiones externas, continuar sin modificar
   return next(req);
 }

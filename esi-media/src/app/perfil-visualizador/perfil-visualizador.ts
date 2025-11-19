@@ -86,7 +86,7 @@ export class PerfilVisualizadorComponent implements OnInit {
   ) { }
 
   private getAuthContext(): void {
-    // Ya no necesitamos el token, solo información del usuario
+    // Solo necesitamos información del usuario, las cookies gestionan la autenticación
     try {
       const lsUserRaw = localStorage.getItem('currentUser');
       const ssUserRaw = sessionStorage.getItem('user');
@@ -388,15 +388,11 @@ export class PerfilVisualizadorComponent implements OnInit {
   }
 
   // =================== SUSCRIPCION ===================
-  // Ya no necesitamos añadir headers manualmente, el interceptor gestiona withCredentials
-  private buildOptions(): { observe: 'body' } {
-    return { observe: 'body' };
-  }
   loadSubscription(): void {
     if (!this.userId) return;
     const url = `${environment.apiUrl}/users/${this.userId}/subscription`;
-    // Ya no necesitamos añadir el token manualmente, el interceptor gestiona withCredentials
-    this.http.get<{ vip: boolean; fechaCambio?: string }>(url, this.buildOptions()).subscribe({
+    // El interceptor gestiona automáticamente withCredentials
+    this.http.get<{ vip: boolean; fechaCambio?: string }>(url).subscribe({
       next: (res) => {
         if (typeof res?.vip === 'boolean') this.form.vip = !!res.vip;
         this.lastSubscriptionChange = res?.fechaCambio || undefined;
@@ -437,9 +433,9 @@ export class PerfilVisualizadorComponent implements OnInit {
   this.subLoading = true;
 
   const url = `${environment.apiUrl}/users/${this.userId}/subscription`;
-  // Ya no necesitamos añadir el token manualmente, el interceptor gestiona withCredentials
+  // El interceptor gestiona automáticamente withCredentials
 
-  this.http.put<{ vip: boolean; fechaCambio?: string }>(url, { vip: this.pendingVip }, this.buildOptions()).pipe(
+  this.http.put<{ vip: boolean; fechaCambio?: string }>(url, { vip: this.pendingVip }).pipe(
     timeout(10000),
     finalize(() => {
       // Esto se ejecutará siempre, al completar o al dar error.
@@ -495,18 +491,14 @@ export class PerfilVisualizadorComponent implements OnInit {
     this.userService.deleteMyAccount().subscribe({
       next: () => {
         alert('Tu cuenta ha sido eliminada correctamente.');
-        // Limpiar cualquier rastro de sesi��n en el cliente
+        // Limpiar información del usuario en el cliente
         try {
-          sessionStorage.removeItem('token');
           sessionStorage.removeItem('user');
           sessionStorage.removeItem('currentUserClass');
           sessionStorage.removeItem('email');
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('userToken');
-          localStorage.removeItem('currentUserToken');
           localStorage.removeItem('currentUser');
         } catch {}
-        // Redirigir a la pǭgina de inicio
+        // Redirigir a la página de inicio
         this.router.navigate(['/home']);
       },
       error: (err: any) => {

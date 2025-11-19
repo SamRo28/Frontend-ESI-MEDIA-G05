@@ -232,11 +232,11 @@ export class GestorDashboardComponent implements OnInit, OnDestroy {
 
   // Cerrar sesión
   logout(): void {
-    // Llamar al servicio de logout
+    // Llamar al servicio de logout para invalidar la cookie en el backend
     this.userService.logout().subscribe({
       next: () => {
         try {
-          // Ya no necesitamos eliminar el token, el backend invalida la cookie
+          // Limpiar información del usuario en sessionStorage
           sessionStorage.removeItem('user');
           sessionStorage.removeItem('currentUserClass');
           sessionStorage.removeItem('email');

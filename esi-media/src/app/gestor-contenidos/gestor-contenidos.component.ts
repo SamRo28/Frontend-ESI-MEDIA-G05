@@ -2,7 +2,7 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { forkJoin, of } from 'rxjs';
 import { timeout, catchError } from 'rxjs/operators';
@@ -132,14 +132,13 @@ export class GestorContenidosComponent implements OnInit {
       size: '50'
     });
 
-    // Intentar obtener token localmente como fallback en caso de fallo (si el interceptor no lo está adjuntando)
-    const token = this.getStoredToken();
-    if (!token) console.warn('[GestorContenidos] No se encontró token en sessionStorage/localStorage (fallback)');
-
-    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+    console.log('[GestorContenidos] Realizando petición con withCredentials');
 
     this.http
-      .get<{ content: ContenidoResumenGestor[] }>(`${environment.apiUrl}/gestor/contenidos?${params.toString()}`, { headers })
+      .get<{ content: ContenidoResumenGestor[] }>(
+        `${environment.apiUrl}/gestor/contenidos?${params.toString()}`,
+        { withCredentials: true } // RESPALDO: asegurar withCredentials
+      )
       .subscribe({
         next: (response) => {
           console.log('[GestorContenidos] respuesta OK', response);
@@ -182,9 +181,15 @@ export class GestorContenidosComponent implements OnInit {
           });
 
           if (itemsWithoutRequired.length > 0) {
-            const tokenForDetails = this.getStoredToken();
-            const headersForDetails = tokenForDetails ? new HttpHeaders({ Authorization: `Bearer ${tokenForDetails}` }) : undefined;
-            const calls = itemsWithoutRequired.map(i => this.http.get<any>(`${environment.apiUrl}/multimedia/${i.id}`, { headers: headersForDetails }).pipe(timeout(10000), catchError(err => of(null))));
+            const calls = itemsWithoutRequired.map(i => 
+              this.http.get<any>(
+                `${environment.apiUrl}/multimedia/${i.id}`,
+                { withCredentials: true }
+              ).pipe(
+                timeout(10000), 
+                catchError(err => of(null))
+              )
+            );
             forkJoin(calls).subscribe({
               next: (details) => {
                 // aplicar detalles sobre la copia normalizada
@@ -220,24 +225,7 @@ export class GestorContenidosComponent implements OnInit {
       });
   }
 
-  /**
-   * Intenta leer el token del sessionStorage o de localStorage como fallback.
-   */
-  private getStoredToken(): string | null {
-    try {
-      const s = sessionStorage.getItem('token');
-      if (s) return s;
-    } catch (e) {
-      // ignore
-    }
-    try {
-      const l1 = localStorage.getItem('authToken') || localStorage.getItem('userToken') || localStorage.getItem('currentUserToken');
-      if (l1) return l1;
-    } catch (e) {
-      // ignore
-    }
-    return null;
-  }
+  
 
   // Ahora acepta un parámetro opcional para controlar el modo de edición
   verDetalle(contenido: ContenidoResumenGestor, startInEditMode: boolean = false): void {
@@ -253,7 +241,10 @@ export class GestorContenidosComponent implements OnInit {
     // Para obtener el detalle reutilizamos el endpoint general de multimedia,
     // que ya construye la referencia de reproducción y aplica validaciones.
     this.http
-      .get<ContenidoDetalleGestor>(`${environment.apiUrl}/multimedia/${contenido.id}`, { headers: this.getStoredToken() ? new HttpHeaders({ Authorization: `Bearer ${this.getStoredToken()}` }) : undefined })
+      .get<ContenidoDetalleGestor>(
+        `${environment.apiUrl}/multimedia/${contenido.id}`,
+        { withCredentials: true }
+      )
       .subscribe({
         next: (detalle) => {
           console.log('[GestorContenidos] detalle OK', detalle);
@@ -337,7 +328,10 @@ export class GestorContenidosComponent implements OnInit {
     this.estadisticasData = null;
     this.cdr.detectChanges();
 
-    const detalle$ = this.http.get<any>(`${environment.apiUrl}/multimedia/${contenido.id}`, { headers: this.getStoredToken() ? new HttpHeaders({ Authorization: `Bearer ${this.getStoredToken()}` }) : undefined }).pipe(
+    const detalle$ = this.http.get<any>(
+      `${environment.apiUrl}/multimedia/${contenido.id}`,
+      { withCredentials: true }
+    ).pipe(
       timeout(15000),
       catchError(err => {
         console.error('[GestorContenidos] detalle error', err);
@@ -540,7 +534,11 @@ export class GestorContenidosComponent implements OnInit {
     };
 
     this.http
-      .put<ContenidoDetalleGestor>(`${environment.apiUrl}/gestor/contenidos/${this.detalleSeleccionado.id}`, payload)
+      .put<ContenidoDetalleGestor>(
+        `${environment.apiUrl}/gestor/contenidos/${this.detalleSeleccionado.id}`, 
+        payload,
+        { withCredentials: true }
+      )
       .subscribe({
         next: () => {
           this.saveSuccess = 'Contenido actualizado correctamente.';
@@ -622,7 +620,10 @@ export class GestorContenidosComponent implements OnInit {
     this.cdr.detectChanges();
 
     this.http
-      .delete<void>(`${environment.apiUrl}/gestor/contenidos/${contenido.id}`)
+      .delete<void>(
+        `${environment.apiUrl}/gestor/contenidos/${contenido.id}`,
+        { withCredentials: true }
+      )
       .subscribe({
         next: () => {
           this.contenidos = this.contenidos.filter(c => c.id !== contenido.id);

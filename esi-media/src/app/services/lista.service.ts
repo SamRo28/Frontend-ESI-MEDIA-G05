@@ -37,7 +37,7 @@ export interface ContenidoResponse {
  * Servicio para gestión de listas/playlists
  * 
  * AUTENTICACIÓN:
- * - El auth.interceptor.ts añade automáticamente el header Authorization con el token
+ * - El auth.interceptor.ts añade automáticamente withCredentials para gestionar cookies HttpOnly
  * - No es necesario manejar tokens manualmente en este servicio
  * 
  * RUTAS:
@@ -175,7 +175,7 @@ export class ListaService {
    * @returns Observable con la respuesta que contiene las listas del usuario
    */
   obtenerListasUsuario(userId: string): Observable<ListasResponse> {
-    // Ya no necesitamos añadir headers manualmente, el interceptor gestiona withCredentials
+    // El interceptor gestiona automáticamente withCredentials
     return this.http.get<ListasResponse>(
       `${this.baseUrl}/usuario/mias`
     );
@@ -188,7 +188,7 @@ export class ListaService {
    * @returns Observable con la respuesta que contiene las listas del gestor
    */
   obtenerListasGestor(): Observable<ListasResponse> {
-    // Ya no necesitamos añadir headers manualmente, el interceptor gestiona withCredentials
+    // El interceptor gestiona automáticamente withCredentials
     return this.http.get<ListasResponse>(
       `${this.baseUrl}/gestor/mias`
     );
