@@ -120,7 +120,7 @@ export class Fa2Qr implements OnInit {
             this.router.navigate(['/3verification'], { state: { allowFa3Code: true } });
           } else {
               sessionStorage.setItem('token', res);
-              this.router.navigate(['/dashboard']);
+              this.router.navigate(['/perfil']);
           }
       }
     },
