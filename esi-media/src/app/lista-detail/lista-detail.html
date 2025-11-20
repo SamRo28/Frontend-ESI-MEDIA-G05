@@ -57,8 +57,8 @@
             </div>
           </div>
 
-          <!-- Actions (solo para el propietario) -->
-          <div class="header-actions" *ngIf="esPropietario()">
+          <!-- Actions -->
+          <div class="header-actions" *ngIf="puedeEditar()">
             <button 
               class="btn" 
               [class.btn-secondary]="!modoEdicion" 
@@ -74,14 +74,14 @@
               <span class="icon">❌</span>
               Cancelar
             </button>
-            <button class="btn btn-danger" (click)="mostrarConfirmacionEliminar()">
+            <button class="btn btn-danger" (click)="mostrarConfirmacionEliminar()" *ngIf="esPropietario()">
               <span class="icon">🗑️</span>
               Eliminar
             </button>
           </div>
 
-          <!-- Información para visualizadores (sin opciones de edición) -->
-          <div class="header-info" *ngIf="!esPropietario() && esVisualizador()">
+          <!-- Información para usuarios sin permisos de edición -->
+          <div class="header-info" *ngIf="!puedeEditar() && !esPropietario()">
             <div class="info-badge">
               <span class="icon">👁️</span>
               <span>Solo lectura</span>
@@ -224,7 +224,7 @@
         <div class="empty-icon">📭</div>
         <h3>No hay contenidos</h3>
         <p>Esta lista no tiene contenidos añadidos.</p>
-        <button class="btn btn-primary" (click)="toggleEdicion()" *ngIf="esPropietario()">
+        <button class="btn btn-primary" (click)="toggleEdicion()" *ngIf="puedeEditar()">
           <span class="icon">+</span>
           Añadir contenidos
         </button>

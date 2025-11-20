@@ -273,13 +273,25 @@ export class ListaService {
 
   /**
    * Verifica si el usuario actual puede editar una lista
-   * Solo el creador de la lista puede editarla
+   * El creador siempre puede editar su lista
+   * Los gestores de contenido pueden editar listas públicas
    * 
    * @param lista La lista a verificar
    * @returns true si puede editar, false en caso contrario
    */
   puedeEditarLista(lista: any): boolean {
-    return this.puedeEliminarLista(lista); // Mismo criterio por ahora
+    // Si es el propietario, siempre puede editar
+    if (this.puedeEliminarLista(lista)) {
+      return true;
+    }
+
+    // Los gestores de contenido pueden editar listas públicas
+    const currentUserClass = sessionStorage.getItem('currentUserClass');
+    if (currentUserClass === 'GestordeContenido' && lista.visible === true) {
+      return true;
+    }
+
+    return false;
   }
 
   /**
