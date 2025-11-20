@@ -1,18 +1,20 @@
 import { Component, OnInit, Inject, PLATFORM_ID, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AdminService } from '../services/admin.service';
 import { environment } from '../../environments/environment';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { timeout, finalize } from 'rxjs';
 import { UserService } from '../services/userService';
+import { PasswordValidatorComponent } from '../shared/components/password-validator/password-validator.component';
+import { PasswordValidation } from '../services/user-validation.service';
 
 
 @Component({
   selector: 'app-perfil-visualizador',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, PasswordValidatorComponent],
   templateUrl: './perfil-visualizador.html',
   styleUrls: ['./perfil-visualizador.css'] // Asegúrate que esta línea esté presente
 })
@@ -35,7 +37,9 @@ export class PerfilVisualizadorComponent implements OnInit {
   };
   originalForm: any = null;
 
-  // Reglas contraseña
+  // Política unificada + reglas adicionales locales
+  pwPolicy?: PasswordValidation;
+  pwPolicyValid = false;
   passwordRules = { minLength: false, upper: false, lower: false, number: false, special: false, match: true, noPersonal: true, notCurrent: true };
 
   // Avatares
@@ -82,11 +86,12 @@ export class PerfilVisualizadorComponent implements OnInit {
     @Inject(PLATFORM_ID) private readonly platformId: Object,
     private readonly cdr: ChangeDetectorRef,
     private readonly userService: UserService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly route: ActivatedRoute
   ) { }
 
   private getAuthContext(): void {
-    // Ya no necesitamos el token, solo información del usuario
+    // Solo necesitamos información del usuario, las cookies gestionan la autenticación
     try {
       const lsUserRaw = localStorage.getItem('currentUser');
       const ssUserRaw = sessionStorage.getItem('user');
@@ -118,6 +123,13 @@ export class PerfilVisualizadorComponent implements OnInit {
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
       this.getAuthContext();
+      
+      // Manejar navegación por fragment (ej. #suscripcion)
+      this.route.fragment.subscribe((fragment: string | null) => {
+        if (fragment === 'suscripcion') {
+          this.activeSection = 'suscripcion';
+        }
+      });
     }
     if (this.userId) {
       this.loading = true;
@@ -252,12 +264,8 @@ export class PerfilVisualizadorComponent implements OnInit {
     this.successMessage = '';
     this.errorMessage = '';
 
-    this.onPasswordInput(); // Re-evaluar reglas
-
-    const passwordRulesValid =
-      this.passwordRules.minLength && this.passwordRules.upper && this.passwordRules.lower &&
-      this.passwordRules.number && this.passwordRules.special && this.passwordRules.match &&
-      this.passwordRules.noPersonal && this.passwordRules.notCurrent;
+    // Usar la política unificada para validar todo excepto 'notCurrent'
+    const passwordRulesValid = this.pwPolicyValid && this.passwordRules.notCurrent;
 
     // Validar que la contraseña actual fue verificada
     if (!this.passwordVerified) {
@@ -315,17 +323,25 @@ export class PerfilVisualizadorComponent implements OnInit {
 
   onPasswordInput(): void {
     const p = this.form.newPassword || '';
-    this.passwordRules.minLength = p.length >= 8 && p.length <= 64;
-    this.passwordRules.upper = /[A-Z]/.test(p);
-    this.passwordRules.lower = /[a-z]/.test(p);
-    this.passwordRules.number = /\d/.test(p);
-    this.passwordRules.special = /[^A-Za-z0-9]/.test(p);
+    // Estas flags se mantienen solo para la UI existente: se sincronizarán desde la política cuando llegue el callback
     this.passwordRules.match = !!p && this.form.newPassword === this.form.repeatPassword;
     this.passwordRules.notCurrent = !!p && this.form.newPassword !== this.form.currentPassword; // La lógica se mantiene, pero el mensaje en el HTML será genérico
-    const normalize = (s?: string) => (s || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
-    const pwd = normalize(this.form.newPassword);
-    const tokens = [normalize(this.form.nombre), normalize(this.form.apellidos), normalize(this.form.alias), normalize((this.email || '').split('@')[0])].filter(t => t && t.length >= 3) as string[];
-    this.passwordRules.noPersonal = !tokens.some(t => pwd.includes(t));
+  }
+
+  // Callbacks de política unificada
+  onPwPolicyChange(v: PasswordValidation): void {
+    this.pwPolicy = v;
+    // Mantener las flags para la UI legada
+    this.passwordRules.minLength = v.minLength;
+    this.passwordRules.upper = v.hasUpperCase;
+    this.passwordRules.lower = v.hasLowerCase;
+    this.passwordRules.number = v.hasNumber;
+    this.passwordRules.special = v.hasSpecialChar;
+    this.passwordRules.noPersonal = v.notContainsPersonalData;
+    this.passwordRules.match = v.passwordsMatch;
+  }
+  onPwPolicyValidChange(ok: boolean): void {
+    this.pwPolicyValid = ok;
   }
 
   canSubmit(): boolean { if (this.loading) return false; return true; }
@@ -388,15 +404,11 @@ export class PerfilVisualizadorComponent implements OnInit {
   }
 
   // =================== SUSCRIPCION ===================
-  // Ya no necesitamos añadir headers manualmente, el interceptor gestiona withCredentials
-  private buildOptions(): { observe: 'body' } {
-    return { observe: 'body' };
-  }
   loadSubscription(): void {
     if (!this.userId) return;
     const url = `${environment.apiUrl}/users/${this.userId}/subscription`;
-    // Ya no necesitamos añadir el token manualmente, el interceptor gestiona withCredentials
-    this.http.get<{ vip: boolean; fechaCambio?: string }>(url, this.buildOptions()).subscribe({
+    // El interceptor gestiona automáticamente withCredentials
+    this.http.get<{ vip: boolean; fechaCambio?: string }>(url).subscribe({
       next: (res) => {
         if (typeof res?.vip === 'boolean') this.form.vip = !!res.vip;
         this.lastSubscriptionChange = res?.fechaCambio || undefined;
@@ -437,9 +449,9 @@ export class PerfilVisualizadorComponent implements OnInit {
   this.subLoading = true;
 
   const url = `${environment.apiUrl}/users/${this.userId}/subscription`;
-  // Ya no necesitamos añadir el token manualmente, el interceptor gestiona withCredentials
+  // El interceptor gestiona automáticamente withCredentials
 
-  this.http.put<{ vip: boolean; fechaCambio?: string }>(url, { vip: this.pendingVip }, this.buildOptions()).pipe(
+  this.http.put<{ vip: boolean; fechaCambio?: string }>(url, { vip: this.pendingVip }).pipe(
     timeout(10000),
     finalize(() => {
       // Esto se ejecutará siempre, al completar o al dar error.
@@ -495,18 +507,14 @@ export class PerfilVisualizadorComponent implements OnInit {
     this.userService.deleteMyAccount().subscribe({
       next: () => {
         alert('Tu cuenta ha sido eliminada correctamente.');
-        // Limpiar cualquier rastro de sesi��n en el cliente
+        // Limpiar información del usuario en el cliente
         try {
-          sessionStorage.removeItem('token');
           sessionStorage.removeItem('user');
           sessionStorage.removeItem('currentUserClass');
           sessionStorage.removeItem('email');
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('userToken');
-          localStorage.removeItem('currentUserToken');
           localStorage.removeItem('currentUser');
         } catch {}
-        // Redirigir a la pǭgina de inicio
+        // Redirigir a la página de inicio
         this.router.navigate(['/home']);
       },
       error: (err: any) => {
@@ -519,7 +527,7 @@ export class PerfilVisualizadorComponent implements OnInit {
     alert('Para eliminar tu cuenta necesitas tener activado el segundo factor de autenticación (2FA). Te llevamos a la página de activación.');
     this.cancelDeleteAccount();
     // Ir a la página de activación 2FA respetando el guard
-    this.router.navigate(['/2fa'], { state: { allowFa2: true } });
+    this.router.navigate(['/2fa'], { state: { allowFa2: true, returnUrl: '/perfil' } });
     return;
   }
 

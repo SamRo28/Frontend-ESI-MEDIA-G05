@@ -2,7 +2,7 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { forkJoin, of } from 'rxjs';
 import { timeout, catchError } from 'rxjs/operators';
@@ -60,6 +60,8 @@ const VIDEO_TAGS: string[] = [
 })
 export class GestorContenidosComponent implements OnInit {
   loading = false;
+  readonly vipToggleId = `vip-toggle-${Math.random().toString(36).slice(2, 7)}`;
+  readonly estadoToggleId = `estado-toggle-${Math.random().toString(36).slice(2, 7)}`;
   errorMessage = '';
   contenidos: ContenidoResumenGestor[] = [];
   // Indicador para evitar flicker: mientras se aplican filtros (enriquecimiento/consulta de detalle), mostrar overlay
@@ -132,14 +134,13 @@ export class GestorContenidosComponent implements OnInit {
       size: '50'
     });
 
-    // Intentar obtener token localmente como fallback en caso de fallo (si el interceptor no lo está adjuntando)
-    const token = this.getStoredToken();
-    if (!token) console.warn('[GestorContenidos] No se encontró token en sessionStorage/localStorage (fallback)');
-
-    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+    console.log('[GestorContenidos] Realizando petición con withCredentials');
 
     this.http
-      .get<{ content: ContenidoResumenGestor[] }>(`${environment.apiUrl}/gestor/contenidos?${params.toString()}`, { headers })
+      .get<{ content: ContenidoResumenGestor[] }>(
+        `${environment.apiUrl}/gestor/contenidos?${params.toString()}`,
+        { withCredentials: true } // RESPALDO: asegurar withCredentials
+      )
       .subscribe({
         next: (response) => {
           console.log('[GestorContenidos] respuesta OK', response);
@@ -182,9 +183,15 @@ export class GestorContenidosComponent implements OnInit {
           });
 
           if (itemsWithoutRequired.length > 0) {
-            const tokenForDetails = this.getStoredToken();
-            const headersForDetails = tokenForDetails ? new HttpHeaders({ Authorization: `Bearer ${tokenForDetails}` }) : undefined;
-            const calls = itemsWithoutRequired.map(i => this.http.get<any>(`${environment.apiUrl}/multimedia/${i.id}`, { headers: headersForDetails }).pipe(timeout(10000), catchError(err => of(null))));
+            const calls = itemsWithoutRequired.map(i => 
+              this.http.get<any>(
+                `${environment.apiUrl}/multimedia/${i.id}`,
+                { withCredentials: true }
+              ).pipe(
+                timeout(10000), 
+                catchError(err => of(null))
+              )
+            );
             forkJoin(calls).subscribe({
               next: (details) => {
                 // aplicar detalles sobre la copia normalizada
@@ -220,24 +227,7 @@ export class GestorContenidosComponent implements OnInit {
       });
   }
 
-  /**
-   * Intenta leer el token del sessionStorage o de localStorage como fallback.
-   */
-  private getStoredToken(): string | null {
-    try {
-      const s = sessionStorage.getItem('token');
-      if (s) return s;
-    } catch (e) {
-      // ignore
-    }
-    try {
-      const l1 = localStorage.getItem('authToken') || localStorage.getItem('userToken') || localStorage.getItem('currentUserToken');
-      if (l1) return l1;
-    } catch (e) {
-      // ignore
-    }
-    return null;
-  }
+  
 
   // Ahora acepta un parámetro opcional para controlar el modo de edición
   verDetalle(contenido: ContenidoResumenGestor, startInEditMode: boolean = false): void {
@@ -253,7 +243,10 @@ export class GestorContenidosComponent implements OnInit {
     // Para obtener el detalle reutilizamos el endpoint general de multimedia,
     // que ya construye la referencia de reproducción y aplica validaciones.
     this.http
-      .get<ContenidoDetalleGestor>(`${environment.apiUrl}/multimedia/${contenido.id}`, { headers: this.getStoredToken() ? new HttpHeaders({ Authorization: `Bearer ${this.getStoredToken()}` }) : undefined })
+      .get<ContenidoDetalleGestor>(
+        `${environment.apiUrl}/multimedia/${contenido.id}`,
+        { withCredentials: true }
+      )
       .subscribe({
         next: (detalle) => {
           console.log('[GestorContenidos] detalle OK', detalle);
@@ -337,7 +330,10 @@ export class GestorContenidosComponent implements OnInit {
     this.estadisticasData = null;
     this.cdr.detectChanges();
 
-    const detalle$ = this.http.get<any>(`${environment.apiUrl}/multimedia/${contenido.id}`, { headers: this.getStoredToken() ? new HttpHeaders({ Authorization: `Bearer ${this.getStoredToken()}` }) : undefined }).pipe(
+    const detalle$ = this.http.get<any>(
+      `${environment.apiUrl}/multimedia/${contenido.id}`,
+      { withCredentials: true }
+    ).pipe(
       timeout(15000),
       catchError(err => {
         console.error('[GestorContenidos] detalle error', err);
@@ -356,7 +352,7 @@ export class GestorContenidosComponent implements OnInit {
     forkJoin([detalle$, avg$]).subscribe({
       next: ([detalle, avg]) => {
         const nvisualizaciones = typeof detalle?.nvisualizaciones === 'number' ? detalle.nvisualizaciones : (detalle?.nvisualizaciones ?? undefined);
-        const fechaHasta = detalle?.fechaDisponibleHasta || detalle?.fechaDisponibleHasta || null;
+        const fechaHasta = detalle?.fechaDisponibleHasta ?? detalle?.fechadisponiblehasta ?? null;
 
         let daysRemaining: number | string = '-';
         if (fechaHasta) {
@@ -540,7 +536,11 @@ export class GestorContenidosComponent implements OnInit {
     };
 
     this.http
-      .put<ContenidoDetalleGestor>(`${environment.apiUrl}/gestor/contenidos/${this.detalleSeleccionado.id}`, payload)
+      .put<ContenidoDetalleGestor>(
+        `${environment.apiUrl}/gestor/contenidos/${this.detalleSeleccionado.id}`, 
+        payload,
+        { withCredentials: true }
+      )
       .subscribe({
         next: () => {
           this.saveSuccess = 'Contenido actualizado correctamente.';
@@ -622,7 +622,10 @@ export class GestorContenidosComponent implements OnInit {
     this.cdr.detectChanges();
 
     this.http
-      .delete<void>(`${environment.apiUrl}/gestor/contenidos/${contenido.id}`)
+      .delete<void>(
+        `${environment.apiUrl}/gestor/contenidos/${contenido.id}`,
+        { withCredentials: true }
+      )
       .subscribe({
         next: () => {
           this.contenidos = this.contenidos.filter(c => c.id !== contenido.id);
@@ -746,33 +749,37 @@ export class GestorContenidosComponent implements OnInit {
 
   private matchesEdad(item: any, edad: string | null): boolean {
     if (!edad) return true;
-    let itemEdad: any = undefined;
-    if (typeof (item as any).edadVisualizacion === 'number') itemEdad = (item as any).edadVisualizacion;
-    else if (typeof (item as any).edadvisualizacion === 'number') itemEdad = (item as any).edadvisualizacion;
-    else if (typeof (item as any).edad === 'number') itemEdad = (item as any).edad;
-    else if (typeof (item as any).edadVisualizacion === 'string') {
-      const n = parseInt((item as any).edadVisualizacion, 10);
-      if (!Number.isNaN(n)) itemEdad = n;
-    } else if (typeof (item as any).edadvisualizacion === 'string') {
-      const s = (item as any).edadvisualizacion.trim();
-      if (s.toUpperCase() === 'TP') itemEdad = 0;
-      else {
-        const n = parseInt(s, 10);
-        if (!Number.isNaN(n)) itemEdad = n;
-      }
-    } else if (typeof (item as any).edad === 'string') {
-      const s = (item as any).edad.trim();
-      if (s.toUpperCase() === 'TP') itemEdad = 0;
-      else {
-        const n = parseInt(s, 10);
-        if (!Number.isNaN(n)) itemEdad = n;
-      }
-    }
-
+    const itemEdad = this.extractEdadValue(item);
     if (typeof itemEdad !== 'number') return false;
     if (edad === 'TP') return itemEdad === 0;
     if (edad === '18') return itemEdad >= 18;
     return true;
+  }
+
+  private extractEdadValue(item: any): number | undefined {
+    const candidates = ['edadVisualizacion', 'edadvisualizacion', 'edad'] as const;
+    for (const field of candidates) {
+      const raw = item?.[field];
+      const parsed = this.parseEdad(raw);
+      if (typeof parsed === 'number') {
+        return parsed;
+      }
+    }
+    return undefined;
+  }
+
+  private parseEdad(raw: unknown): number | undefined {
+    if (typeof raw === 'number') {
+      return raw;
+    }
+    if (typeof raw !== 'string') {
+      return undefined;
+    }
+    const trimmed = raw.trim();
+    if (!trimmed) return undefined;
+    if (trimmed.toUpperCase() === 'TP') return 0;
+    const num = parseInt(trimmed, 10);
+    return Number.isNaN(num) ? undefined : num;
   }
 
   private matchesResolucion(item: any, resoluciones: string[]): boolean {
@@ -825,27 +832,16 @@ export class GestorContenidosComponent implements OnInit {
   }
 
   private extractEdadFromDetail(d: any): number | undefined {
-    // Aceptar números o cadenas como 'TP' / '0' / '18'
-    if (typeof d.edadvisualizacion === 'number') return d.edadvisualizacion;
-    if (typeof d.edad === 'number') return d.edad;
-    if (typeof d.edadVisualizacion === 'number') return d.edadVisualizacion;
-    if (typeof d.edadvisualizacion === 'string') {
-      const s = d.edadvisualizacion.trim();
-      if (s.toUpperCase() === 'TP') return 0;
-      const n = parseInt(s, 10);
-      if (!Number.isNaN(n)) return n;
-    }
-    if (typeof d.edad === 'string') {
-      const s = d.edad.trim();
-      if (s.toUpperCase() === 'TP') return 0;
-      const n = parseInt(s, 10);
-      if (!Number.isNaN(n)) return n;
-    }
-    if (typeof d.edadVisualizacion === 'string') {
-      const s = d.edadVisualizacion.trim();
-      if (s.toUpperCase() === 'TP') return 0;
-      const n = parseInt(s, 10);
-      if (!Number.isNaN(n)) return n;
+    const fields = ['edadvisualizacion', 'edad', 'edadVisualizacion'] as const;
+    for (const field of fields) {
+      const value = d?.[field];
+      if (typeof value === 'number') {
+        return value;
+      }
+      const parsed = this.parseEdad(value);
+      if (typeof parsed === 'number') {
+        return parsed;
+      }
     }
     return undefined;
   }
@@ -859,92 +855,80 @@ export class GestorContenidosComponent implements OnInit {
 
   /** Normaliza un objeto de resumen de contenido recibido del backend */
   private normalizeContenidoResumen(raw: any): ContenidoResumenGestor {
-    const id = raw.id ?? raw._id ?? raw.idContenido ?? String(Math.random());
-    const titulo = raw.titulo ?? raw.title ?? raw.nombre ?? raw.name ?? '';
-    const tipoRaw = (raw.tipo ?? raw.type ?? raw.tipoContenido ?? 'VIDEO').toString();
-    const tipo = tipoRaw.toUpperCase().startsWith('A') ? 'AUDIO' : 'VIDEO';
-    const vip = raw.vip === true || raw.esVip === true || raw.vip === 'true' || false;
-
-    // Extraer tags en múltiples formatos
-    let tags: string[] = [];
-    if (Array.isArray(raw.tags)) tags = raw.tags;
-    else if (Array.isArray(raw.tag_list)) tags = raw.tag_list;
-    else if (Array.isArray(raw.tags_list)) tags = raw.tags_list;
-    else if (typeof raw.tags === 'string') tags = raw.tags.split(',').map((s: string) => s.trim()).filter(Boolean);
-    else if (typeof raw.tag === 'string') tags = raw.tag.split(',').map((s: string) => s.trim()).filter(Boolean);
-
-    // Edad de visualización
-    let edad: number | undefined = undefined;
-    if (typeof raw.edadvisualizacion === 'number') edad = raw.edadvisualizacion;
-    else if (typeof raw.edadVisualizacion === 'number') edad = raw.edadVisualizacion;
-    else if (typeof raw.edad === 'number') edad = raw.edad;
-    // Aceptar también cadenas 'TP' o '0'/'18'
-    else if (typeof raw.edadvisualizacion === 'string') {
-      const s = raw.edadvisualizacion.trim();
-      if (s.toUpperCase() === 'TP') edad = 0;
-      else {
-        const n = parseInt(s, 10);
-        if (!Number.isNaN(n)) edad = n;
-      }
-    } else if (typeof raw.edadVisualizacion === 'string') {
-      const s = raw.edadVisualizacion.trim();
-      if (s.toUpperCase() === 'TP') edad = 0;
-      else {
-        const n = parseInt(s, 10);
-        if (!Number.isNaN(n)) edad = n;
-      }
-    } else if (typeof raw.edad === 'string') {
-      const s = raw.edad.trim();
-      if (s.toUpperCase() === 'TP') edad = 0;
-      else {
-        const n = parseInt(s, 10);
-        if (!Number.isNaN(n)) edad = n;
-      }
-    }
-
-    // Resolución (normalizar a formatos conocidos: 720p/1080p/2160p cuando sea posible)
-    let resolucion: string | null = null;
-    const rawRes = raw.resolucion ?? raw.resolution ?? raw.resolucion_video ?? null;
-    if (rawRes != null) {
-      const norm = this.normalizeResolutionRaw(rawRes);
-      resolucion = norm ?? null;
-    }
+    const id = this.extractContenidoId(raw);
+    const titulo = this.extractContenidoTitulo(raw);
+    const tipo = this.extractContenidoTipo(raw);
+    const vip = this.extractContenidoVip(raw);
+    const tags = this.extractTagsFromDetail(raw) ?? [];
+    const edadVisualizacion = this.extractEdadFromDetail(raw);
+    const resolucion = this.extractResolucionFromDetail(raw);
 
     return {
       id,
       titulo,
       tipo,
-      vip: !!vip,
+      vip,
       resolucion: resolucion ?? null,
       // attach normalized tags/edad for filtering convenience
       ...(tags.length ? { tags } : {}),
-      ...(typeof edad === 'number' ? { edadVisualizacion: edad } : {})
+      ...(typeof edadVisualizacion === 'number' ? { edadVisualizacion } : {})
     } as any;
+  }
+
+  private extractContenidoId(raw: any): string {
+    return raw.id ?? raw._id ?? raw.idContenido ?? String(Math.random());
+  }
+
+  private extractContenidoTitulo(raw: any): string {
+    return raw.titulo ?? raw.title ?? raw.nombre ?? raw.name ?? '';
+  }
+
+  private extractContenidoTipo(raw: any): 'AUDIO' | 'VIDEO' {
+    const tipoRaw = (raw.tipo ?? raw.type ?? raw.tipoContenido ?? 'VIDEO').toString();
+    return tipoRaw.toUpperCase().startsWith('A') ? 'AUDIO' : 'VIDEO';
+  }
+
+  private extractContenidoVip(raw: any): boolean {
+    return raw.vip === true || raw.esVip === true || raw.vip === 'true';
   }
 
   /** Normaliza variantes de resolución a los tokens usados por el UI: '720p','1080p','2160p' cuando es posible. */
   private normalizeResolutionRaw(raw: any): string | undefined {
     if (raw == null) return undefined;
-    const s = String(raw).trim().toLowerCase();
-    // numérico '1080' -> '1080p'
-    const onlyDigits = s.replace(/[^0-9]/g, '');
-    if (onlyDigits.length >= 3) {
-      // map common heights
-      if (onlyDigits === '2160' || onlyDigits === '4' || onlyDigits === '2160p') return '2160p';
-      if (onlyDigits === '1080' || onlyDigits === '1080p') return '1080p';
-      if (onlyDigits === '720' || onlyDigits === '720p') return '720p';
-      // fallback: if it's a number like 480/360, keep as e.g. '480p'
-      return `${onlyDigits}p`;
+    const trimmed = String(raw).trim();
+    if (!trimmed) return undefined;
+    return this.normalizeResolutionFromDigits(trimmed) ??
+      this.normalizeResolutionFromText(trimmed.toLowerCase()) ??
+      trimmed;
+  }
+
+  private normalizeResolutionFromDigits(value: string): string | undefined {
+    const digits = value.replace(/[^0-9]/g, '');
+    if (digits.length < 3) return undefined;
+    switch (digits) {
+      case '2160':
+      case '4':
+      case '2160p':
+        return '2160p';
+      case '1080':
+      case '1080p':
+        return '1080p';
+      case '720':
+      case '720p':
+        return '720p';
+      default:
+        return `${digits}p`;
     }
-    // common textual variants
-    if (s.includes('4k') || s.includes('2160') || s.includes('uhd')) return '2160p';
-    if (s.includes('full') && s.includes('hd')) return '1080p';
-    if (s.includes('hd') && !s.includes('full')) return '720p';
-    if (s.includes('720')) return '720p';
-    if (s.includes('1080')) return '1080p';
-    if (s.includes('2160')) return '2160p';
-    // unknown format, return original trimmed string to allow direct compares
-    return String(raw).trim();
+  }
+
+  private normalizeResolutionFromText(value: string): string | undefined {
+    if (value.includes('4k') || value.includes('2160') || value.includes('uhd')) return '2160p';
+    if (value.includes('full') && value.includes('hd')) return '1080p';
+    if (value.includes('hd') && !value.includes('full')) return '720p';
+    if (value.includes('720')) return '720p';
+    if (value.includes('1080')) return '1080p';
+    if (value.includes('2160')) return '2160p';
+    return undefined;
   }
 
   /**

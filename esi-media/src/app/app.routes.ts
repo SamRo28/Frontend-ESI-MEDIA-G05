@@ -34,7 +34,9 @@ export const routes: Routes = [
 
   {
     path: 'admin-dashboard',
-    component: AdminDashboardComponent
+    component: AdminDashboardComponent,
+    canActivate: [MultimediaGuard],
+    data: { tipoUsuario: 'Administrador' }
   },
   {
     path: '2fa',
@@ -70,11 +72,15 @@ export const routes: Routes = [
   },
   {
     path: 'audio/subir',
-    component: AudioUploadComponent
+    component: AudioUploadComponent,
+    canActivate: [MultimediaGuard],
+    data: { tipoUsuario: 'GestordeContenido' }
   },
   {
     path: 'video/subir',
-    component: VideoUploadComponent
+    component: VideoUploadComponent,
+    canActivate: [MultimediaGuard],
+    data: { tipoUsuario: 'GestordeContenido' }
   },
   { 
     path: 'forgot-password', 
@@ -86,22 +92,27 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
-    component: VisuDashboard
+    component: VisuDashboard,
+    canActivate: [MultimediaGuard],
+    data: { tipoUsuario: 'Visualizador' }
   },
   {
     path: 'dashboard/listas',
     component: GestionListasComponent,
-    canActivate: [MultimediaGuard]
+    canActivate: [MultimediaGuard],
+    data: { tipoUsuario: 'Visualizador' }
   },
   {
     path: 'dashboard/listas/crear',
     component: CrearListaComponent,
-    canActivate: [MultimediaGuard]
+    canActivate: [MultimediaGuard],
+    data: { tipoUsuario: 'Visualizador' }
   },
   {
     path: 'dashboard/listas/:id',
     component: ListaDetailComponent,
-    canActivate: [MultimediaGuard]
+    canActivate: [MultimediaGuard],
+    data: { tipoUsuario: 'Visualizador' }
   },
   {
     path: 'perfil',
@@ -109,12 +120,15 @@ export const routes: Routes = [
   },
   {
     path: 'gestor-dashboard',
-    component: GestorDashboardComponent
+    component: GestorDashboardComponent,
+    canActivate: [MultimediaGuard],
+    data: { tipoUsuario: 'GestordeContenido' }
   },
   {
     path: 'gestor-dashboard/contenidos',
     component: GestorContenidosComponent,
-    canActivate: [MultimediaGuard]
+    canActivate: [MultimediaGuard],
+    data: { tipoUsuario: 'GestordeContenido' }
   },
   {
     // Ruta legacy eliminada: la vista principal vive en /dashboard.
@@ -126,42 +140,49 @@ export const routes: Routes = [
   {
     path: 'dashboard/videos',
     component: VisuDashboard,
-    canActivate: [MultimediaGuard]
+    canActivate: [MultimediaGuard],
+    data: { tipoUsuario: 'Visualizador' }
   },
   {
     path: 'dashboard/audios',
     component: VisuDashboard,
-    canActivate: [MultimediaGuard]
+    canActivate: [MultimediaGuard],
+    data: { tipoUsuario: 'Visualizador' }
   },
   {
     path: 'dashboard/listas-publicas',
     component: VisuDashboard,
-    canActivate: [MultimediaGuard]
+    canActivate: [MultimediaGuard],
+    data: { tipoUsuario: 'Visualizador' }
   },
   {
     path: 'dashboard/:id',
     component: MultimediaDetailComponent,
-    canActivate: [MultimediaGuard]
+    canActivate: [MultimediaGuard],
+    data: { tipoUsuario: 'Visualizador' }
   },
   // Redirecciones legacy desde /multimedia* a /dashboard*
   { path: 'multimedia', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'multimedia/videos', redirectTo: 'dashboard/videos', pathMatch: 'full' },
   { path: 'multimedia/audios', redirectTo: 'dashboard/audios', pathMatch: 'full' },
-  { path: 'multimedia/:id', redirectTo: 'dashboard/:id', pathMatch: 'full' },
+  { path: 'multimedia/:id', redirectTo: 'dashboard/:id', pathMatch: 'full', data: { prerender: false } },
   {
 
     path: 'gestor-dashboard/gestion-listas',
     component: GestionListasComponent,
-    canActivate: [MultimediaGuard]
+    canActivate: [MultimediaGuard],
+    data: { tipoUsuario: 'GestordeContenido' }
   },
   {
     path: 'gestor-dashboard/gestion-listas/crear',
     component: CrearListaComponent,
-    canActivate: [MultimediaGuard]
+    canActivate: [MultimediaGuard],
+    data: { tipoUsuario: 'GestordeContenido' }
   },
   {
     path: 'gestor-dashboard/gestion-listas/:id',
     component: ListaDetailComponent,
-    canActivate: [MultimediaGuard]
+    canActivate: [MultimediaGuard],
+    data: { tipoUsuario: 'GestordeContenido' }
   }
 ];

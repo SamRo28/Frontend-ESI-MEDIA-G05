@@ -148,10 +148,10 @@
   </div>
 
   <!-- Modal de detalle -->
-  <div class="detalle-backdrop" *ngIf="mostrarDetalle" (click)="cerrarDetalle()"></div>
+  <div class="detalle-backdrop" *ngIf="mostrarDetalle" tabindex="-1" (click)="cerrarDetalle()" (keydown.escape)="cerrarDetalle()"></div>
   <div class="detalle-modal" *ngIf="mostrarDetalle">
     <div class="detalle-header">
-      <div class="detalle-title-group">
+      <div class="detalle-title-group" tabindex="0" (keydown.escape)="cerrarDetalle()">
         <h2 class="detalle-title">
           {{ detalleSeleccionado?.titulo || 'Detalle de contenido' }}
         </h2>
@@ -284,20 +284,20 @@
  
                <!-- VIP -->
                <div class="detalle-item">
-                 <label class="detalle-label">Contenido VIP</label>
+                 <span class="detalle-label">Contenido VIP</span>
                  <span *ngIf="!editMode" class="detalle-value">{{ detalleSeleccionado.vip ? 'Sí' : 'No' }}</span>
-                 <label *ngIf="editMode" class="toggle-label">
-                   <input type="checkbox" name="vip" [(ngModel)]="editForm.vip">
+                 <label *ngIf="editMode" class="toggle-label" [attr.for]="vipToggleId">
+                   <input [id]="vipToggleId" type="checkbox" name="vip" [(ngModel)]="editForm.vip">
                    <span>Marcar como VIP</span>
                  </label>
                </div>
- 
+
                <!-- Estado -->
                <div class="detalle-item">
-                 <label class="detalle-label">Estado</label>
+                 <span class="detalle-label">Estado</span>
                  <span *ngIf="!editMode" class="detalle-value">{{ detalleSeleccionado.estado ? 'Visible' : 'No visible' }}</span>
-                 <label *ngIf="editMode" class="toggle-label">
-                   <input type="checkbox" name="estado" [(ngModel)]="editForm.estado">
+                 <label *ngIf="editMode" class="toggle-label" [attr.for]="estadoToggleId">
+                   <input [id]="estadoToggleId" type="checkbox" name="estado" [(ngModel)]="editForm.estado">
                    <span>{{ editForm.estado ? 'Visible' : 'No visible' }}</span>
                  </label>
                </div>
@@ -348,7 +348,7 @@
   </div>
 
   <!-- Modal de estadísticas -->
-  <div class="detalle-backdrop" *ngIf="mostrarEstadisticas" (click)="cerrarEstadisticas()"></div>
+  <div class="detalle-backdrop" *ngIf="mostrarEstadisticas" tabindex="-1" (click)="cerrarEstadisticas()" (keydown.escape)="cerrarEstadisticas()"></div>
   <div class="detalle-modal estadisticas-modal" *ngIf="mostrarEstadisticas">
     <div class="detalle-header">
       <div class="detalle-title-group">

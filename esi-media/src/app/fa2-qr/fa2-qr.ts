@@ -29,10 +29,13 @@ export class Fa2Qr implements OnInit {
   
   // Estado del botón de copiar
   isCopied: boolean = false;
+  private returnUrl: string | null = null;
 
   constructor(private userService: UserService, private sanitizer: DomSanitizer, private cdr: ChangeDetectorRef, private router: Router) { }
 
   ngOnInit(): void {
+    const state = history.state as any;
+    this.returnUrl = typeof state?.returnUrl === 'string' ? state.returnUrl : null;
     // Aquí llamarías a tu servicio para obtener el QR y la clave secreta
     this.loadQRCode();
   }
@@ -47,8 +50,6 @@ export class Fa2Qr implements OnInit {
           this.rawQrUrl = mensaje.toString();
           // Angular puede bloquear URLs externas; marcaremos la URL como segura
           const sanitized = this.sanitizer.bypassSecurityTrustUrl(this.rawQrUrl);
-          console.log('QR URL (raw):', this.rawQrUrl);
-          console.log('QR URL (sanitized):', sanitized);
           // Reset load state: ocultar imagen hasta que termine la carga
           this.qrVisible = false;
           this.qrLoadError = null;
@@ -66,7 +67,6 @@ export class Fa2Qr implements OnInit {
   }
 
   onQrLoad(): void {
-    console.log('QR image loaded successfully');
     this.qrVisible = true;
   this.cdr.detectChanges();
   }
@@ -103,8 +103,6 @@ export class Fa2Qr implements OnInit {
     return;
   }
 
-  console.log('Verificando código:', this.verificationCode, 'para', email);
-
   this.userService.verify2FACode(email, this.verificationCode).subscribe({
     next: (res: any) => {
       let user = JSON.parse(sessionStorage.getItem('user') || '{}');
@@ -120,7 +118,11 @@ export class Fa2Qr implements OnInit {
             this.router.navigate(['/3verification'], { state: { allowFa3Code: true } });
           } else {
               // El token ya está en la cookie HttpOnly
-              this.router.navigate(['/dashboard']);
+              if (this.returnUrl) {
+                this.router.navigateByUrl(this.returnUrl);
+              } else {
+                this.router.navigate(['/dashboard']);
+              }
           }
       }
     },

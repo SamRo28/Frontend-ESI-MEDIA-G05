@@ -8,7 +8,7 @@ export interface PasswordValidation {
   hasSpecialChar: boolean;
   noStartsWithUpperCase: boolean;
   passwordsMatch: boolean;
-  notContainsUsername: boolean;
+  notContainsPersonalData: boolean;
 }
 
 export interface ValidationResult {
@@ -22,7 +22,15 @@ export interface ValidationResult {
 })
 export class UserValidationService {
   
-  validatePassword(password: string, confirmPassword: string, username: string): PasswordValidation {
+  validatePassword(password: string, confirmPassword: string, username: string, firstName: string = '', lastName: string = ''): PasswordValidation {
+    const lowerPass = password.toLowerCase();
+    const parts: string[] = [];
+    if (username) parts.push(username.toLowerCase());
+    if (firstName) parts.push(firstName.toLowerCase());
+    if (lastName) parts.push(lastName.toLowerCase());
+    // Filtrar partes muy cortas (<=2) para evitar falsos positivos
+    const meaningful = parts.filter(p => p.length > 2);
+    const containsPersonal = meaningful.some(p => lowerPass.includes(p));
     return {
       minLength: password.length >= 8,
       hasUpperCase: /[A-Z]/.test(password),
@@ -31,8 +39,7 @@ export class UserValidationService {
       hasSpecialChar: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
       noStartsWithUpperCase: password.length > 0 && !/^[A-Z]/.test(password),
       passwordsMatch: password.length > 0 && password === confirmPassword,
-      notContainsUsername: username.length === 0 || password.length === 0 || 
-        !password.toLowerCase().includes(username.toLowerCase())
+      notContainsPersonalData: password.length === 0 || !containsPersonal
     };
   }
 
@@ -80,7 +87,7 @@ export class UserValidationService {
       { key: 'hasNumber', label: 'Al menos un número' },
       { key: 'hasSpecialChar', label: 'Al menos un carácter especial' },
       { key: 'passwordsMatch', label: 'Las contraseñas deben coincidir' },
-      { key: 'notContainsUsername', label: 'No debe contener el nombre' }
+      { key: 'notContainsPersonalData', label: 'No debe contener datos personales (nombre o apellidos)' }
     ];
   }
 }

@@ -388,9 +388,9 @@ export class ContentFilterComponent implements OnInit, OnChanges {
    */
   get filterIcon(): string {
     switch (this.activeContentType) {
-      case 'video': return '🎬';
+      case 'video': return '▶️';
       case 'audio': return '🎵';
-      default: return '🔍';
+      default: return '⚙️';
     }
   }
 

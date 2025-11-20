@@ -107,6 +107,10 @@ export class MultimediaListComponent implements OnInit, OnChanges {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
+    const specialMode = this.filtersObject?.specialMode;
+    if (specialMode === 'top-contents' || specialMode === 'top-rated' || specialMode === 'favorites') {
+      return;
+    }
     // Filtro inicial: preferir tipo forzado por el contenedor (p.ej. dashboard)
     if (this.tipoForzado === 'VIDEO' || this.tipoForzado === 'AUDIO') {
       this.filtroTipo = this.tipoForzado;

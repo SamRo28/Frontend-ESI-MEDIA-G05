@@ -44,16 +44,6 @@ export class AdminService {
 
   constructor(private readonly http: HttpClient) {}
 
-  // Ya no es necesario añadir headers manualmente.
-  // El interceptor configura withCredentials para todas las peticiones al backend.
-  private getAuthHeaders(): any {
-    return {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    };
-  }
-
   getUsuarios(): Observable<Usuario[]> {
     return this.http.post<Usuario[]>(`${this.apiUrl}/users/listar`, {}).pipe(
       catchError(this.handleError)
@@ -118,7 +108,6 @@ export class AdminService {
 
   deleteUser(userId: string): Observable<any> {
     const url = `${this.apiUrl}/users/${userId}`;
-    console.log('AdminService: Eliminando usuario:', userId);
     // Usamos directamente el endpoint del backend que ya maneja la eliminación de contraseña
     return this.http.delete(url).pipe(
       timeout(5000),
@@ -134,11 +123,6 @@ export class AdminService {
    */
   obtenerPerfil(usuarioId: string, adminId?: string): Observable<PerfilDetalle> {
     const url = `${this.apiUrl}/perfiles/${usuarioId}`;
-    if (adminId) {
-      console.log('AdminService: Obteniendo perfil de usuario:', usuarioId, 'por admin:', adminId);
-    } else {
-      console.log('AdminService: Obteniendo perfil de usuario sin Admin-ID');
-    }
     const options = adminId ? { headers: { 'Admin-ID': adminId } } : {};
     return this.http.get<PerfilDetalle>(url, options).pipe(
       // Aumentamos timeout para evitar errores por lentitud del backend en entornos locales
@@ -153,7 +137,6 @@ export class AdminService {
   /** Bloquea un usuario */
   bloquearUsuario(usuarioId: string, adminId: string): Observable<any> {
     const url = `${this.apiUrl}/usuarios/${usuarioId}/bloquear`;
-    console.log('AdminService: Bloqueando usuario:', usuarioId);
     const headers = { 'Admin-ID': adminId };
     return this.http.put(url, {}, { headers }).pipe(
       timeout(5000),
@@ -166,9 +149,7 @@ export class AdminService {
   // ✅ MÉTODO CORREGIDO: Usar endpoints simples que funcionaban antes
   // Obtener cualquier usuario por ID (usando endpoint existente)
   getUserById(id: string): Observable<any> {
-    console.log('🔗 Obteniendo usuario por ID:', id);
     const url = `${this.apiUrl}/users/${id}`;
-    console.log('🌐 URL:', url);
     return this.http.get<any>(url)
       .pipe(
         timeout(10000),
@@ -203,7 +184,6 @@ export class AdminService {
   /** Desbloquea un usuario */
   desbloquearUsuario(usuarioId: string, adminId: string): Observable<any> {
     const url = `${this.apiUrl}/usuarios/${usuarioId}/desbloquear`;
-    console.log('AdminService: Desbloqueando usuario:', usuarioId);
     const headers = { 'Admin-ID': adminId };
     return this.http.put(url, {}, { headers }).pipe(
       timeout(5000),
@@ -251,18 +231,15 @@ export class AdminService {
   }
 
   getAdministradorById(id: string): Observable<any> {
-    console.log('🔗 Obteniendo administrador (usando endpoint genérico):', id);
     return this.getUserById(id);
   }
 
 
   getGestorById(id: string): Observable<any> {
-    console.log('🔗 Obteniendo gestor (usando endpoint genérico):', id);
     return this.getUserById(id);
   }
 
    getVisualizadorById(id: string): Observable<any> {
-    console.log('🔗 Obteniendo visualizador (usando endpoint genérico):', id);
     return this.getUserById(id);
   }
 
@@ -272,13 +249,11 @@ export class AdminService {
     return this.http.get<Paginado<VisualizadorGestionDTO>>(`${this.apiUrl}/visualizadores`, { params: { page, size } as any });
   }
   updateGestor(id: string, gestor: GestorGestionDTO): Observable<any> {
-    console.log('🔗 Actualizando gestor (usando endpoint genérico):', id, gestor);
     return this.updateUser(id, gestor, "GestordeContenido");
   }
 
   // Actualizar administrador (compatibilidad con user-management)
   updateAdministrador(id: string, admin: AdministradorGestionDTO): Observable<any> {
-    console.log('🔗 Actualizando administrador (usando endpoint genérico):', id, admin);
     return this.updateUser(id, admin, "Administrador");
   }
 

@@ -23,38 +23,26 @@ export interface AverageRatingDTO {
 export class ValoracionService {
   private readonly base = `${environment.apiUrl}/api/valoraciones`;
 
-  constructor(private http: HttpClient) {}
-
-  // Ya no necesitamos añadir headers manualmente, el interceptor gestiona withCredentials
-  private authOptions(params?: Record<string, string | string[]>) : { params?: Record<string, string | string[]> } {
-    const opts: { params?: Record<string, string | string[]> } = {};
-    if (params) { opts.params = params; }
-    return opts;
-  }
+  constructor(private readonly http: HttpClient) {}
 
   createOrGet(contenidoId: string): Observable<ValoracionDTO> {
-    const opts = this.authOptions();
-    return this.http.post<ValoracionDTO>(this.base, { contenidoId }, opts);
+    return this.http.post<ValoracionDTO>(this.base, { contenidoId });
   }
 
   valorarPorId(id: string, valoracion: number): Observable<void> {
-    const opts = this.authOptions();
-    return this.http.post<void>(`${this.base}/${id}/valorar`, { valoracion }, opts);
+    return this.http.post<void>(`${this.base}/${id}/valorar`, { valoracion });
   }
 
   showRating(contenidoId: string): Observable<ShowRatingDTO> {
-    const opts = this.authOptions({ contenidoId });
-    return this.http.get<ShowRatingDTO>(`${this.base}/show`, opts);
+    return this.http.get<ShowRatingDTO>(`${this.base}/show`, { params: { contenidoId } });
   }
 
   average(contenidoId: string): Observable<AverageRatingDTO> {
-    const opts = this.authOptions({ contenidoId });
-    return this.http.get<AverageRatingDTO>(`${this.base}/average`, opts);
+    return this.http.get<AverageRatingDTO>(`${this.base}/average`, { params: { contenidoId } });
   }
 
   myRating(contenidoId: string): Observable<number> {
-    const opts = this.authOptions({ contenidoId });
-    return this.http.get<number>(`${this.base}/my`, opts);
+    return this.http.get<number>(`${this.base}/my`, { params: { contenidoId } });
   }
 
 }

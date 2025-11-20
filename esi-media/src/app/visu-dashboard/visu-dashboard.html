@@ -33,12 +33,23 @@
       </nav>
 
       <div class="user-section">
-        <!-- Botón de filtro -->
-        <app-content-filter 
-          [contentType]="contentFilterType"
-          (filtersApplied)="onFiltersApplied($event)"
-          (filtersChanged)="onFiltersChanged($event)">
-        </app-content-filter>
+        <!-- Botón VIP -->
+        <button 
+          *ngIf="!isUserVIP()" 
+          class="vip-button" 
+          (click)="navigateToSubscription()"
+          [attr.aria-label]="'Actualizar a VIP'"
+          type="button">
+          <span class="vip-text">VIP</span>
+        </button>
+        <button 
+          *ngIf="isUserVIP()" 
+          class="vip-button vip-active" 
+          [attr.aria-label]="'Usuario VIP'"
+          type="button"
+          disabled>
+          <span class="vip-text">VIP</span>
+        </button>
         
         <button class="user-profile" 
                 (click)="toggleUserMenu()" 
@@ -75,11 +86,15 @@
   <main class="dashboard-main">
     <section class="dashboard-section">
       <div class="section-header">
-        <h2 class="section-title">{{ mostrarListasPublicas ? 'Listas Públicas' : 'Contenido Multimedia' }}</h2>
-        <div class="section-actions">
-          <button class="btn-toggle-panel" (click)="toggleListasPrivadas()">
-            {{ mostrarListasPrivadas ? 'Ocultar Listas' : 'Ver Mis Listas' }}
-          </button>
+        <div class="section-title-with-filter">
+          <h2 class="section-title">{{ mostrarListasPublicas ? 'Listas Públicas' : 'Contenido Multimedia' }}</h2>
+          <!-- Botón de filtro -->
+          <app-content-filter 
+            *ngIf="!mostrarListasPrivadas"
+            [contentType]="contentFilterType"
+            (filtersApplied)="onFiltersApplied($event)"
+            (filtersChanged)="onFiltersChanged($event)">
+          </app-content-filter>
         </div>
       </div>
       

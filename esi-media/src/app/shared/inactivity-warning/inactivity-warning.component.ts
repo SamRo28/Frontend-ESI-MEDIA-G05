@@ -156,23 +156,13 @@ export class InactivityWarningComponent implements OnInit, OnDestroy {
   private onInactivityDetected(): void {
     if (!this.isBrowser) return;
     
-    console.log('⚠️ INACTIVIDAD DETECTADA - Mostrando warning');
-    
     // Mostrar advertencia
     this.showWarning = true;
     this.remainingTime = this.WARNING_TIME;
     
-    console.log('showWarning:', this.showWarning, 'remainingTime:', this.remainingTime);
-    console.log('Modal HTML debería estar visible ahora');
-    
     // Forzar detección de cambios
     this.cdr.markForCheck();
     this.cdr.detectChanges();
-    
-    // Verificar después de un tick
-    setTimeout(() => {
-      console.log('Después del tick - showWarning:', this.showWarning);
-    }, 0);
     
     // Iniciar cuenta regresiva
     this.startCountdown();

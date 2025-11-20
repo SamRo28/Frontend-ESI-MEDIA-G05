@@ -5,8 +5,7 @@ import { ActivatedRoute, RouterLink, RouterLinkActive, Router } from '@angular/r
 import { MultimediaService, ContenidoDetalleDTO } from '../services/multimedia.service';
 import { UserService } from '../services/userService';
 import { ListaService, ListasResponse } from '../services/lista.service';
-// Forzar uso explícito del entorno de producción (apiUrl desplegado)
-import { environment } from '../../environments/environment.production';
+import { environment } from '../../environments/environment';
 import { ValoracionService } from '../services/valoracion.service';
 import { ValoracionComponent } from '../shared/valoracion/valoracion.component';
 import { finalize } from 'rxjs/operators';
@@ -75,7 +74,7 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     private valoracionSvc: ValoracionService,
     private favoritesService: FavoritesService,
     private userService: UserService
-  ) {}
+  ) { }
 
   // Utilidades de uso interno para reducir complejidad
   private schedule(fn: () => void): void { setTimeout(fn, 0); }
@@ -98,7 +97,7 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     }
     // Ya no necesitamos capturar el token manualmente
     // El navegador enviará automáticamente la cookie HttpOnly
-    
+
     // Cargar listas privadas del usuario
     this.cargarListasPrivadas();
 
@@ -122,11 +121,13 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   onValoracionUpdated(): void {
     // Refrescar promedio y estado local tras una valoración
     if (!this.id) return;
-    this.valoracionSvc.average(this.id).subscribe({ next: (avg) => {
-      this.averageRating = avg?.averageRating ?? null;
-      this.ratingsCount = avg?.ratingsCount ?? 0;
-      this.cdr.markForCheck();
-    }, error: () => {} });
+    this.valoracionSvc.average(this.id).subscribe({
+      next: (avg) => {
+        this.averageRating = avg?.averageRating ?? null;
+        this.ratingsCount = avg?.ratingsCount ?? 0;
+        this.cdr.markForCheck();
+      }, error: () => { }
+    });
   }
 
   ngOnDestroy(): void {
@@ -142,12 +143,11 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   cargar(): void {
     this.cargando = true;
     this.error = null;
-    console.log('[MultimediaDetail] Iniciando carga detalle id=', this.id);
     this.clearDetalleTimeoutSafely();
     // Fallback de seguridad: si en 8s no llega respuesta, apagamos loader y mostramos error genérico
     this.detalleTimeout = setTimeout(() => {
       if (this.cargando) {
-          
+
         this.cargando = false;
         if (!this.detalle && !this.error) {
           this.error = 'Tiempo de espera agotado al cargar el contenido';
@@ -155,15 +155,15 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
       }
     }, 8000);
     this.multimedia.detalle(this.id).subscribe({
-        next: (d) => {
-          this.detalle = d;
-          this.revisarFavorito();
-          // Para VIDEO: dejamos de mostrar loader general (datos recibidos) pero activamos skeleton hasta ready
+      next: (d) => {
+        this.detalle = d;
+        this.revisarFavorito();
+        // Para VIDEO: dejamos de mostrar loader general (datos recibidos) pero activamos skeleton hasta ready
         if (d.tipo === 'VIDEO') {
           this.cargando = false;
           this.playerReady = false;
           this.buffering = false;
-          
+
           this.cdr.markForCheck();
           const url = d.referenciaReproduccion || '';
           this.isYoutube = this.isYoutubeUrl(url);
@@ -174,22 +174,24 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
         // Para AUDIO mantenemos cargando sólo hasta el botón (descarga diferida), así que apagamos también
         if (d.tipo === 'AUDIO') {
           this.cargando = false;
-          
+
           this.cdr.markForCheck();
         }
         this.clearDetalleTimeoutSafely();
         // Tras cargar detalle, obtener promedio y estado de mi valoración (si existe)
         try {
           // Average (siempre público)
-          
-          this.valoracionSvc.average(this.id).subscribe({ next: (avg) => {
-            this.averageRating = avg?.averageRating ?? null;
-            this.ratingsCount = avg?.ratingsCount ?? 0;
-            this.cdr.markForCheck();
-          }, error: () => {} });
+
+          this.valoracionSvc.average(this.id).subscribe({
+            next: (avg) => {
+              this.averageRating = avg?.averageRating ?? null;
+              this.ratingsCount = avg?.ratingsCount ?? 0;
+              this.cdr.markForCheck();
+            }, error: () => { }
+          });
 
           // Show: requiere auth y nos indicará si existe instancia y si ya valoró
-          
+
           this.valoracionSvc.showRating(this.id).subscribe({
             next: (dto) => {
               // Si devuelve 200 con dto.myRating != null => existe y tengo rating
@@ -245,19 +247,23 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
         // Crear o recuperar instancia Valoracion (idempotente) — no bloqueante para reproducir
         try {
-          
-          this.valoracionSvc.createOrGet(id).subscribe({ next: (v) => {
-            
-            this.valoracionInstance = v;
-            this.ratingInstanceExists = true;
-            // actualizar average
-            this.valoracionSvc.average(id).subscribe({ next: (avg) => {
-              this.averageRating = avg?.averageRating ?? null;
-              this.ratingsCount = avg?.ratingsCount ?? 0;
+
+          this.valoracionSvc.createOrGet(id).subscribe({
+            next: (v) => {
+
+              this.valoracionInstance = v;
+              this.ratingInstanceExists = true;
+              // actualizar average
+              this.valoracionSvc.average(id).subscribe({
+                next: (avg) => {
+                  this.averageRating = avg?.averageRating ?? null;
+                  this.ratingsCount = avg?.ratingsCount ?? 0;
+                  this.cdr.markForCheck();
+                }, error: () => { }
+              });
               this.cdr.markForCheck();
-            }, error: () => {} });
-            this.cdr.markForCheck();
-          }, error: (err) => { console.error('[MultimediaDetail] createOrGet error', err); } });
+            }, error: (err) => { console.error('[MultimediaDetail] createOrGet error', err); }
+          });
         } catch (e) { console.error('[MultimediaDetail] createOrGet thrown', e); }
         // 2) Iniciar reproducción según tipo
         setTimeout(() => this.iniciarPlayback(), 0);
@@ -273,7 +279,7 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
 
   private iniciarPlayback(): void {
     if (!this.detalle) return;
-    
+
     const playbackHandlers = {
       'AUDIO': () => this.iniciarPlaybackAudio(),
       'VIDEO': () => this.iniciarPlaybackVideo()
@@ -318,11 +324,9 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   }
 
   private reproducirElemento(element: HTMLAudioElement | HTMLVideoElement): void {
-    try {
-      element.play();
-    } catch {
+    element.play()?.catch(() => {
       // Silenciar errores de reproducción
-    }
+    });
   }
 
   descargarAudio(): void {
@@ -341,28 +345,11 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
 
   audioSrc(): string {
     if (!this.detalle || this.detalle.tipo !== 'AUDIO') return '';
-    let base = this.detalle.referenciaReproduccion || '';
-    // Normalizar a dominio de backend en despliegue, evitando localhost
-    try {
-      if (/^https?:\/\//i.test(base)) {
-        const u = new URL(base);
-        // Reescribir siempre el origen al del backend configurado
-        base = `${environment.apiUrl.replace(/\/+$/,'')}${u.pathname}${u.search || ''}${u.hash || ''}`;
-      } else if (/^\//.test(base)) {
-        // Ruta relativa -> anteponer dominio backend
-        base = `${environment.apiUrl.replace(/\/+$/,'')}${base}`;
-      }
-    } catch {
-      // Fallback simple si URL constructor falla: asegurar prefijo del backend cuando parece relativo
-      if (!/^https?:\/\//i.test(base)) {
-        base = `${environment.apiUrl.replace(/\/+$/,'')}/${base.replace(/^\/+/, '')}`;
-      }
-    }
-    // Evitar duplicar protocolo si accidentalmente ya contiene http://http://
-    base = base.replace(/^(https?:\/\/)+(https?:\/\/)/i, '$1');
-    // Ya no añadimos el token como parámetro de query, el navegador envía la cookie
-    return base;
+
+    const baseUrl = environment.apiUrl.replace(/\/+$/, ''); 
+    return `${baseUrl}/multimedia/audio/${this.detalle.id}`;
   }
+
 
   onAudioError(ev: Event): void {
     console.error('[MultimediaDetail] Error evento <audio>', ev);
@@ -370,7 +357,7 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   }
 
   onAudioLoaded(ev: Event): void {
-    
+
   }
 
   caratulaUrl(): string | null {
@@ -378,7 +365,7 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     if (!c) return null;
     if (typeof c === 'string') return c;
     if (typeof c === 'object') {
-      for (const k of ['url','src','data']) {
+      for (const k of ['url', 'src', 'data']) {
         if (typeof (c as any)[k] === 'string') return (c as any)[k];
       }
     }
@@ -401,7 +388,6 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
 
   // --- Eventos del reproductor de VIDEO ---
   onIframeLoaded(): void {
-    console.log('[MultimediaDetail] iframe load');
     this.schedule(() => { this.playerReady = true; this.buffering = false; this.cdr.markForCheck(); });
   }
 
@@ -417,24 +403,20 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   }
   onVideoLoaded(): void {
     // loadedmetadata: ya tenemos duración, podemos mostrar el player
-    console.log('[MultimediaDetail] video loadedmetadata');
     this.schedule(() => { this.playerReady = true; this.cdr.markForCheck(); });
   }
   onVideoCanPlay(): void {
-    console.log('[MultimediaDetail] video canplay');
     this.schedule(() => { this.playerReady = true; this.buffering = false; this.cdr.markForCheck(); });
   }
   onVideoWaiting(): void {
-    console.log('[MultimediaDetail] video waiting');
     this.schedule(() => { if (this.playerReady) { this.buffering = true; this.cdr.markForCheck(); } });
   }
   onVideoPlaying(): void {
-    console.log('[MultimediaDetail] video playing');
     this.schedule(() => { this.buffering = false; this.cdr.markForCheck(); });
   }
 
   // --- Métodos para manejo de listas privadas ---
-  
+
   /**
    * Carga las listas privadas del usuario autenticado
    */
@@ -446,16 +428,16 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     }
 
     this.cargandoListas = true;
-    
-    
+
+
     this.listaService.getListasPropiasUsuario().subscribe({
       next: (response: ListasResponse) => {
         if (response.success && response.listas) {
           // Filtrar solo listas privadas (no visibles)
           this.listasPrivadas = response.listas.filter(lista => !lista.visible);
-          
+
         } else {
-          
+
           this.listasPrivadas = [];
         }
         this.cargandoListas = false;
@@ -504,7 +486,7 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
-    
+
 
     this.listaService.addContenido(lista.id, this.detalle.id).subscribe({
       next: (response) => {
@@ -538,8 +520,8 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
   crearNuevaLista(): void {
     // Redirigir a la página de crear lista con el ID del contenido actual como parámetro
     if (this.detalle?.id) {
-      this.router.navigate(['/dashboard/listas/crear'], { 
-        queryParams: { contenidoId: this.detalle.id } 
+      this.router.navigate(['/dashboard/listas/crear'], {
+        queryParams: { contenidoId: this.detalle.id }
       });
     } else {
       this.router.navigate(['/dashboard/listas/crear']);
@@ -652,8 +634,8 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
     const h = Math.floor(total / 3600);
     const m = Math.floor((total % 3600) / 60);
     const sec = total % 60;
-    if (h > 0) return `${h}:${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
-    return `${m}:${sec.toString().padStart(2,'0')}`;
+    if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    return `${m}:${sec.toString().padStart(2, '0')}`;
   }
 
   fechaDisponibleTexto(): string {
@@ -707,7 +689,7 @@ export class MultimediaDetailComponent implements OnInit, OnDestroy {
           sessionStorage.removeItem('user');
           sessionStorage.removeItem('currentUserClass');
           sessionStorage.removeItem('email');
-        } catch {}
+        } catch { }
         this.multimedia.clearCache();
         this.router.navigate(['/login']);
       },

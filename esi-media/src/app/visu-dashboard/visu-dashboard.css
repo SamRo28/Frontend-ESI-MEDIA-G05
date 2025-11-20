@@ -115,6 +115,55 @@
   z-index: 50; /* Asegurar que esté por debajo del menú de usuario pero visible */
 }
 
+/* Botón VIP dorado */
+.vip-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+  border: 2px solid rgba(251, 191, 36, 0.5);
+  border-radius: 25px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.vip-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6);
+  border-color: rgba(251, 191, 36, 0.8);
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+}
+
+.vip-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.vip-button.vip-active {
+  cursor: default;
+  opacity: 0.85;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+  border-color: rgba(251, 191, 36, 0.7);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.vip-icon {
+  font-size: 18px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.vip-text {
+  font-size: 14px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
 .notification-btn {
   background: rgba(168, 85, 247, 0.2);
   border: 1px solid rgba(168, 85, 247, 0.3);
@@ -431,6 +480,12 @@
   justify-content: space-between;
   gap: 16px;
   margin: 8px auto 16px;
+}
+
+.section-title-with-filter {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .section-title {

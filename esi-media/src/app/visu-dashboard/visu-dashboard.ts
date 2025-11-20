@@ -1,14 +1,14 @@
 import { Component, OnInit, AfterViewInit, OnDestroy, inject, PLATFORM_ID } from '@angular/core';
-import { Router, NavigationEnd, RouterLink, RouterLinkActive, RouterModule, ActivatedRoute } from '@angular/router';
+import { Router, NavigationEnd, RouterLink, RouterModule, ActivatedRoute } from '@angular/router';
 import { MultimediaService, ContenidoResumenDTO } from '../services/multimedia.service';
 import { UserService } from '../services/userService';
 import { FavoritesService } from '../services/favorites.service';
+import { Subscription } from 'rxjs';
 import { GestionListasComponent } from '../gestion-listas/gestion-listas';
 import { MultimediaListComponent } from '../multimedia-list/multimedia-list';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ListasPrivadas } from '../listas-privadas/listas-privadas';
 import { CrearListaComponent } from '../crear-lista/crear-lista';
-import { PerfilVisualizadorComponent } from '../perfil-visualizador/perfil-visualizador';
 import { ContentFilterComponent } from '../shared/content-filter/content-filter.component';
 import { finalize } from 'rxjs/operators';
 
@@ -22,7 +22,7 @@ interface Star {
   selector: 'app-visu-dashboard',
   standalone: true,
 
-  imports: [CommonModule, RouterLink, RouterLinkActive, RouterModule, ListasPrivadas, CrearListaComponent, GestionListasComponent, MultimediaListComponent, ContentFilterComponent, PerfilVisualizadorComponent],
+  imports: [CommonModule, RouterLink, RouterModule, ListasPrivadas, CrearListaComponent, GestionListasComponent, MultimediaListComponent, ContentFilterComponent],
 
   templateUrl: './visu-dashboard.html',
   styleUrl: './visu-dashboard.css'
@@ -45,6 +45,9 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
   favoritos: ContenidoResumenDTO[] = [];
   favoritosLoading = false;
   activeSection: 'inicio' | 'videos' | 'audios' | 'listas' | 'favoritos' = 'inicio';
+  private favoritesUpdateSubscription: Subscription | null = null;
+  private pendingFavoritesRetry = false;
+  private pendingFavoritesRetryHandle: number | null = null;
   
   // Variables para el sistema de filtrado
   currentTagFilters: string[] = [];
@@ -99,6 +102,11 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
         this.activateFavoritesView();
       }
     });
+    this.favoritesUpdateSubscription = this.favoritesService.favoritesUpdates$.subscribe(() => {
+      if (this.mostrarFavoritos) {
+        this.refreshFavorites();
+      }
+    });
     // Inicial rápido
     const initUrl = this.router.url || '';
     if (initUrl.includes('/dashboard/videos')) {
@@ -143,6 +151,11 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
       } catch (e) {
         // ignorar
       }
+    }
+    this.favoritesUpdateSubscription?.unsubscribe();
+    if (this.pendingFavoritesRetryHandle) {
+      clearTimeout(this.pendingFavoritesRetryHandle);
+      this.pendingFavoritesRetryHandle = null;
     }
   }
 
@@ -303,9 +316,16 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
     if (!this.isBrowser) {
       return;
     }
+    const cachedFavorites = this.favoritesService.getCachedFavorites();
+    if (Array.isArray(cachedFavorites)) {
+      this.favoritos = [...cachedFavorites];
+    }
     this.favoritosLoading = true;
     this.favoritesService.list()
-      .pipe(finalize(() => this.favoritosLoading = false))
+      .pipe(finalize(() => {
+        this.favoritosLoading = false;
+        this.tryScheduleFavoritesRetry();
+      }))
       .subscribe({
         next: list => { this.favoritos = Array.isArray(list) ? list : []; },
         error: err => {
@@ -313,6 +333,26 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
           this.favoritos = [];
         }
       });
+  }
+
+  private tryScheduleFavoritesRetry(): void {
+    if (!this.mostrarFavoritos) {
+      return;
+    }
+    if (this.pendingFavoritesRetry) {
+      return;
+    }
+    if (!this.favoritesService.hasPendingUpdates()) {
+      return;
+    }
+    this.pendingFavoritesRetry = true;
+    this.pendingFavoritesRetryHandle = window.setTimeout(() => {
+      this.pendingFavoritesRetry = false;
+      this.pendingFavoritesRetryHandle = null;
+      if (this.mostrarFavoritos) {
+        this.refreshFavorites();
+      }
+    }, 650);
   }
 
   private updateUserDisplayData(): void {
@@ -461,7 +501,14 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
         },
         error: (err: any) => {
           console.error('Error al eliminar la cuenta:', err);
-          const message = err?.error?.mensaje || 'No se pudo eliminar la cuenta. Inténtalo de nuevo más tarde.';
+          const backendMsg: string = err?.error?.mensaje || err?.error?.message || '';
+          if (err?.status === 403 && backendMsg === 'No autorizado para eliminar la cuenta') {
+            alert('Para eliminar tu cuenta necesitas activar el segundo factor de autenticación (2FA). Te llevamos a la página de activación.');
+            this.closeCuentaModal();
+            this.router.navigate(['/2fa'], { state: { allowFa2: true, returnUrl: '/perfil' } });
+            return;
+          }
+          const message = backendMsg || 'No se pudo eliminar la cuenta. Inténtalo de nuevo más tarde.';
           // Usar alert para errores críticos
           alert(`Error: ${message}`);
         }
@@ -472,11 +519,11 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
 
 
   logout(): void {
-    // Llamar al servicio de logout
+    // Llamar al servicio de logout para invalidar la cookie en el backend
     this.userService.logout().subscribe({
       next: () => {
         try {
-          // Ya no necesitamos eliminar el token, el backend invalida la cookie
+          // Limpiar información del usuario en sessionStorage
           sessionStorage.removeItem('user');
           sessionStorage.removeItem('currentUserClass');
           sessionStorage.removeItem('email');
@@ -519,5 +566,23 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
     if (this.filtroTipo === 'VIDEO') return 'video';
     if (this.filtroTipo === 'AUDIO') return 'audio';
     return 'all';
+  }
+
+  /**
+   * Verifica si el usuario actual tiene suscripción VIP
+   */
+  isUserVIP(): boolean {
+    if (!this.isBrowser) return false;
+    if (this.currentUser && typeof this.currentUser.vip === 'boolean') {
+      return this.currentUser.vip;
+    }
+    return false;
+  }
+
+  /**
+   * Navega a la página de perfil, sección de suscripción
+   */
+  navigateToSubscription(): void {
+    this.router.navigate(['/perfil'], { fragment: 'suscripcion' });
   }
 }
