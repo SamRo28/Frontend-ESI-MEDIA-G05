@@ -1,7 +1,7 @@
 import { Component, OnInit, Inject, PLATFORM_ID, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AdminService } from '../services/admin.service';
 import { environment } from '../../environments/environment';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -86,7 +86,8 @@ export class PerfilVisualizadorComponent implements OnInit {
     @Inject(PLATFORM_ID) private readonly platformId: Object,
     private readonly cdr: ChangeDetectorRef,
     private readonly userService: UserService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly route: ActivatedRoute
   ) { }
 
   private getAuthContext(): void {
@@ -122,6 +123,13 @@ export class PerfilVisualizadorComponent implements OnInit {
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
       this.getAuthContext();
+      
+      // Manejar navegación por fragment (ej. #suscripcion)
+      this.route.fragment.subscribe((fragment: string | null) => {
+        if (fragment === 'suscripcion') {
+          this.activeSection = 'suscripcion';
+        }
+      });
     }
     if (this.userId) {
       this.loading = true;
