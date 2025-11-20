@@ -29,10 +29,13 @@ export class Fa2Qr implements OnInit {
   
   // Estado del botón de copiar
   isCopied: boolean = false;
+  private returnUrl: string | null = null;
 
   constructor(private userService: UserService, private sanitizer: DomSanitizer, private cdr: ChangeDetectorRef, private router: Router) { }
 
   ngOnInit(): void {
+    const state = history.state as any;
+    this.returnUrl = typeof state?.returnUrl === 'string' ? state.returnUrl : null;
     // Aquí llamarías a tu servicio para obtener el QR y la clave secreta
     this.loadQRCode();
   }
@@ -115,7 +118,11 @@ export class Fa2Qr implements OnInit {
             this.router.navigate(['/3verification'], { state: { allowFa3Code: true } });
           } else {
               // El token ya está en la cookie HttpOnly
-              this.router.navigate(['/dashboard']);
+              if (this.returnUrl) {
+                this.router.navigateByUrl(this.returnUrl);
+              } else {
+                this.router.navigate(['/dashboard']);
+              }
           }
       }
     },

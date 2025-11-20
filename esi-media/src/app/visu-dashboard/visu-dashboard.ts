@@ -501,7 +501,14 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
         },
         error: (err: any) => {
           console.error('Error al eliminar la cuenta:', err);
-          const message = err?.error?.mensaje || 'No se pudo eliminar la cuenta. Inténtalo de nuevo más tarde.';
+          const backendMsg: string = err?.error?.mensaje || err?.error?.message || '';
+          if (err?.status === 403 && backendMsg === 'No autorizado para eliminar la cuenta') {
+            alert('Para eliminar tu cuenta necesitas activar el segundo factor de autenticación (2FA). Te llevamos a la página de activación.');
+            this.closeCuentaModal();
+            this.router.navigate(['/2fa'], { state: { allowFa2: true, returnUrl: '/perfil' } });
+            return;
+          }
+          const message = backendMsg || 'No se pudo eliminar la cuenta. Inténtalo de nuevo más tarde.';
           // Usar alert para errores críticos
           alert(`Error: ${message}`);
         }

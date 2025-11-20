@@ -527,7 +527,7 @@ export class PerfilVisualizadorComponent implements OnInit {
     alert('Para eliminar tu cuenta necesitas tener activado el segundo factor de autenticación (2FA). Te llevamos a la página de activación.');
     this.cancelDeleteAccount();
     // Ir a la página de activación 2FA respetando el guard
-    this.router.navigate(['/2fa'], { state: { allowFa2: true } });
+    this.router.navigate(['/2fa'], { state: { allowFa2: true, returnUrl: '/perfil' } });
     return;
   }
 
