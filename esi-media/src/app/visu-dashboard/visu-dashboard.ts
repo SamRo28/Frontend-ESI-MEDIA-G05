@@ -560,4 +560,22 @@ export class VisuDashboard implements OnInit, AfterViewInit, OnDestroy {
     if (this.filtroTipo === 'AUDIO') return 'audio';
     return 'all';
   }
+
+  /**
+   * Verifica si el usuario actual tiene suscripción VIP
+   */
+  isUserVIP(): boolean {
+    if (!this.isBrowser) return false;
+    if (this.currentUser && typeof this.currentUser.vip === 'boolean') {
+      return this.currentUser.vip;
+    }
+    return false;
+  }
+
+  /**
+   * Navega a la página de perfil, sección de suscripción
+   */
+  navigateToSubscription(): void {
+    this.router.navigate(['/perfil'], { fragment: 'suscripcion' });
+  }
 }
