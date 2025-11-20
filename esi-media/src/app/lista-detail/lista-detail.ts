@@ -84,7 +84,9 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
-    const observables = this.esVisualizador() ? {
+    // Tanto visualizadores como gestores intentan primero con APIs públicas,
+    // luego intentan con APIs privadas si fallan
+    const observables = {
       lista: this.listaService.obtenerListaPublicaPorId(listaId).pipe(
         catchError(error => (error.status === 404 || error.status === 403) 
           ? this.listaService.obtenerListaPorId(listaId) : of(error))
@@ -93,9 +95,6 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
         catchError(error => (error.status === 404 || error.status === 403)
           ? this.listaService.obtenerContenidosLista(listaId) : of(error))
       )
-    } : {
-      lista: this.listaService.obtenerListaPorId(listaId),
-      contenidos: this.listaService.obtenerContenidosLista(listaId)
     };
     
     forkJoin(observables).subscribe({
@@ -164,6 +163,24 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
     
     // Solo el creador de la lista puede editarla/eliminarla
     return this.lista.creadorId === this.userId;
+  }
+
+  /**
+   * Verifica si el usuario puede editar la lista
+   * Los gestores pueden editar listas públicas aunque no sean suyas
+   */
+  puedeEditar(): boolean {
+    // Si es propietario, siempre puede editar
+    if (this.esPropietario()) {
+      return true;
+    }
+
+    // Los gestores de contenido pueden editar listas públicas
+    if (this.esGestorDeContenido() && this.lista?.visible === true) {
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -417,11 +434,11 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
    * Recarga solo los contenidos de la lista
    */
   private cargarContenidosLista(): void {
-    const contenidosObservable = this.esVisualizador() 
-      ? this.listaService.obtenerContenidosListaPublica(this.lista.id).pipe(
-          catchError(() => this.listaService.obtenerContenidosLista(this.lista.id))
-        )
-      : this.listaService.obtenerContenidosLista(this.lista.id);
+    // Tanto visualizadores como gestores intentan primero con API pública,
+    // luego con API privada si fallan
+    const contenidosObservable = this.listaService.obtenerContenidosListaPublica(this.lista.id).pipe(
+      catchError(() => this.listaService.obtenerContenidosLista(this.lista.id))
+    );
     
     contenidosObservable.subscribe({
       next: (response) => {
@@ -545,7 +562,7 @@ export class ListaDetailComponent implements OnInit, OnDestroy {
         if (response.success) {
           this.mostrarModalEliminar = false;
           alert('Lista eliminada correctamente');
-          this.router.navigate(['/dashboard/listas']);
+          this.router.navigate(['/dashboard/listas-publicas']);
         } else {
           alert(response.mensaje || 'Error al eliminar la lista');
         }
