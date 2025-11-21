@@ -1,59 +1,52 @@
-# EsiMedia
+# Frontend-ESI-MEDIA-G05
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.2.1.
+Este repositorio contiene la aplicación web (SPA) desarrollada con **Angular** y **Tailwind CSS** para la plataforma ESI Media. Gestiona la interfaz de usuario, paneles de administración, reproducción de multimedia y la interacción con la API REST.
 
-## Development server
+## Stack Tecnológico
 
-To start a local development server, run:
+* **Framework:** Angular
+* **Lenguaje:** TypeScript
+* **Estilos:** Tailwind CSS
+
+## Requisitos Previos
+
+Asegúrate de tener instalado:
+1.  **Node.js** (Versión LTS recomendada).
+2.  **Angular CLI** (Instalado globalmente o accesible vía npm).
+
+## Configuración del Entorno
+
+El archivo principal de configuración se encuentra en `esi-media/src/environments/environment.ts` (para desarrollo) y `environment.production.ts` (para producción). Asegúrate de que la `apiUrl` apunte a tu backend.
+
+## Ejecución del proyecto
+
+Desde la carpeta `esi-media`:
 
 ```bash
+npm install
 ng serve
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Compilación del proyecto
 
 ```bash
-ng generate component component-name
+npm build
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Estructura del proyecto
 
-```bash
-ng generate --help
-```
+El proyecto sigue una estructura modular basada en componentes y servicios de Angular:
 
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+esi-media/src/app/
+├── guards/             # Protecciones de rutas (AuthGuard, Roles)
+├── model/              # Interfaces y modelos de datos (TypeScript)
+├── services/           # Lógica de conexión con la API y gestión de estado
+├── shared/             # Componentes reutilizables (Modales, Validadores)
+├── environments/       # Configuración de variables de entorno (API URL)
+└── [features]/         # Carpetas por funcionalidad principal:
+    ├── login/          # Autenticación
+    ├── home/           # Página de inicio
+    ├── admin-dashboard/   # Panel de administración
+    ├── gestor-dashboard/  # Panel para gestores de contenido
+    ├── visu-dashboard/    # Panel para visualizadores
+    └── ...
