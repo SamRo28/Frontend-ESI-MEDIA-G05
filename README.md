@@ -37,6 +37,7 @@ npm build
 
 El proyecto sigue una estructura modular basada en componentes y servicios de Angular:
 
+```text
 esi-media/src/app/
 ├── guards/             # Protecciones de rutas (AuthGuard, Roles)
 ├── model/              # Interfaces y modelos de datos (TypeScript)
@@ -50,3 +51,4 @@ esi-media/src/app/
     ├── gestor-dashboard/  # Panel para gestores de contenido
     ├── visu-dashboard/    # Panel para visualizadores
     └── ...
+```
