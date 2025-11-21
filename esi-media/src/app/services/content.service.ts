@@ -1,6 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, from } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 
 export interface AudioUploadData {
@@ -13,7 +16,7 @@ export interface AudioUploadData {
   fechaDisponibleHasta?: Date | null;
   visible: boolean;
   archivo: File;
-  caratula?: any;
+  caratula?: File;
 }
 
 export interface VideoUploadData {
@@ -27,7 +30,7 @@ export interface VideoUploadData {
   visible: boolean;
   url: string;
   resolucion: string;
-  caratula?: any;
+  caratula?: File;
 }
 
 export interface UploadResponse {
@@ -39,6 +42,23 @@ export interface UploadResponse {
   url?: string;
 }
 
+export interface ContenidoSearchResult {
+  id: string;
+  titulo: string;
+  tipo: 'Video' | 'Audio';
+  descripcion?: string;
+  duracion?: number;
+  resolucion?: string;
+}
+
+export interface SearchContentResponse {
+  success: boolean;
+  mensaje: string;
+  contenidos: ContenidoSearchResult[];
+  total: number;
+  query: string;
+}
+
 // Interface para manejo de errores del backend
 export interface BackendError {
   success: false;
@@ -46,11 +66,56 @@ export interface BackendError {
   errors?: { [key: string]: string };
 }
 
+// Gestión de contenidos para Gestor
+export interface GestorContenidoResumen {
+  id: string;
+  titulo: string;
+  tipo: 'AUDIO' | 'VIDEO';
+  vip: boolean;
+  resolucion?: string | null;
+}
+
+export interface GestorContenidoPage {
+  content: GestorContenidoResumen[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
+
+export interface GestorContenidoDetalle {
+  id: string;
+  titulo: string;
+  descripcion: string;
+  tipo: 'AUDIO' | 'VIDEO';
+  caratula?: any;
+  vip: boolean;
+  duracion: number;
+  estado: boolean;
+  fechaDisponibleHasta?: string | null;
+  edadVisualizacion: number;
+  nvisualizaciones: number;
+  tags: string[];
+  referenciaReproduccion: string;
+  resolucion?: string | null;
+}
+
+export interface GestorContenidoUpdatePayload {
+  titulo: string;
+  descripcion: string;
+  tags: string[];
+  vip: boolean;
+  estado: boolean;
+  edadVisualizacion: number;
+  fechaDisponibleHasta?: string | null;
+  caratula?: any;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class ContentService {
-  private readonly baseUrl = 'http://localhost:8080/gestor';
+  private readonly baseUrl = `${environment.apiUrl}/gestor`;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -66,9 +131,11 @@ export class ContentService {
       formData.append('descripcion', audioData.descripcion);
     }
     
-    audioData.tags.forEach((tag, index) => {
-      formData.append(`tags[${index}]`, tag);
-    });
+    let tagIndex = 0;
+    for (const tag of audioData.tags) {
+      formData.append(`tags[${tagIndex}]`, tag);
+      tagIndex++;
+    }
     
     formData.append('duracion', audioData.duracion.toString());
     formData.append('vip', audioData.vip.toString());
@@ -84,7 +151,7 @@ export class ContentService {
       formData.append('caratula', audioData.caratula);
     }
 
-    // El interceptor authInterceptor se encarga automáticamente del header Authorization
+    // El interceptor gestiona automáticamente withCredentials
     const headers = new HttpHeaders();
     return this.http.post<UploadResponse>(`${this.baseUrl}/audio/subir`, formData, { headers });
   }
@@ -93,6 +160,28 @@ export class ContentService {
    * Sube un video por URL usando el endpoint /gestor/video/subir
    */
   uploadVideo(videoData: VideoUploadData): Observable<UploadResponse> {
+    if (videoData.caratula) {
+      // Convertir la carátula a base64 para enviarla como JSON
+      const fileToBase64Promise = new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('Error al leer el archivo de carátula'));
+        reader.readAsDataURL(videoData.caratula!);
+      });
+
+      return from(fileToBase64Promise).pipe(
+        switchMap(base64String => this.sendVideoData({...videoData, caratulaBase64: base64String}))
+      );
+    } else {
+      // Sin carátula, enviar directamente
+      return this.sendVideoData(videoData);
+    }
+  }
+
+  /**
+   * Método privado para enviar los datos del video como JSON
+   */
+  private sendVideoData(videoData: VideoUploadData & { caratulaBase64?: string }): Observable<UploadResponse> {
     const payload = {
       titulo: videoData.titulo,
       descripcion: videoData.descripcion || null,
@@ -106,10 +195,10 @@ export class ContentService {
       visible: videoData.visible,
       url: videoData.url,
       resolucion: videoData.resolucion,
-      caratula: videoData.caratula || null
+      caratula: videoData.caratulaBase64 || null
     };
 
-    // El interceptor authInterceptor se encarga automáticamente del header Authorization
+    // El interceptor gestiona automáticamente withCredentials
     const headers = new HttpHeaders({
       'Content-Type': 'application/json'
     });
@@ -128,5 +217,91 @@ export class ContentService {
    */
   checkVideoStatus(): Observable<any> {
     return this.http.get(`${this.baseUrl}/video/estado`);
+  }
+
+
+  /**
+   * Busca contenidos usando el endpoint /multimedia con parámetro query
+   * Este endpoint respeta todos los filtros de usuario (edad, VIP, etc.)
+   */
+  buscarContenidos(query: string, limit: number = 10): Observable<SearchContentResponse> {
+    if (!query || query.trim().length < 2) {
+      return of({
+        success: false,
+        mensaje: 'El query debe tener al menos 2 caracteres',
+        contenidos: [],
+        total: 0,
+        query: query
+      });
+    }
+
+    const params = new URLSearchParams({
+      query: query.trim(),
+      size: Math.min(limit, 20).toString(), // Limitar a máximo 20 para evitar sobrecarga
+      page: '0'
+    });
+
+    // Log de búsqueda eliminado para reducir ruido en consola
+
+    // El interceptor gestiona automáticamente withCredentials
+    return this.http.get<any>(`${environment.apiUrl}/multimedia?${params}`).pipe(
+      catchError(error => {
+        console.error('Error en búsqueda de contenidos:', error);
+        
+        let mensajeError = 'Error al buscar contenidos';
+        if (error.status === 401) {
+          mensajeError = 'No tienes permisos para buscar contenidos';
+        } else if (error.status === 0) {
+          mensajeError = 'No se puede conectar al servidor';
+        } else if (error.status >= 500) {
+          mensajeError = 'Error interno del servidor';
+        }
+
+        return of({
+          success: false,
+          mensaje: mensajeError,
+          contenidos: [],
+          total: 0,
+          query: query.trim()
+        });
+      }),
+      // Transformar la respuesta del endpoint /multimedia al formato esperado
+      map((response: any) => {
+        if (response && response.content) {
+          // Convertir ContenidoResumenDTO[] a ContenidoSearchResult[]
+          const contenidos: ContenidoSearchResult[] = response.content.map((item: any) => ({
+            id: item.id,
+            titulo: item.titulo,
+            tipo: item.tipo === 'AUDIO' ? 'Audio' : 'Video',
+            descripcion: '', // ContenidoResumenDTO no incluye descripción
+            duracion: undefined, // No disponible en resumen
+            resolucion: undefined // No disponible en resumen
+          }));
+
+          return {
+            success: true,
+            mensaje: `${contenidos.length} contenidos encontrados`,
+            contenidos: contenidos,
+            total: response.totalElements || contenidos.length,
+            query: query.trim()
+          };
+        } else {
+          return {
+            success: false,
+            mensaje: 'No se encontraron contenidos',
+            contenidos: [],
+            total: 0,
+            query: query.trim()
+          };
+        }
+      })
+    );
+  }
+
+  /**
+   * Método legacy mantenido para compatibilidad
+   */
+  buscarPorNombre(nombre: string): Observable<any> {
+    return this.buscarContenidos(nombre, 10);
   }
 }

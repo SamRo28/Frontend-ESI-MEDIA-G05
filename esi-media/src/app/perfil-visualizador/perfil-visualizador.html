@@ -1,0 +1,290 @@
+<div class="perfil-wrapper">
+
+  <!-- Nuevo encabezado fijo -->
+  <header class="perfil-page-header">
+    <div class="perfil-header-content">
+      <!-- Botón para volver al dashboard -->
+      <a routerLink="/dashboard" class="btn-volver">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        <span>Volver</span>
+      </a>
+      <!-- Navegación de la página -->
+      <nav class="page-nav">
+        <button class="page-nav-item" [class.active]="activeSection==='info'" (click)="select('info')">
+          <span>Información general</span>
+        </button>
+        <button class="page-nav-item" [class.active]="activeSection==='suscripcion'" (click)="select('suscripcion')">
+          <span>Suscripción</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="perfil-content">
+    <!-- Contenido -->
+    <section>
+
+
+      <!-- Cabecera con avatar actual -->
+      <div *ngIf="activeSection==='info'" class="card profile-header">
+        <div class="ph-left">
+          <img [src]="getAvatarSrc(originalForm?.foto || form.foto)" class="avatar-lg" alt="Foto actual" />
+        </div>
+        <div>
+          <div class="ph-name">{{ originalForm?.nombre || '-' }} {{ originalForm?.apellidos || '' }}</div>
+          <div class="ph-email">{{ email || '-' }}</div>
+        </div>
+      </div>
+
+      <!-- Información general -->
+      <div *ngIf="activeSection==='info'">
+        <!-- Mensajes -->
+        <div *ngIf="errorMessage" class="alert alert-error">{{ errorMessage }}</div>
+        <div *ngIf="successMessage" class="alert alert-success">{{ successMessage }}</div>
+
+        <div class="card">
+          <div class="row">
+            <div class="row-title">Nombre y apellidos</div>
+            <div class="row-content">
+              <div class="input-grid">
+                <input [(ngModel)]="form.nombre" name="nombre" type="text" maxlength="80" class="input" placeholder="Nombre" />
+                <input [(ngModel)]="form.apellidos" name="apellidos" type="text" maxlength="120" class="input" placeholder="Apellidos" />
+              </div>
+            </div>
+          </div>
+          <hr />
+          <div class="row">
+            <div class="row-title">Correo</div>
+            <div class="row-content">
+              <div class="email-text">{{ email }}</div>
+              <span class="no-edit-badge">No editable</span>
+            </div>
+          </div>
+          <hr />
+          <div class="row">
+            <div class="row-title">Alias</div>
+            <div class="row-content">
+              <input [(ngModel)]="form.alias" name="alias" type="text" maxlength="80" class="input" placeholder="Alias" />
+            </div>
+          </div>
+          <hr />
+          <div class="row">
+            <div class="row-title">Fecha de nacimiento</div>
+            <div class="row-content">
+              <input [(ngModel)]="form.fechaNacimiento" name="fechaNacimiento" type="date" class="input" />
+            </div>
+          </div>
+          <hr />
+          <div class="row">
+            <div class="row-title">Tipo de usuario</div>
+            <div class="row-content">
+              <span class="badge">{{ rol || 'Visualizador' }}</span>
+            </div>
+          </div>
+          <hr />
+          <div class="row">
+            <div class="row-title">Tipo de cuenta</div>
+            <div class="row-content">
+              <span class="badge" [class.badge-vip]="form.vip">{{ form.vip ? 'VIP' : 'Estándar' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="row">
+            <div class="row-title">Foto</div>
+            <div class="row-content">
+              <div class="avatar-grid-label">Modificar foto</div>
+              <div class="avatar-grid">
+                <button type="button" class="avatar-item" *ngFor="let a of availableAvatars" (click)="selectAvatar(a)">
+                  <img [src]="'/' + a" [alt]="a" />
+                </button>
+              </div>
+            </div>
+          </div>
+          <hr />
+          <div class="row">
+            <div class="row-title">Contraseña</div>
+            <div class="row-content">
+              <!-- Paso 1: Verificar contraseña actual -->
+              <div *ngIf="!passwordVerified" class="pw-step">
+                <div class="pw-helper-text">Para cambiar tu contraseña es necesario ingresar la contraseña actual.</div>
+                <!-- Campo oculto para evitar auto-relleno del navegador -->
+                <input type="password" style="display:none" tabindex="-1">
+                <div class="input-group with-icon">
+                  <input [type]="passwordVisibility['current'] ? 'text' : 'password'" class="input" placeholder="Contraseña actual" [(ngModel)]="form.currentPassword" name="currentPassword" autocomplete="off" autocapitalize="off" spellcheck="false" />
+                  <button type="button" class="icon-btn pw-icon-btn" (click)="togglePasswordVisibility('current')">
+                    <!-- Ojo abierto -->
+                    <svg *ngIf="!passwordVisibility['current']" class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639l4.433-7.447A1.012 1.012 0 017.447 4h9.106a1.012 1.012 0 01.97.734l4.433 7.447a1.012 1.012 0 010 .639l-4.433 7.447A1.012 1.012 0 0116.553 20H7.447a1.012 1.012 0 01-.97-.734L2.036 12.322z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    <!-- Ojo cerrado -->
+                    <svg *ngIf="passwordVisibility['current']" class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                  </button>
+                </div>
+                <div class="btn-row">
+                  <button type="button" class="btn-primary" [disabled]="verifyingPassword || !form.currentPassword" (click)="verifyCurrentPassword()">
+                    {{ verifyingPassword ? 'Verificando...' : 'Verificar' }}
+                  </button>
+                </div>
+                <div *ngIf="passwordCheckError" class="pw-feedback error">{{ passwordCheckError }}</div>
+                <div *ngIf="passwordCheckOk" class="pw-feedback success">{{ passwordCheckOk }}</div>
+              </div>
+              <!-- Paso 2: Nueva contraseña -->
+              <div *ngIf="passwordVerified" class="pw-section">
+                <app-password-validator
+                  [password]="form.newPassword"
+                  [confirmPassword]="form.repeatPassword"
+                  [username]="email"
+                  [firstName]="form.nombre"
+                  [lastName]="form.apellidos"
+                  (passwordChange)="form.newPassword = $event; onPasswordInput()"
+                  (confirmPasswordChange)="form.repeatPassword = $event; onPasswordInput()"
+                  (validationChange)="onPwPolicyChange($event)"
+                  (isValidChange)="onPwPolicyValidChange($event)"></app-password-validator>
+                <ul class="pw-rules">
+                  <li class="pw-rule" [class.ok]="passwordRules.notCurrent">
+                    <span class="pw-ic" [class.on]="passwordRules.notCurrent"></span>
+                    No usada recientemente
+                  </li>
+                </ul>
+                <div class="btn-row pw-btn-row">
+                  <button type="button" class="btn-primary" (click)="attemptPasswordChange()">
+                    Cambiar Contraseña
+                  </button>
+                </div>
+                <div *ngIf="passwordChangeError" class="pw-feedback error">{{ passwordChangeError }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-primary" (click)="openConfirm()" [disabled]="!canSubmit()">Guardar cambios</button>
+        </div>
+      </div>
+
+      <!-- Suscripción -->
+      <div *ngIf="activeSection=='suscripcion'" class="sub-stack">
+        <div class="sub-header">
+          <h2 class="sub-title">Gestiona tu suscripción</h2>
+          <p class="sub-desc">Elige el plan que mejor se adapte a ti. Puedes cambiarlo cuando quieras.</p>
+        </div>
+
+        <!-- Tarjeta del Plan Actual -->
+        <div class="current-plan-card" [class.vip]="form.vip">
+          <div class="current-plan-icon">
+            <svg *ngIf="!form.vip" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <svg *ngIf="form.vip" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM18 15.75l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 18l-1.035.259a3.375 3.375 0 00-2.456 2.456L18 21.75l-.259-1.035a3.375 3.375 0 00-2.456-2.456L14.25 18l1.036-.259a3.375 3.375 0 002.456-2.456L18 15.75z" /></svg>
+          </div>
+          <div class="current-plan-info">
+            <div class="current-plan-label">Tu plan actual</div>
+            <div class="current-plan-name">{{ form.vip ? 'VIP' : 'Estándar' }}</div>
+            <div class="current-plan-desc">
+              {{ form.vip ? '¡Disfrutando de la experiencia completa!' : 'Acceso a una gran selección de contenido.' }}
+            </div>
+            <div class="current-plan-meta" *ngIf="subscriberSince">
+              <span>Miembro desde {{ subscriberSince }}</span>
+              <span *ngIf="accountAgeLabel">&nbsp;·&nbsp;{{ accountAgeLabel }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="plan-chooser">
+          <!-- Plan Estándar -->
+          <div class="plan-card" [class.current]="!form.vip" [class.selected]="selectedPlan==='STD'" role="button" tabindex="0" (click)="selectPlan('STD')" (keydown.enter)="selectPlan('STD')" (keydown.space)="selectPlan('STD')">
+            <div class="pc-icon-wrapper std">
+              <svg class="pc-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <div class="pc-title">Estándar</div>
+            <div class="pc-price">Gratis</div>
+            <ul class="pc-list">
+              <li *ngFor="let f of stdFeatures">{{ f }}</li>
+            </ul>
+            <span class="pc-badge" *ngIf="!form.vip">Plan actual</span>
+          </div>
+          <!-- Plan VIP -->
+          <div class="plan-card vip-card" [class.current]="form.vip" [class.selected]="selectedPlan==='VIP'" role="button" tabindex="0" (click)="selectPlan('VIP')" (keydown.enter)="selectPlan('VIP')" (keydown.space)="selectPlan('VIP')">
+            <div class="pc-icon-wrapper vip">
+              <svg class="pc-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM18 15.75l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 18l-1.035.259a3.375 3.375 0 00-2.456 2.456L18 21.75l-.259-1.035a3.375 3.375 0 00-2.456-2.456L14.25 18l1.036-.259a3.375 3.375 0 002.456-2.456L18 15.75z" /></svg>
+            </div>
+            <div class="pc-title">VIP</div>
+            <div class="pc-price">Premium</div>
+            <ul class="pc-list">
+              <li *ngFor="let f of vipFeatures">{{ f }}</li>
+            </ul>
+            <span class="pc-badge" *ngIf="form.vip">Plan actual</span>
+          </div>
+        </div>
+        <div class="plan-accept">
+          <button class="btn-primary" [disabled]="selectedPlan===null || (selectedPlan==='VIP')===form.vip || subLoading" (click)="confirmarSeleccion()">Aceptar</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Confirmación -->
+  <div *ngIf="showConfirm" class="confirm-backdrop" tabindex="-1" (click)="cancelConfirm()" (keydown.escape)="cancelConfirm()">
+    <div class="confirm-card" tabindex="0" (click)="$event.stopPropagation()" (keydown.escape)="cancelConfirm()">
+      <div class="confirm-title">Confirmar cambios</div>
+      <div class="confirm-text">¿Deseas guardar los cambios de tu perfil?</div>
+      <div class="confirm-actions">
+        <button class="btn" (click)="cancelConfirm()">Cancelar</button>
+        <button class="btn-primary" (click)="save()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmación Suscripción -->
+    <div *ngIf="showSubConfirm" class="confirm-backdrop" tabindex="-1" (click)="cancelarCambioSuscripcion()" (keydown.escape)="cancelarCambioSuscripcion()">
+      <div class="confirm-card" tabindex="0" (click)="$event.stopPropagation()" (keydown.escape)="cancelarCambioSuscripcion()">
+      <div class="confirm-title">Confirmar cambio de suscripcion</div>
+      <div class="confirm-copy upgrade" *ngIf="pendingVip">
+        <div class="confirm-lead">Vas a pasar a VIP.</div>
+        <p>La mejor opcion para disfrutar de todas las ventajas:</p>
+        <ul class="confirm-list">
+          <li>Acceso a contenido VIP</li>
+          <li>Novedades destacadas antes</li>
+          <li>Mas dispositivos simultaneos</li>
+        </ul>
+      </div>
+      <div class="confirm-copy warn" *ngIf="pendingVip === false && pendingVip !== null">
+        <div class="confirm-lead">¿Estás seguro de cambiar a Estándar?</div>
+        <p>Perderas acceso a:</p>
+        <ul class="confirm-list">
+          <li>Contenido VIP</li>
+          <li>Novedades destacadas</li>
+          <li>Mas dispositivos a la vez</li>
+        </ul>
+        <div class="confirm-note">Podras volver a VIP cuando quieras.</div>
+      </div>
+      <div class="confirm-actions">
+        <button class="btn" (click)="cancelarCambioSuscripcion()">Cancelar</button>
+        <button class="btn-primary" [disabled]="subLoading" (click)="confirmarCambioSuscripcion()">{{ subLoading ? 'Confirmando...' : 'Confirmar' }}</button>
+      </div>
+    </div>
+  </div>
+
+ 
+  <!-- Sección de Eliminación de Cuenta (solo en Información general) -->
+<div *ngIf="activeSection==='info'" class="delete-account-section">
+  <button (click)="handleDeleteAccount()" class="btn-delete">Eliminar cuenta</button>
+</div>
+
+
+  <!-- Modal de Confirmación de Eliminación -->
+    <div *ngIf="showDeleteConfirm" class="confirm-backdrop" tabindex="-1" (click)="cancelDeleteAccount()" (keydown.escape)="cancelDeleteAccount()">
+      <div class="confirm-card delete-confirm-card" tabindex="0" (click)="$event.stopPropagation()" (keydown.escape)="cancelDeleteAccount()">
+      <div class="confirm-title delete-confirm-title">¿Estás seguro?</div>
+      <p class="confirm-text">
+        Si eliminas tu cuenta, todos tus datos personales y listas privadas se borrarán permanentemente.
+        <br><strong>Esta acción no se puede deshacer.</strong>
+      </p>
+      <div class="confirm-actions">
+        <button class="btn" (click)="cancelDeleteAccount()" [disabled]="isDeleting">Cancelar</button>
+        <button class="btn-primary btn-delete-confirm" (click)="confirmDeleteAccount()" [disabled]="isDeleting">
+          {{ isDeleting ? 'Eliminando...' : 'Sí, eliminar mi cuenta' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

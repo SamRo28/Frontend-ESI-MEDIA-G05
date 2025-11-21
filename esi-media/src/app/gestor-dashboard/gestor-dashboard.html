@@ -25,6 +25,15 @@
         <button class="btn-upload-header" (click)="navigateToUpload()">
           ⬆️ Subir Contenido
         </button>
+        <!-- Botón de Gestionar Contenidos añadido aquí -->
+        <button type="button" class="btn-gestion-contenidos" (click)="navigateToGestionContenidos()">
+          Gestionar Contenidos
+        </button>
+        <button class="btn-listas-header" 
+                (click)="toggleGestionListas()" 
+                [class.active]="mostrarGestionListas">
+          📋 Gestionar Listas
+        </button>
         <!-- Mensaje de éxito pequeño junto al logout para que sea visible cerca del botón -->
         <div *ngIf="successMessage" class="logout-message ml-3 px-3 py-1 bg-green-50 border border-green-300 text-green-700 rounded text-sm flex items-center gap-2">
           <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
@@ -39,61 +48,89 @@
 
   <!-- Main Content -->
   <main class="main-content">
-    
-    <!-- Hero Section con Acciones -->
-    <section class="hero-actions">
-      <div class="hero-content">
-
-        <h1 class="hero-title">Gestión de {{ gestorType === 'video' ? 'Video' : 'Audio' }}</h1>
-        <p class="hero-subtitle">Sube y administra contenido {{ gestorType === 'video' ? 'de video' : 'de audio' }} para la plataforma ESI Media</p>
-        
-        <!-- Información del Dashboard -->
-        <div class="dashboard-info">
-          <p class="info-text">
-            Utiliza el botón "Subir Contenido" en la barra superior para agregar nuevo contenido {{ gestorType === 'video' ? 'de video' : 'de audio' }}.
-          </p>
+    <!-- Sección de gestión de listas (mostrar cuando se activa el tab) -->
+    <section class="dashboard-section" *ngIf="mostrarGestionListas">
+      <div class="section-header">
+        <h2 class="section-title">Gestión de Listas</h2>
+        <div class="section-actions">
+          <button class="btn-crear-lista" (click)="openCrearListaModal()">
+            Crear Nueva Lista
+          </button>
         </div>
+      </div>
+      
+      <!-- Componente de gestión de listas para gestores -->
+      <div class="gestion-listas-section">
+        <app-gestion-listas [modo]="'gestor'" [forceReload]="forceReloadListasGestor"></app-gestion-listas>
       </div>
     </section>
 
-    <!-- Tips y Guías Rápidas -->
-    <section class="tips-section">
-      <div class="tips-content">
-        <h2 class="tips-title">💡 Guía Rápida</h2>
-        <div class="tips-grid">
-          <div class="tip-card" *ngIf="gestorType === 'audio'">
-            <div class="tip-icon">🎵</div>
-            <h4>Subida de Audio</h4>
-            <ul>
-              <li>Formato: Solo MP3</li>
-              <li>Tamaño máximo: 2MB</li>
-              <li>Duración: Hasta 10 minutos</li>
-            </ul>
-          </div>
+    <!-- Contenido principal del dashboard (mostrar cuando NO se muestran listas) -->
+    <div *ngIf="!mostrarGestionListas">
+      <!-- Hero Section con Acciones -->
+      <section class="hero-actions">
+        <div class="hero-content">
+
+          <h1 class="hero-title">Gestión de {{ gestorType === 'video' ? 'Video' : 'Audio' }}</h1>
+          <p class="hero-subtitle">Sube y administra contenido {{ gestorType === 'video' ? 'de video' : 'de audio' }} para la plataforma ESI Media</p>
           
-          <div class="tip-card" *ngIf="gestorType === 'video'">
-            <div class="tip-icon">🎬</div>
-            <h4>Subida de Video</h4>
-            <ul>
-              <li>Formato: URLs válidas</li>
-              <li>Plataformas como: YouTube</li>
-              <li>Duración: Hasta 4 horas</li>
-              <li>Resoluciones soportadas: 720p, 1080p, 4k</li>
-            </ul>
-          </div>
-          
-          <div class="tip-card">
-            <div class="tip-icon">👍</div>
-            <h4>Clasifica tu contenido</h4>
-            <ul>
-              <li>Conviértete en experto en una especialización</li>
-              <li>Selecciona tags apropiados</li>
-              <li>Define la edad mínima para su reproducción</li>
-              <li>Añade descripciones detalladas</li>
-            </ul>
+          <!-- Información del Dashboard -->
+          <div class="dashboard-info">
+            <p class="info-text">
+              Utiliza los botones de la parte superior para subir contenido, gestionar todos los contenidos o administrar tus listas.
+            </p>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <section class="tips-section">
+        <div class="tips-content">
+          <h2 class="tips-title">💡 Guía Rápida</h2>
+          <div class="tips-grid">
+            <div class="tip-card" *ngIf="gestorType === 'audio'">
+              <div class="tip-icon">🎵</div>
+              <h4>Subida de Audio</h4>
+              <ul>
+                <li>Formato: Solo MP3</li>
+                <li>Tamaño máximo: 2MB</li>
+                <li>Duración: Hasta 10 minutos</li>
+              </ul>
+            </div>
+            
+            <div class="tip-card" *ngIf="gestorType === 'video'">
+              <div class="tip-icon">🎬</div>
+              <h4>Subida de Video</h4>
+              <ul>
+                <li>Formato: URLs válidas</li>
+                <li>Plataformas como: YouTube</li>
+                <li>Duración: Hasta 4 horas</li>
+                <li>Resoluciones soportadas: 720p, 1080p, 4k</li>
+              </ul>
+            </div>
+            
+            <div class="tip-card">
+              <div class="tip-icon">👍</div>
+              <h4>Clasifica tu contenido</h4>
+              <ul>
+                <li>Elige bien los tags</li>
+                <li>Define la edad mínima adecuada</li>
+                <li>Añade descripciones claras y precisas</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
   </main>
 </div>
+
+<!-- Modal para crear lista -->
+<div class="modal-backdrop" *ngIf="showCrearModal" (click)="closeCrearListaModal()" (keydown)="$event.key === 'Escape' && closeCrearListaModal()"></div>
+<dialog class="modal-container" [attr.open]="showCrearModal ? true : null">
+  <crear-lista 
+    [modo]="'gestor'"
+    [modal]="true"
+    (cerrar)="closeCrearListaModal()"
+    (creada)="closeCrearListaModal(true)">
+  </crear-lista>
+</dialog>

@@ -1,0 +1,444 @@
+/* Contenedor principal del filtro */
+.filter-container {
+  position: relative;
+  display: inline-block;
+  z-index: 100;
+}
+
+/* Botón principal de filtro */
+.filter-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.filter-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.filter-button.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.filter-button.active:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(102, 126, 234, 0.5);
+}
+
+/* Elementos del botón */
+.filter-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.filter-text {
+  white-space: nowrap;
+}
+
+.filter-arrow {
+  font-size: 12px;
+  transition: transform 0.3s ease;
+}
+
+.filter-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+/* Backdrop del panel */
+.filter-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 20px;
+  padding-top: 120px; /* Espacio desde arriba para evitar que se salga de pantalla */
+}
+
+/* Panel principal */
+.filter-panel {
+  background: linear-gradient(135deg, #1e1e2e 0%, #2a2a40 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 100%;
+  max-height: 70vh;
+  overflow-y: auto;
+  backdrop-filter: blur(20px);
+  animation: slideDown 0.3s ease;
+}
+
+/* Header del panel */
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Botones grandes para seleccionar tipo (Vídeo / Audio) */
+.type-switch {
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px;
+  justify-content: center;
+  align-items: center;
+}
+
+.type-btn {
+  flex: 1 1 0;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.06);
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  color: #f7f7fb;
+  background: rgba(255,255,255,0.02);
+  transition: all 0.18s ease;
+}
+
+.type-btn.video { background: linear-gradient(90deg, rgba(102,126,234,0.06), rgba(118,75,162,0.03)); }
+.type-btn.audio { background: linear-gradient(90deg, rgba(118,75,162,0.03), rgba(102,126,234,0.06)); }
+
+.type-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.25); }
+.type-btn:active { transform: translateY(0); }
+
+.type-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border-color: #667eea;
+  box-shadow: 0 6px 20px rgba(102,126,234,0.35);
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.panel-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.panel-subtitle {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  font-weight: 500;
+  font-style: italic;
+}
+
+.panel-icon {
+  font-size: 24px;
+}
+
+.close-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-button:hover {
+  background: rgba(255, 77, 77, 0.2);
+  color: #ffaaaa;
+}
+
+/* Sección de tags */
+.tags-section {
+  padding: 24px;
+}
+
+/* Lanes: mejorar contraste y separación para que sean legibles sobre el fondo oscuro */
+.lane {
+  padding: 16px 24px;
+  margin: 8px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02); /* sutilmente más claro que el panel */
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.lane h4 {
+  margin: 0 0 12px 0;
+  color: #dbe9ff; /* encabezados claros */
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.special-lane {
+  padding: 16px 24px;
+  margin: 8px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.special-desc {
+  margin: 6px 0 12px 0;
+  color: rgba(255,255,255,0.8);
+  font-style: italic;
+  font-size: 13px;
+}
+.top-contents-list { list-style: none; padding: 0; margin: 0 0 12px 0; }
+.top-contents-item { display:flex; justify-content:space-between; align-items:center; gap:12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.top-contents-item .title { color: #ffffff; font-weight: 700; font-size: 14px; }
+.top-contents-item .views { color: rgba(255,255,255,0.62); font-size: 12px; font-weight: 600; }
+.muted { color: rgba(255,255,255,0.6); font-size: 12px; margin-left: 6px; }
+
+/* Estilo específico para encabezados dentro de special-results para mantener consistencia */
+.special-results h5 {
+  margin: 0 0 8px 0;
+  color: #dbe9ff;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+}
+
+/* Reservar espacio durante 'Cargando...' para evitar parpadeos de layout */
+.special-results { min-height: 80px; }
+.special-results > div { color: rgba(255,255,255,0.9); }
+
+.tags-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+/* Opciones de tags */
+.tag-option {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tag-option:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.tag-option.selected {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Ajustes específicos para el subpanel 'Especial' (tags mostrados sin contador) */
+.special-tags-grid .tag-option { padding: 10px 14px; font-weight: 600; }
+
+
+.tag-option.selected:hover {
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Mensajes / errores del panel especial: contraste y legibilidad mejorados */
+.special-error {
+  background: rgba(255, 69, 58, 0.12);
+  color: #ffdddd;
+  border: 1px solid rgba(255, 69, 58, 0.25);
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin: 8px 0 12px 0;
+  font-weight: 600;
+}
+
+.special-message {
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255,255,255,0.9);
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin: 8px 0 12px 0;
+}
+
+/* Botones usados por Suscripción, Edad y Resolución */
+.option-btn {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255,255,255,0.04);
+  color: #f3f7ff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  margin: 6px 6px 0 0;
+  box-shadow: none;
+}
+
+.option-btn:hover { background: rgba(255,255,255,0.06); transform: translateY(-2px); }
+.option-btn.selected { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-color: #667eea; color: #fff; box-shadow: 0 6px 18px rgba(102,126,234,0.25); }
+
+.sus-options, .edad-options, .res-options { display:flex; flex-wrap:wrap; gap:8px; padding: 12px 24px; }
+
+/* When type is locked by the parent, make the other button visually disabled */
+.type-btn[disabled] { opacity: 0.6; cursor: not-allowed; filter: grayscale(0.05); }
+
+/* Información de selección */
+.selection-info {
+  padding: 16px 24px;
+  background: rgba(102, 126, 234, 0.1);
+  border-top: 1px solid rgba(102, 126, 234, 0.2);
+  border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.selection-text {
+  margin: 0 0 8px 0;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.selection-tags {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* Botones de acción */
+.panel-actions {
+  display: flex;
+  gap: 12px;
+  padding: 20px 24px;
+}
+
+.action-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border-radius: 10px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.clear-button {
+  background: rgba(255, 107, 107, 0.1);
+  color: #ffaaaa;
+  border: 2px solid rgba(255, 107, 107, 0.3);
+}
+
+.clear-button:hover:not(:disabled) {
+  background: rgba(255, 107, 107, 0.2);
+  border-color: #ffaaaa;
+  transform: translateY(-2px);
+}
+
+.clear-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.apply-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  border: 2px solid #667eea;
+}
+
+.apply-button:hover {
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  transform: translateY(-2px);
+}
+
+.button-icon {
+  font-size: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .filter-backdrop {
+    padding: 10px;
+  }
+  
+  .filter-panel {
+    max-height: 90vh;
+  }
+  
+  .tags-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+  }
+  
+  .tag-option {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  
+  .panel-actions {
+    flex-direction: column;
+  }
+  
+  .filter-button .filter-text {
+    display: none;
+  }
+}
+
+/* Animaciones */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

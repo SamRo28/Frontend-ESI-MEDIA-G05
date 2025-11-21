@@ -201,17 +201,22 @@
 
                   <!-- Alternar estado -->
                   <button 
-                    (click)="toggleUserStatus(user)"
-                    [class]="user.bloqueado 
-                      ? 'text-green-600 hover:text-green-900 hover:bg-green-50' 
-                      : 'text-red-600 hover:text-red-900 hover:bg-red-50'"
+                    (click)="openToggleStatusModal(user)"
+                    [class]="user.bloqueado
+                      ? 'text-red-600 hover:text-red-900 hover:bg-red-50'
+                      : 'text-green-600 hover:text-green-900 hover:bg-green-50'"
                     class="p-2 rounded-lg transition-colors"
                     [title]="user.bloqueado ? 'Desbloquear usuario' : 'Bloquear usuario'">
+                    <!-- Bloqueado: candado CERRADO en rojo -->
                     <svg *ngIf="user.bloqueado" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                     </svg>
+
+                    <!-- Desbloqueado: candado ABIERTO en verde -->
                     <svg *ngIf="!user.bloqueado" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
                     </svg>
                   </button>
 
@@ -269,9 +274,62 @@
   </div>
 </div>
 
+<!-- Modal de confirmación de cambio de estado (Bloquear/Desbloquear) -->
+<div *ngIf="showToggleStatusModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" tabindex="-1" (click)="closeToggleStatusModal()" (keydown.escape)="closeToggleStatusModal()">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md" tabindex="0" (click)="$event.stopPropagation()" (keydown.escape)="closeToggleStatusModal()">
+    <!-- Header del modal -->
+    <div 
+      [class]="userToToggleStatus?.bloqueado 
+        ? 'bg-red-600 text-white' 
+        : 'bg-green-600 text-white'"
+      class="p-6 rounded-t-xl">
+      <h3 class="text-lg font-semibold">Confirmar Cambio de Estado</h3>
+      <p [class]="userToToggleStatus?.bloqueado ? 'text-red-100' : 'text-green-100'" class="text-sm mt-1">
+        {{ userToToggleStatus?.bloqueado
+            ? 'El usuario no podrá iniciar sesión.'
+            : 'El usuario tiene acceso activo.' }}
+      </p>
+    </div>
+
+    <!-- Contenido del modal -->
+    <div class="p-6">
+      <div *ngIf="userToToggleStatus" class="text-center mb-6">
+        <h4 class="text-lg font-semibold text-gray-900 mb-2">
+          ¿{{ !userToToggleStatus.bloqueado ? 'Bloquear' : 'Desbloquear' }} a este usuario?
+        </h4>
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <p class="font-semibold text-gray-900">{{ userToToggleStatus.nombre }} {{ userToToggleStatus.apellidos }}</p>
+          <p class="text-sm text-gray-600">{{ userToToggleStatus.email }}</p>
+        </div>
+      </div>
+
+      <!-- Botones del modal -->
+      <div class="flex justify-end gap-3">
+        <button 
+          (click)="closeToggleStatusModal()"
+          [disabled]="processing"
+          class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-colors">
+          Cancelar
+        </button>
+        <button 
+          (click)="confirmToggleStatus()"
+          [disabled]="processing"
+          [class]="userToToggleStatus?.bloqueado ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'"
+          class="px-4 py-2 text-white rounded-lg disabled:opacity-50 transition-colors flex items-center gap-2">
+          <svg *ngIf="processing" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          {{ processing ? 'Confirmando...' : (!userToToggleStatus?.bloqueado ? 'Bloquear' : 'Desbloquear') }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal de edición -->
-<div *ngIf="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" (click)="closeEditModal()">
-  <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" (click)="$event.stopPropagation()">
+<div *ngIf="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" tabindex="-1" (click)="closeEditModal()" (keydown.escape)="closeEditModal()">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" tabindex="0" (click)="$event.stopPropagation()" (keydown.escape)="closeEditModal()">
     <!-- Header del modal -->
     <div class="flex items-center justify-between p-6 border-b border-gray-200">
       <div>
@@ -291,8 +349,9 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Nombre -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+            <label for="edit-nombre" class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
             <input 
+              id="edit-nombre"
               type="text"
               [(ngModel)]="editForm.nombre"
               name="nombre"
@@ -302,8 +361,9 @@
 
           <!-- Apellidos -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Apellidos</label>
+            <label for="edit-apellidos" class="block text-sm font-medium text-gray-700 mb-2">Apellidos</label>
             <input 
+              id="edit-apellidos"
               type="text"
               [(ngModel)]="editForm.apellidos"
               name="apellidos"
@@ -314,8 +374,9 @@
 
         <!-- Email (solo lectura) -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+          <label for="edit-email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
           <input 
+            id="edit-email"
             type="email"
             [value]="editForm.email"
             readonly
@@ -326,8 +387,9 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Departamento -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Departamento</label>
+            <label for="edit-departamento" class="block text-sm font-medium text-gray-700 mb-2">Departamento</label>
             <input 
+              id="edit-departamento"
               type="text"
               [(ngModel)]="editForm.departamento"
               name="departamento"
@@ -337,8 +399,9 @@
 
           <!-- Apodo (si aplica) -->
           <div *ngIf="activeTab !== 'administradores'">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Apodo</label>
+            <label for="edit-apodo" class="block text-sm font-medium text-gray-700 mb-2">Apodo</label>
             <input 
+              id="edit-apodo"
               type="text"
               [(ngModel)]="editForm.apodo"
               name="apodo"
@@ -386,8 +449,8 @@
 </div>
 
 <!-- Modal de confirmación de eliminación -->
-<div *ngIf="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" (click)="closeDeleteModal()">
-  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md" (click)="$event.stopPropagation()">
+<div *ngIf="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" tabindex="-1" (click)="closeDeleteModal()" (keydown.escape)="closeDeleteModal()">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md" tabindex="0" (click)="$event.stopPropagation()" (keydown.escape)="closeDeleteModal()">
     <!-- Header del modal -->
     <div class="bg-red-600 text-white p-6 rounded-t-xl">
       <h3 class="text-lg font-semibold">Confirmar Eliminación</h3>

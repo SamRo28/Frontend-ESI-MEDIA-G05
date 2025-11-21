@@ -1,17 +1,21 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { VisualizadorService } from '../services/visualizador.service';
+import { UserService } from '../services/userService';
+import { PasswordValidatorComponent } from '../shared/components/password-validator/password-validator.component';
 
 @Component({
   selector: 'app-registro-visualizador',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, PasswordValidatorComponent],
   templateUrl: './registro-visualizador.component.html',
   styleUrl: './registro-visualizador.component.css'
 })
-export class RegistroVisualizadorComponent implements OnInit {
+export class RegistroVisualizadorComponent implements OnInit, OnDestroy {
+  private static readonly ACT_POLL_INTERVAL = 3000;
+  private static readonly CONFIRM_2FA_MESSAGE = 'Cuenta activada. ¿Deseas activar 2FA ahora?';
   // Rutas de avatares predefinidos
   preloadedImages: string[] = [
     'perfil1.png',
@@ -28,19 +32,8 @@ export class RegistroVisualizadorComponent implements OnInit {
   minAllowedBirthStr: string; // fecha mínima permitida (limite inferior) - no usada estrictamente aquí
   maxBirthForFourYearsStr: string; // fecha máxima para que el usuario tenga al menos 4 años
 
-  // Validación de contraseña en tiempo real
-  passwordValidation = {
-    minLength: false,
-    hasUpperCase: false,
-    hasLowerCase: false,
-    hasNumber: false,
-    hasSpecialChar: false,
-    hasPersonalData: false // Controla si la contraseña contiene datos personales
-  };
-
-  // Control para mostrar/ocultar las contraseñas
-  showPassword = false;
-  showConfirmPassword = false;
+  // Estado de validación del password-validator
+  private passwordIsValid = false;
 
   form!: FormGroup;
   submitted = false;
@@ -48,7 +41,15 @@ export class RegistroVisualizadorComponent implements OnInit {
   serverErrors: Record<string, string[]> = {};
   emailErrorAdded = false; // Control para evitar duplicación de mensajes de error de email
 
-  constructor(private fb: FormBuilder, private router: Router, private svc: VisualizadorService) {
+  // Estado de activación
+  waitingActivation = false;
+  private pollId: any = null;
+  private emailForPolling: string | null = null;
+  private activationFinalized = false; // evita repetir confirm tras manejar activación
+  private pendingShow2FA = false; // activación detectada con pestaña oculta
+  // Ya no necesitamos lastActivationToken, el backend gestiona los tokens mediante cookies
+
+  constructor(private fb: FormBuilder, private router: Router, private svc: VisualizadorService, private userService: UserService) {
     
     const today = new Date();
     this.todayStr = RegistroVisualizadorComponent.toDateInputValue(today);
@@ -92,16 +93,18 @@ export class RegistroVisualizadorComponent implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       alias: ['', [Validators.maxLength(12)]],
       fecha_nac: ['', [Validators.required, this.birthDateValidator(4)]],
-      password: ['', [Validators.required, this.passwordValidator()]],
+      password: ['', [Validators.required]],
       passwordConfirm: ['', [Validators.required]],
       vip: [false],
       avatar: [null] // Para almacenar la ruta del avatar seleccionado
     }, { validators: this.passwordsMatchValidator });
-    
-    // Suscribirse a cambios en el campo de contraseña para validar en tiempo real
-    this.form.get('password')?.valueChanges.subscribe(value => {
-      this.validatePassword(value);
-    });
+
+
+    // Escuchar foco/visibilidad para comprobar activación al volver a la app
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', this.onVisibilityOrFocus);
+      window.addEventListener('focus', this.onVisibilityOrFocus);
+    }
   }
 
   // Validador personalizado: comprobar que la fecha sea anterior a hoy y que la edad >= minYears
@@ -119,90 +122,30 @@ export class RegistroVisualizadorComponent implements OnInit {
     };
   }
 
-  // Validador de contraseña que verifica criterios individuales
-  passwordValidator(): ValidatorFn {
-    return (control: AbstractControl): ValidationErrors | null => {
-      const value = control.value;
-      if (!value) return null; // required lo maneja aparte
-      
-      // Verificar todos los criterios básicos
-      const hasMinLength = value.length >= 8;
-      const hasUpperCase = /[A-Z]/.test(value);
-      const hasLowerCase = /[a-z]/.test(value);
-      const hasNumber = /[0-9]/.test(value);
-      const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value);
-      
-      // Verificar que no contenga datos personales (se comprobará más a fondo en validatePassword)
-      // Aquí solo verificamos si el formulario existe y tiene los campos necesarios
-      let hasPersonalData = false;
-      const form = control.parent;
-      if (form) {
-        const nombre = form.get('nombre')?.value?.toLowerCase() || '';
-        const apellidos = form.get('apellidos')?.value?.toLowerCase() || '';
-        
-        if (nombre && apellidos && value) {
-          const lowerValue = value.toLowerCase();
-          // Comprobar si la contraseña contiene el nombre o apellidos
-          hasPersonalData = (nombre.length > 2 && lowerValue.includes(nombre.toLowerCase())) || 
-                           (apellidos.length > 2 && lowerValue.includes(apellidos.toLowerCase()));
-        }
+  // Callbacks del componente compartido de contraseñas
+  onPasswordValidationChange(validation: any): void {
+    const passCtrl = this.form.get('password');
+    const confirmCtrl = this.form.get('passwordConfirm');
+    // Gestionar error de política en el control password
+    const hasPolicyError = !validation.minLength || !validation.hasUpperCase || !validation.hasLowerCase ||
+                 !validation.hasNumber || !validation.hasSpecialChar || !validation.noStartsWithUpperCase ||
+                 !validation.notContainsPersonalData;
+    if (passCtrl) {
+      const current = { ...(passCtrl.errors || {}) } as Record<string, boolean>;
+      if (hasPolicyError) {
+        current['passwordPolicy'] = true;
+        passCtrl.setErrors(current);
+      } else {
+        delete current['passwordPolicy'];
+        passCtrl.setErrors(Object.keys(current).length ? current : null);
       }
-      
-      // Si todos los criterios pasan, devolver null (válido)
-      if (hasMinLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar && !hasPersonalData) {
-        return null;
-      }
-      
-      // Sino, devolver un objeto con los criterios que fallaron
-      return {
-        passwordPolicy: {
-          hasMinLength,
-          hasUpperCase,
-          hasLowerCase,
-          hasNumber,
-          hasSpecialChar,
-          hasPersonalData
-        }
-      };
-    };
-  }
-  
-  // Método para validar la contraseña y actualizar el estado de validación
-  validatePassword(value: string): void {
-    if (!value) {
-      this.resetPasswordValidation();
-      return;
     }
-    
-    // Comprobar si contiene datos personales
-    const nombre = this.form?.get('nombre')?.value?.toLowerCase() || '';
-    const apellidos = this.form?.get('apellidos')?.value?.toLowerCase() || '';
-    const lowerValue = value.toLowerCase();
-    
-    const hasPersonalData = (nombre && nombre.length > 2 && lowerValue.includes(nombre)) || 
-                          (apellidos && apellidos.length > 2 && lowerValue.includes(apellidos));
-    
-    // Actualizar estado de validación
-    this.passwordValidation = {
-      minLength: value.length >= 8,
-      hasUpperCase: /[A-Z]/.test(value),
-      hasLowerCase: /[a-z]/.test(value),
-      hasNumber: /[0-9]/.test(value),
-      hasSpecialChar: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value),
-      hasPersonalData: hasPersonalData
-    };
+    // Forzar revalidación de coincidencia
+    if (confirmCtrl) confirmCtrl.updateValueAndValidity({ onlySelf: false, emitEvent: false });
   }
-  
-  // Resetear el estado de validación de contraseña
-  resetPasswordValidation(): void {
-    this.passwordValidation = {
-      minLength: false,
-      hasUpperCase: false,
-      hasLowerCase: false,
-      hasNumber: false,
-      hasSpecialChar: false,
-      hasPersonalData: false
-    };
+
+  onPasswordIsValidChange(isValid: boolean): void {
+    this.passwordIsValid = isValid;
   }
 
   //Lo tengo ya en el servicio del back, pero en el front hago comprobaciones inmediatas
@@ -222,75 +165,97 @@ export class RegistroVisualizadorComponent implements OnInit {
     // Solo mostrar errores si el formulario ha sido enviado
     if (!f || !this.formSubmitted) return errors;
     
+    // Procesar errores de controles individuales
     for (const key of Object.keys(f.controls)) {
       const control = f.get(key);
       if (!control || !control.errors) continue;
       
-      for (const err of Object.keys(control.errors)) {
-        switch (err) {
-          case 'required': 
-            errors.push(`${this.humanize(key)} es obligatorio`);
-            break;
-          case 'maxlength': 
-            errors.push(`${this.humanize(key)} supera longitud máxima`);
-            break;
-          case 'email': 
-            errors.push('Email con formato inválido');
-            break;
-          case 'invalidDate': 
-            errors.push('Fecha de nacimiento inválida');
-            break;
-          case 'futureDate': 
-            errors.push('La fecha no puede ser futura');
-            break;
-          case 'tooYoung': 
-            errors.push(`Debes tener al menos 4 años`);
-            break;
-          case 'passwordPolicy':
-            // Mostrar mensajes específicos para cada criterio fallido de la política de contraseñas
-            const policy = control.errors['passwordPolicy'];
-            const passwordErrors: string[] = [];
-            
-            if (!policy.hasMinLength) {
-              passwordErrors.push('tener al menos 8 caracteres');
-            }
-            if (!policy.hasUpperCase) {
-              passwordErrors.push('incluir al menos una letra mayúscula');
-            }
-            if (!policy.hasLowerCase) {
-              passwordErrors.push('incluir al menos una letra minúscula');
-            }
-            if (!policy.hasNumber) {
-              passwordErrors.push('incluir al menos un número');
-            }
-            if (!policy.hasSpecialChar) {
-              passwordErrors.push('incluir al menos un carácter especial (!, @, #, $, etc.)');
-            }
-            if (policy.hasPersonalData) {
-              passwordErrors.push('no contener datos personales (nombre o apellidos)');
-            }
-            
-            if (passwordErrors.length > 0) {
-              errors.push(`La contraseña debe ${passwordErrors.join(', ')}`);
-            }
-            break;
-          case 'pattern': 
-            errors.push('La contraseña no cumple la política mínima');
-            break;
-          case 'duplicate': 
-            // No agregamos el error de duplicado aquí porque ya se muestra en el campo
-            break; 
-          default: 
-            errors.push(`${this.humanize(key)}: ${err}`);
-        }
-      }
+      this.processControlErrors(control, key, errors);
     }
     
-    const groupErr = f.errors;
-    if (groupErr && groupErr['passwordsMismatch'] && this.formSubmitted) 
-      errors.push('Las contraseñas no coinciden');
+    // Procesar errores a nivel de formulario
+    this.processFormGroupErrors(f, errors);
       
     return errors;
+  }
+
+  // Procesa los errores de un control específico
+  private processControlErrors(control: any, key: string, errors: string[]): void {
+    for (const err of Object.keys(control.errors)) {
+      const errorMessage = this.getErrorMessage(err, control, key);
+      if (errorMessage) {
+        errors.push(errorMessage);
+      }
+    }
+  }
+
+  // Obtiene el mensaje de error apropiado para cada tipo de error
+  private getErrorMessage(err: string, control: any, key: string): string | null {
+    switch (err) {
+      case 'required': 
+        return `${this.humanize(key)} es obligatorio`;
+      case 'maxlength': 
+        return `${this.humanize(key)} supera longitud máxima`;
+      case 'email': 
+        return 'Email con formato inválido';
+      case 'invalidDate': 
+        return 'Fecha de nacimiento inválida';
+      case 'futureDate': 
+        return 'La fecha no puede ser futura';
+      case 'tooYoung': 
+        return `Debes tener al menos 4 años`;
+      case 'passwordPolicy':
+        const policy = control.errors['passwordPolicy'];
+        if (!policy || typeof policy !== 'object') {
+          return 'La contraseña no cumple la política mínima';
+        }
+        return this.buildPasswordPolicyMessage(policy);
+      case 'pattern': 
+        return 'La contraseña no cumple la política mínima';
+      case 'duplicate': 
+        // No agregamos el error de duplicado aquí porque ya se muestra en el campo
+        return null; 
+      default: 
+        return `${this.humanize(key)}: ${err}`;
+    }
+  }
+
+  // Construye el mensaje específico para errores de política de contraseñas
+  private buildPasswordPolicyMessage(policy: any): string | null {
+    const passwordErrors: string[] = [];
+    
+    if (!policy.hasMinLength) {
+      passwordErrors.push('tener al menos 8 caracteres');
+    }
+    if (!policy.hasUpperCase) {
+      passwordErrors.push('incluir al menos una letra mayúscula');
+    }
+    if (!policy.hasLowerCase) {
+      passwordErrors.push('incluir al menos una letra minúscula');
+    }
+    if (!policy.hasNumber) {
+      passwordErrors.push('incluir al menos un número');
+    }
+    if (!policy.hasSpecialChar) {
+      passwordErrors.push('incluir al menos un carácter especial (!, @, #, $, etc.)');
+    }
+    if (policy.hasPersonalData) {
+      passwordErrors.push('no contener datos personales (nombre o apellidos)');
+    }
+    
+    if (passwordErrors.length > 0) {
+      return `La contraseña debe ${passwordErrors.join(', ')}`;
+    }
+    
+    return null;
+  }
+
+  // Procesa errores a nivel de formulario completo
+  private processFormGroupErrors(f: any, errors: string[]): void {
+    const groupErr = f.errors;
+    if (groupErr && groupErr['passwordsMismatch'] && this.formSubmitted) {
+      errors.push('Las contraseñas no coinciden');
+    }
   }
 
   /**
@@ -323,21 +288,7 @@ export class RegistroVisualizadorComponent implements OnInit {
     this.emailErrorAdded = false;
     
     // Restablecer los errores previos de los controles
-    Object.keys(this.form.controls).forEach(key => {
-      const control = this.form.get(key);
-      if (control && control.hasError('server') || control?.hasError('duplicate')) {
-        // Mantener otros errores pero eliminar los del servidor
-        const currentErrors = {...control.errors};
-        delete currentErrors['server'];
-        delete currentErrors['duplicate'];
-        
-        if (Object.keys(currentErrors).length > 0) {
-          control.setErrors(currentErrors);
-        } else {
-          control.setErrors(null);
-        }
-      }
-    });
+    this.clearServerAndDuplicateControlErrors();
     
     if (this.form.invalid) {
       // No necesitamos marcar todos los controles como tocados, ya que ahora
@@ -361,149 +312,70 @@ export class RegistroVisualizadorComponent implements OnInit {
       foto: this.selectedAvatar >= 0 ? this.preloadedImages[this.selectedAvatar] : null // Incluir avatar seleccionado
     };
 
+    // Mostrar el mensaje de espera inmediatamente y memorizar email para polling
+    this.waitingActivation = true;
+    this.emailForPolling = val.email;
+
     // Llamar al servicio con el objeto JSON
     this.svc.register(payload).subscribe({
       next: (response) => {
-        console.log('Registro exitoso:', response);
-        sessionStorage.setItem('email', val.email);
-        // Preguntar al usuario si desea activar 2FA
-        // Usamos el diálogo nativo confirm por simplicidad; si el proyecto tiene
-        // un modal o servicio de notificaciones, se puede reemplazar por eso.
-        const wants2fa = window.confirm('Registro completado. ¿Deseas activar la autenticación en 2 pasos (2FA) ahora?');
-
-        if (wants2fa) {
-          // Redirigir a la página de configuración de 2FA
-          // El guard Fa2Guard comprueba allowFa2 en navigation.extras.state o history.state,
-          // por eso enviamos allowFa2: true aquí (coincide con login y con la expectativa del guard).
-          this.router.navigate(['/2fa'], { state: { allowFa2: true } });
-        } else {
-          // Si el usuario no quiere 2FA, redirigir a la página principal o login
-          // Ajusta la ruta según la estructura de rutas de la aplicación
-          this.router.navigate(['/dashboard']);
-        }
+        this.ensureSessionUserFromForm();
+        // Empezar a escuchar la activación
+        this.startPollingActivation(val.email);
       },
       error: (err) => {
         console.error('Error en registro:', err);
-        
-        // Mostrar todos los detalles del error para depuración
-        console.log('Detalles completos del error:', JSON.stringify(err, null, 2));
-        
-        // Manejo mejorado de errores del backend
-        if (err?.errors) {
-          // Procesar errores del formato de nuestro backend
-          for (const e of err.errors) {
-            const fieldName = this.mapFieldName(e.field || 'general');
-            this.serverErrors[fieldName] = this.serverErrors[fieldName] || [];
-            
-            // Para el campo email, siempre usar un mensaje amigable si es error de duplicado
-            if (fieldName === 'email' && 
-               (e.message.toLowerCase().includes('ya registrado') ||
-                e.message.toLowerCase().includes('duplicado') ||
-                e.message.toLowerCase().includes('ya existe') ||
-                e.message.toLowerCase().includes('unicidad'))) {
-              // No añadir mensaje al error general, se mostrará en el campo
-            } else {
-              this.serverErrors[fieldName].push(e.message);
-            }
-            
-            // Marcar el campo como inválido
-            const ctrl = this.form.get(fieldName);
-            if (ctrl) {
-              ctrl.setErrors({ server: true });
-            }
-            
-            // Manejar específicamente el error de email duplicado
-            if (!this.emailErrorAdded && 
-                (fieldName === 'email' || 
-                (e.message && (
-                 e.message.toLowerCase().includes('email') || 
-                 e.message.toLowerCase().includes('correo')) && 
-                 (e.message.toLowerCase().includes('ya existe') || 
-                 e.message.toLowerCase().includes('duplicado') || 
-                 e.message.toLowerCase().includes('ya está registrado') || 
-                 e.message.toLowerCase().includes('ya registrado') || 
-                 e.message.toLowerCase().includes('unicidad'))))) {
-              
-              console.log('Detectado error de email duplicado:', e.message);
-              
-              const emailCtrl = this.form.get('email');
-              if (emailCtrl) {
-                emailCtrl.setErrors({ duplicate: true });
-                
-                // Forzar la visualización del error marcando el campo
-                this.form.markAllAsTouched();
-                emailCtrl.markAsDirty();
-              }
-              
-              // Asegurarse de que el error se muestre en el bloque general, no en el campo
-              if (!this.serverErrors['general']) {
-                this.serverErrors['general'] = [];
-              }
-              
-              // Añadir mensaje amigable al bloque general
-              if (!this.serverErrors['general'].includes('Este correo ya está registrado en el sistema')) {
-                this.serverErrors['general'].push('Este correo ya está registrado en el sistema');
-              }
-              
-              // Marcar que ya hemos añadido un error de email
-              this.emailErrorAdded = true;
-            }
-          }
-        } else if (err?.error?.errores && Array.isArray(err.error.errores)) {
-          // Procesar errores en formato de Spring Boot
-          for (const errorMsg of err.error.errores) {
-            this.serverErrors['general'] = this.serverErrors['general'] || [];
-            this.serverErrors['general'].push(errorMsg);
-            
-            // Detectar mensajes específicos de error
-            if (!this.emailErrorAdded && 
-                typeof errorMsg === 'string' && 
-                (errorMsg.toLowerCase().includes('email') || 
-                 errorMsg.toLowerCase().includes('correo') || 
-                 errorMsg.toLowerCase().includes('unicidad')) && 
-                (errorMsg.toLowerCase().includes('ya existe') || 
-                 errorMsg.toLowerCase().includes('duplicado') ||
-                 errorMsg.toLowerCase().includes('ya registrado') ||
-                 errorMsg.toLowerCase().includes('ya está registrado'))) {
-              
-              console.log('Detectado error de email duplicado en errores generales:', errorMsg);
-              
-              const emailCtrl = this.form.get('email');
-              if (emailCtrl) {
-                emailCtrl.setErrors({ duplicate: true });
-                emailCtrl.markAsDirty();
-              }
-              
-              // Asegurarse de que el error se muestre en el bloque general
-              if (!this.serverErrors['general']) {
-                this.serverErrors['general'] = [];
-              }
-              
-              // Añadir mensaje amigable al bloque general
-              if (!this.serverErrors['general'].includes('Este correo ya está registrado en el sistema')) {
-                this.serverErrors['general'].push('Este correo ya está registrado en el sistema');
-              }
-              
-              // Marcar que ya hemos añadido un error de email
-              this.emailErrorAdded = true;
-              
-              // Eliminar otros mensajes relacionados con email
-              this.serverErrors['general'] = this.serverErrors['general']?.filter(
-                msg => !(msg.toLowerCase().includes('email') || msg.toLowerCase().includes('correo')) || 
-                msg === 'Este correo ya está registrado en el sistema'
-              ) || [];
-            }
-          }
-        } else if (err?.error?.mensaje) {
-          // Error general con mensaje
-          this.serverErrors['general'] = [err.error.mensaje];
-        } else {
-          // Fallback para otros tipos de errores
-          this.serverErrors['general'] = ['Error de conexión con el servidor. Inténtalo más tarde.'];
-        }
+        this.waitingActivation = false;
+        this.processRegistrationError(err);
       }
     });
   }
+
+  private startPollingActivation(email: string) {
+    this.stopPollingActivation();
+    this.pollId = setInterval(() => {
+      this.svc.estadoActivacion(email).subscribe({
+        next: (res) => this.handleActivationResponse(res, 'polling')
+      });
+    }, RegistroVisualizadorComponent.ACT_POLL_INTERVAL);
+  }
+
+  private stopPollingActivation() {
+    if (this.pollId) {
+      clearInterval(this.pollId);
+      this.pollId = null;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.stopPollingActivation();
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.onVisibilityOrFocus);
+      window.removeEventListener('focus', this.onVisibilityOrFocus);
+    }
+  }
+
+  // Al volver a la pestaña, forzar una comprobación inmediata para no esperar al próximo interval
+  private onVisibilityOrFocus = () => {
+    // Si vuelve el foco y ya tenemos token pendiente, redirigir
+    if (this.pendingShow2FA && !this.activationFinalized) {
+      this.activationFinalized = true;
+      this.waitingActivation = false;
+      this.pendingShow2FA = false;
+      // Restaurar comportamiento original: mostrar confirm de 2FA al recuperar foco
+      this.prompt2FAAndNavigate();
+      return;
+    }
+    if (this.waitingActivation && this.emailForPolling) {
+      this.svc.estadoActivacion(this.emailForPolling).subscribe({
+        next: (res) => this.handleActivationResponse(res, 'focus')
+      });
+    }
+  };
+
+  // Eliminado flujo modal: se usa window.confirm directamente al detectar activación.
+
+  
   
   // Mapeo de nombres de campo del backend a nombres de campo del formulario
   private mapFieldName(backendField: string): string {
@@ -545,5 +417,191 @@ export class RegistroVisualizadorComponent implements OnInit {
     }
     
     return Array.from(uniqueMessages);
+  }
+
+  private processRegistrationError(err: any): void {
+    if (err?.errors) {
+      this.processBackendErrors(err.errors);
+    } else if (err?.error?.errores && Array.isArray(err.error.errores)) {
+      this.processSpringBootErrors(err.error.errores);
+    } else if (err?.error?.mensaje) {
+      this.serverErrors['general'] = [err.error.mensaje];
+    } else {
+      this.serverErrors['general'] = ['Error de conexión con el servidor. Inténtalo más tarde.'];
+    }
+  }
+
+  private processBackendErrors(errors: any[]): void {
+    for (const e of errors) {
+      const fieldName = this.mapFieldName(e.field || 'general');
+      this.serverErrors[fieldName] = this.serverErrors[fieldName] || [];
+      
+      this.handleFieldError(e, fieldName);
+      this.markFieldAsInvalid(fieldName);
+      this.handleEmailDuplicateError(e, fieldName);
+    }
+  }
+
+  private handleFieldError(e: any, fieldName: string): void {
+    // Para el campo email, siempre usar un mensaje amigable si es error de duplicado
+    if (fieldName === 'email' && 
+       (e.message.toLowerCase().includes('ya registrado') ||
+        e.message.toLowerCase().includes('duplicado') ||
+        e.message.toLowerCase().includes('ya existe') ||
+        e.message.toLowerCase().includes('unicidad'))) {
+      // No añadir mensaje al error general, se mostrará en el campo
+    } else {
+      this.serverErrors[fieldName].push(e.message);
+    }
+  }
+
+  private markFieldAsInvalid(fieldName: string): void {
+    const ctrl = this.form.get(fieldName);
+    if (ctrl) {
+      ctrl.setErrors({ server: true });
+    }
+  }
+
+  private handleEmailDuplicateError(e: any, fieldName: string): void {
+    if (!this.emailErrorAdded && 
+        (fieldName === 'email' || 
+        (e.message && (
+         e.message.toLowerCase().includes('email') || 
+         e.message.toLowerCase().includes('correo')) && 
+         (e.message.toLowerCase().includes('ya existe') || 
+         e.message.toLowerCase().includes('duplicado') || 
+         e.message.toLowerCase().includes('ya está registrado') || 
+         e.message.toLowerCase().includes('ya registrado') || 
+         e.message.toLowerCase().includes('unicidad'))))) {
+      
+      this.setEmailDuplicateError();
+      this.ensureGeneralEmailError();
+      this.emailErrorAdded = true;
+    }
+  }
+
+  private setEmailDuplicateError(): void {
+    const emailCtrl = this.form.get('email');
+    if (emailCtrl) {
+      emailCtrl.setErrors({ duplicate: true });
+      this.form.markAllAsTouched();
+      emailCtrl.markAsDirty();
+    }
+  }
+
+  private processSpringBootErrors(errores: any[]): void {
+    for (const errorMsg of errores) {
+      this.serverErrors['general'] = this.serverErrors['general'] || [];
+      this.serverErrors['general'].push(errorMsg);
+      
+      this.detectAndHandleEmailDuplicate(errorMsg);
+    }
+  }
+
+  private detectAndHandleEmailDuplicate(errorMsg: any): void {
+    if (!this.emailErrorAdded && 
+        typeof errorMsg === 'string' && 
+        this.isEmailRelatedError(errorMsg) && 
+        this.isDuplicateError(errorMsg)) {
+      
+      this.setEmailDuplicateError();
+      this.ensureGeneralEmailError();
+      this.emailErrorAdded = true;
+      this.cleanUpEmailErrors();
+    }
+  }
+
+  private isEmailRelatedError(message: string): boolean {
+    return message.toLowerCase().includes('email') || 
+           message.toLowerCase().includes('correo') || 
+           message.toLowerCase().includes('unicidad');
+  }
+
+  private isDuplicateError(message: string): boolean {
+    return message.toLowerCase().includes('ya existe') || 
+           message.toLowerCase().includes('duplicado') ||
+           message.toLowerCase().includes('ya registrado') ||
+           message.toLowerCase().includes('ya está registrado');
+  }
+
+  private ensureGeneralEmailError(): void {
+    if (!this.serverErrors['general']) {
+      this.serverErrors['general'] = [];
+    }
+    
+    if (!this.serverErrors['general'].includes('Este correo ya está registrado en el sistema')) {
+      this.serverErrors['general'].push('Este correo ya está registrado en el sistema');
+    }
+  }
+
+  private cleanUpEmailErrors(): void {
+    this.serverErrors['general'] = this.serverErrors['general']?.filter(
+      msg => !(msg.toLowerCase().includes('email') || msg.toLowerCase().includes('correo')) || 
+      msg === 'Este correo ya está registrado en el sistema'
+    ) || [];
+  }
+
+  // Helpers para reducir duplicación y complejidad
+  private clearServerAndDuplicateControlErrors(): void {
+    Object.keys(this.form.controls).forEach(key => {
+      const control = this.form.get(key);
+      if (!control || !control.errors) return;
+      if (control.hasError('server') || control.hasError('duplicate')) {
+        const currentErrors = { ...control.errors } as Record<string, boolean>;
+        delete currentErrors['server'];
+        delete currentErrors['duplicate'];
+        if (Object.keys(currentErrors).length > 0) {
+          control.setErrors(currentErrors);
+        } else {
+          control.setErrors(null);
+        }
+      }
+    });
+  }
+
+  private ensureSessionUserFromForm(): void {
+    try {
+      const v = this.form?.value || {};
+      if (v?.email) sessionStorage.setItem('email', v.email);
+      sessionStorage.setItem('currentUserClass', 'Visualizador');
+      const minimalUser = {
+        email: v?.email || '',
+        nombre: v?.nombre || 'Usuario',
+        username: v?.alias || v?.nombre || 'usuario',
+        vip: !!v?.vip
+      };
+      sessionStorage.setItem('user', JSON.stringify(minimalUser));
+    } catch {}
+  }
+
+  // Ya no necesitamos persistToken, el backend gestiona los tokens mediante cookies
+
+  private prompt2FAAndNavigate(): void {
+    const wants2fa = window.confirm(RegistroVisualizadorComponent.CONFIRM_2FA_MESSAGE);
+    if (wants2fa) {
+      this.router.navigate(['/2fa'], { state: { allowFa2: true } });
+    } else {
+      this.userService.login(this.form.value.email, this.form.value.password).subscribe({
+          next: () => {
+            this.router.navigate(['/dashboard']);
+          }
+        });
+    }
+  }
+
+  private handleActivationResponse(res: any, source: 'polling' | 'focus'): void {
+    if (!res?.activated || this.activationFinalized) return;
+    this.stopPollingActivation();
+    // Ya no necesitamos persistir el token, el backend lo gestiona mediante cookies
+    this.ensureSessionUserFromForm();
+    // Si la pestaña está oculta, posponer el diálogo hasta focus/visibility
+    if (typeof document !== 'undefined' && document.hidden) {
+      this.pendingShow2FA = true;
+      this.waitingActivation = false;
+      return;
+    }
+    this.activationFinalized = true;
+    this.waitingActivation = false;
+    this.prompt2FAAndNavigate();
   }
 }

@@ -1,0 +1,70 @@
+<section class="gestion-listas-wrapper">
+  <div *ngIf="loading" class="state">Cargando listas...</div>
+  
+  <div *ngIf="!loading && listas.length === 0" class="state">
+    {{ modo === 'gestor' ? 'No hay listas disponibles' : 'No hay listas públicas disponibles' }}
+  </div>
+
+  <div class="grid" *ngIf="!loading && listas.length > 0">
+    <div class="playlist-card" *ngFor="let l of listas">
+      <!-- Contenido principal de la tarjeta -->
+      <button class="card-content" 
+              (click)="verListaCompleta(l)"
+              [attr.aria-label]="'Ver lista completa: ' + l.nombre">
+        <div class="thumb" 
+             [style.background-image]="obtenerCaratulaPrimerContenido(l) ? 'url(' + obtenerCaratulaPrimerContenido(l) + ')' : 'none'"
+             [class.thumb-placeholder]="!obtenerCaratulaPrimerContenido(l)">
+        </div>
+        <h3 class="title">{{ l.nombre }}</h3>
+        <p class="meta">Lista de reproducción</p>
+        <p class="description" *ngIf="l.descripcion">{{ l.descripcion }}</p>
+        <p class="link">Ver lista de reproducción completa</p>
+      </button>
+      
+      <!-- Información adicional -->
+      <div class="card-info">
+        <span class="content-count" *ngIf="l.contenidosIds && l.contenidosIds.length">
+          {{ l.contenidosIds.length }} contenido{{ l.contenidosIds.length !== 1 ? 's' : '' }}
+        </span>
+        <span class="visibility-badge" *ngIf="l.visible === true" title="Lista pública">🌐</span>
+        <span class="visibility-badge" *ngIf="l.visible === false" title="Lista privada">🔒</span>
+        
+        <!-- Botones de acción para gestores -->
+        <div class="card-actions" *ngIf="modo === 'gestor' && puedeEditar(l)">
+          <button 
+            class="btn-action btn-edit"
+            (click)="editarLista(l, $event)"
+            title="Editar lista"
+            aria-label="Editar lista">
+            ✏️
+          </button>
+          <button 
+            class="btn-action btn-delete"
+            (click)="eliminarLista(l, $event)"
+            *ngIf="puedeEliminar(l)"
+            title="Eliminar lista"
+            aria-label="Eliminar lista">
+            🗑️
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Modal de edición -->
+<div class="modal-overlay" *ngIf="mostrarModalEdicion" 
+     (click)="onCancelarEdicion()"
+     (keydown.escape)="onCancelarEdicion()">
+  <div class="modal-container" 
+       (click)="$event.stopPropagation()"
+       (keydown)="$event.stopPropagation()">
+    <crear-lista
+      [modal]="true"
+      [modo]="modo"
+      [listaParaEditar]="listaParaEditar"
+      (editada)="onListaEditada($event)"
+      (cerrar)="onCancelarEdicion()">
+    </crear-lista>
+  </div>
+</div>

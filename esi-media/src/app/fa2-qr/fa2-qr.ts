@@ -1,7 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { UserService } from '../../userService';
+import { UserService } from '../services/userService';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 
@@ -29,10 +29,13 @@ export class Fa2Qr implements OnInit {
   
   // Estado del botón de copiar
   isCopied: boolean = false;
+  private returnUrl: string | null = null;
 
   constructor(private userService: UserService, private sanitizer: DomSanitizer, private cdr: ChangeDetectorRef, private router: Router) { }
 
   ngOnInit(): void {
+    const state = history.state as any;
+    this.returnUrl = typeof state?.returnUrl === 'string' ? state.returnUrl : null;
     // Aquí llamarías a tu servicio para obtener el QR y la clave secreta
     this.loadQRCode();
   }
@@ -47,8 +50,6 @@ export class Fa2Qr implements OnInit {
           this.rawQrUrl = mensaje.toString();
           // Angular puede bloquear URLs externas; marcaremos la URL como segura
           const sanitized = this.sanitizer.bypassSecurityTrustUrl(this.rawQrUrl);
-          console.log('QR URL (raw):', this.rawQrUrl);
-          console.log('QR URL (sanitized):', sanitized);
           // Reset load state: ocultar imagen hasta que termine la carga
           this.qrVisible = false;
           this.qrLoadError = null;
@@ -66,7 +67,6 @@ export class Fa2Qr implements OnInit {
   }
 
   onQrLoad(): void {
-    console.log('QR image loaded successfully');
     this.qrVisible = true;
   this.cdr.detectChanges();
   }
@@ -103,33 +103,35 @@ export class Fa2Qr implements OnInit {
     return;
   }
 
-  console.log('Verificando código:', this.verificationCode, 'para', email);
-
   this.userService.verify2FACode(email, this.verificationCode).subscribe({
     next: (res: any) => {
-
-      if(sessionStorage.getItem('currentUserClass') !== 'visualizador'){
-          this.router.navigate(['3verification'], { state: { allowFa3Code: true }
-          });
+      let user = JSON.parse(sessionStorage.getItem('user') || '{}');
+      if(sessionStorage.getItem('currentUserClass')!== 'Visualizador'){
+        this.router.navigate(['/3verification'], { state: { allowFa3Code: true } });
+        return;
       }
       else{
-        const wants2fa = window.confirm('Registro completado. ¿Deseas activar la autenticación en 2 pasos (2FA) ahora?');
+        const wants2fa = window.confirm('Registro completado. ¿Deseas activar la autenticación en 3 pasos (3FA) ahora?');
 
           if (wants2fa) {
-            // Redirigir a la página de configuración de 2FA
-            this.router.navigate(['3verification'], { state: { allowFa3Code: true } });
+            // Redirigir a la verificación 3FA
+            this.router.navigate(['/3verification'], { state: { allowFa3Code: true } });
           } else {
-            // Si el usuario no quiere 2FA, redirigir a la página principal o login
-            // Ajusta la ruta según la estructura de rutas de la aplicación
-            this.router.navigate(['/dashboard']);
+              // El token ya está en la cookie HttpOnly
+              if (this.returnUrl) {
+                this.router.navigateByUrl(this.returnUrl);
+              } else {
+                this.router.navigate(['/dashboard']);
+              }
           }
-        }
+      }
     },
     error: (err: any) => {
       console.error('Error verificando 2FA:', err);
       alert('Código inválido o error en el servidor. Revisa el código e inténtalo de nuevo.');
     }
   });
+  
   }
 
 }

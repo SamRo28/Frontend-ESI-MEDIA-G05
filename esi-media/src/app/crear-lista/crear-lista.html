@@ -1,0 +1,247 @@
+<div class="crear-lista-container" [class.modal-mode]="modal">
+  <!-- Botón circular de cerrar para modo modal -->
+  <button 
+    *ngIf="modal"
+    type="button"
+    class="modal-close-btn"
+    (click)="onCancelar()"
+    aria-label="Cerrar modal">
+    X
+  </button>
+  
+  <!-- Header bar similar al visu-dashboard -->
+  <div class="header-bar" *ngIf="!modal">
+    <h2>🎵 {{ tituloModal }}</h2>
+    <button class="btn btn-secondary" (click)="volver()">🏠 Volver al Dashboard</button>
+  </div>
+
+  <!-- Título principal -->
+  <div class="page-header">
+    <h1>{{ tituloModal }}</h1>
+    <p>Complete los campos para {{ listaParaEditar ? 'actualizar' : 'crear' }} su lista personalizada</p>
+  </div>
+
+  <!-- Mensaje de éxito -->
+  <div *ngIf="mensajeExito" class="alert alert-success">
+    {{ mensajeExito }}
+  </div>
+
+  <!-- Mensaje de error para nombres duplicados -->
+  <div *ngIf="mensajeErrorNombre" class="alert alert-error">
+    {{ mensajeErrorNombre }}
+  </div>
+
+  <form [formGroup]="listaForm" (ngSubmit)="onSubmit()" class="crear-lista-form">
+    <!-- Información básica -->
+    <div class="form-section">
+      <h2>Información básica</h2>
+      
+      <!-- Campo Nombre -->
+      <div class="form-field">
+        <label for="nombre">Nombre de la lista *</label>
+        <input 
+          id="nombre"
+          type="text" 
+          formControlName="nombre"
+          class="full-width"
+          placeholder="Ej: Mi lista de música favorita"
+          aria-label="Nombre de la lista">
+        <div class="error" *ngIf="listaForm.get('nombre')?.invalid && listaForm.get('nombre')?.touched">
+          <span *ngIf="listaForm.get('nombre')?.errors?.['required']">⚠️ El nombre es requerido</span>
+          <span *ngIf="listaForm.get('nombre')?.errors?.['minlength']">⚠️ Mínimo 3 caracteres</span>
+        </div>
+      </div>
+
+      <!-- Campo Descripción -->
+      <div class="form-field">
+        <label for="descripcion">Descripción *</label>
+        <textarea 
+          id="descripcion"
+          formControlName="descripcion"
+          rows="3"
+          class="full-width"
+          placeholder="Describe tu lista..."
+          aria-label="Descripción de la lista"></textarea>
+        <div class="error" *ngIf="listaForm.get('descripcion')?.invalid && listaForm.get('descripcion')?.touched">
+          <span *ngIf="listaForm.get('descripcion')?.errors?.['required']">⚠️ La descripción es requerida</span>
+          <span *ngIf="listaForm.get('descripcion')?.errors?.['minlength']">⚠️ Mínimo 10 caracteres</span>
+        </div>
+      </div>
+
+      <!-- Campo Especialización (solo para gestores) -->
+      <div class="form-field" *ngIf="modo === 'gestor'">
+        <label for="especializacion">Especialización del gestor *</label>
+        <select 
+          id="especializacion"
+          formControlName="especializacion"
+          class="full-width"
+          aria-label="Especialización del gestor">
+          <option value="" disabled>Selecciona tu especialización</option>
+          <option *ngFor="let especialidad of especializacionesDisponibles" [value]="especialidad">
+            {{ especialidad }}
+          </option>
+        </select>
+        <div class="error" *ngIf="listaForm.get('especializacion')?.invalid && listaForm.get('especializacion')?.touched">
+          <span *ngIf="listaForm.get('especializacion')?.errors?.['required']">⚠️ La especialización es requerida</span>
+        </div>
+        <div class="hint">Selecciona el área de contenido en la que tienes más experiencia</div>
+      </div>
+    </div>
+
+    <!-- Configuración -->
+    <div class="form-section">
+      <h2>Configuración</h2>
+      
+      <!-- Campo Tags -->
+      <div class="form-field">
+        <label for="tags-section">
+          Etiquetas 
+          <span *ngIf="hasSelectedTags()" class="selected-count">({{ getSelectedTagsCount() }} seleccionadas)</span>
+        </label>
+        
+        <!-- Grid de tags seleccionables -->
+        <fieldset id="tags-section" class="tags-grid" aria-label="Seleccionar etiquetas para la lista">
+          <legend class="sr-only">Selecciona las etiquetas que describan tu lista</legend>
+          <div *ngFor="let tag of availableListTags" 
+               class="tag-option">
+            <input 
+              type="checkbox" 
+              [id]="'tag-' + tag.value"
+              [checked]="isTagSelected(tag.value)"
+              (change)="toggleTag(tag.value)"
+              class="tag-checkbox"
+              [attr.aria-describedby]="'tag-' + tag.value + '-desc'">
+            <label [for]="'tag-' + tag.value" 
+                   class="tag-label"
+                   [id]="'tag-' + tag.value + '-desc'">
+              {{ tag.label }}
+            </label>
+          </div>
+        </fieldset>
+        
+        <!-- Resumen de tags seleccionados -->
+        <div class="tags-summary" *ngIf="!hasSelectedTags()">
+          💡 Selecciona las etiquetas que mejor describan tu lista para ayudar a otros usuarios a encontrarla
+        </div>
+        <div class="tags-summary selected" *ngIf="hasSelectedTags()">
+          ✅ <strong>{{ getSelectedTagsCount() }} etiqueta(s) seleccionada(s):</strong> {{ getSelectedTagsText() }}
+        </div>
+      </div>
+
+      <!-- Campo Visible (solo para gestores) -->
+      <div class="form-field" *ngIf="modo === 'gestor'">
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="visible">
+          Lista pública
+        </label>
+        <div class="hint">Las listas públicas son visibles para todos los usuarios</div>
+      </div>
+    </div>
+
+    <!-- Gestión de contenidos -->
+    <div class="form-section">
+      <h2>Contenidos de la lista</h2>
+      
+      <!-- Input para añadir contenido -->
+      <div class="form-field">
+        <label for="contenidoInput">Añadir contenido</label>
+        <div class="search-content-container">
+          <div class="input-with-button">
+            <input 
+              id="contenidoInput"
+              type="text" 
+              [(ngModel)]="nuevoContenido"
+              [ngModelOptions]="{standalone: true}"
+              (input)="onBuscarContenido()"
+              (blur)="cerrarSugerencias()"
+              (keydown.enter)="agregarContenido()"
+              (keydown.escape)="cerrarSugerencias()"
+              placeholder="Escribe para buscar contenidos..."
+              class="content-input"
+              autocomplete="off"
+              aria-label="Buscar contenidos para añadir a la lista">
+          </div>
+          
+          <!-- Sugerencias de contenidos -->
+          <div class="content-suggestions" *ngIf="mostrarSugerencias && contenidosEncontrados.length > 0">
+            <div class="suggestions-header">
+              <span class="suggestions-title">Contenidos encontrados:</span>
+            </div>
+            <div 
+              *ngFor="let contenido of contenidosEncontrados" 
+              class="suggestion-item"
+              (mousedown)="seleccionarContenido(contenido)"
+              [title]="contenido.descripcion">
+              <div class="suggestion-main">
+                <span class="suggestion-title">{{ contenido.titulo }}</span>
+                <span class="suggestion-type" [class.type-audio]="contenido.tipo === 'Audio'" [class.type-video]="contenido.tipo === 'Video'">
+                  {{ contenido.tipo }}
+                </span>
+              </div>
+              <div class="suggestion-details" *ngIf="contenido.descripcion">
+                <span class="suggestion-description">{{ contenido.descripcion }}</span>
+                <span class="suggestion-duration" *ngIf="contenido.duracion">
+                  {{ formatDuration(contenido.duracion) }}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Estado de búsqueda -->
+          <div class="search-status" *ngIf="buscandoContenidos">
+            <span class="search-loading">🔍 Buscando contenidos...</span>
+          </div>
+          
+          <div class="search-hint" *ngIf="nuevoContenido && nuevoContenido.length > 0 && nuevoContenido.length < 2">
+            <span class="hint-text">Escribe al menos 2 caracteres para buscar</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lista de contenidos -->
+      <div class="contenidos-section">
+        <div class="contenidos-header">
+          <span>Contenidos añadidos ({{ contenidosIds.length }})</span>
+          <div class="error" *ngIf="contenidosIds.length === 0 && mostrarErrorContenido">
+            ⚠️ Debe añadir al menos un contenido
+          </div>
+        </div>
+        
+        <div *ngIf="contenidosIds.length === 0" class="empty-contenidos">
+          <span class="icon">📭</span>
+          <p>No hay contenidos añadidos</p>
+        </div>
+        
+        <div class="contenidos-list" *ngIf="contenidosIds.length > 0">
+          <div *ngFor="let contenido of contenidosIds; let i = index" class="contenido-item">
+            <span class="contenido-text">{{ obtenerNombreContenido(contenido) }}</span>
+            <button 
+              type="button"
+              class="btn btn-remove-content"
+              (click)="quitarContenido(i)"
+              [disabled]="!puedeEliminarContenido()"
+              [title]="puedeEliminarContenido() ? 'Eliminar contenido' : 'No se puede eliminar el último contenido'">
+              <span class="icon">🗑️</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botones de acción -->
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" (click)="modal ? onCancelar() : volver()">
+        <span class="icon">{{ modal ? '❌' : '🏠' }}</span>
+        {{ modal ? 'Cancelar' : 'Volver' }}
+      </button>
+      <button 
+        type="submit" 
+        class="btn btn-primary" 
+        [disabled]="!puedeCrearLista()">
+        <span class="icon" *ngIf="guardando">⏳</span>
+        <span class="icon" *ngIf="!guardando">💾</span>
+        {{ textoBotonSubmit }}
+      </button>
+    </div>
+  </form>
+</div>

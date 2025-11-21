@@ -4,26 +4,79 @@
     <div class="header-content">
       <div class="logo-section">
         <div class="logo">
-          <span class="logo-icon">🎵</span>
+          <img src="/EsiMedia icono sin fondo.png" alt="ESIMedia Logo" class="w-8 h-8">
           <span class="logo-text">EsiMedia</span>
         </div>
       </div>
 
       <nav class="nav-menu">
-        <a href="#" class="nav-link active">Inicio</a>
-        <a href="#" class="nav-link">Música</a>
-        <a href="#" class="nav-link">Películas</a>
-        <a href="#" class="nav-link">Podcasts</a>
+        <a routerLink="/dashboard" class="nav-link" 
+           [class.active]="activeSection === 'inicio'" 
+           (click)="handleNavSelect('inicio')">Inicio</a>
+        <a routerLink="/dashboard/videos" class="nav-link" 
+           [class.active]="activeSection === 'videos'" 
+           (click)="handleNavSelect('videos')">Videos</a>
+        <a routerLink="/dashboard/audios" class="nav-link" 
+           [class.active]="activeSection === 'audios'" 
+           (click)="handleNavSelect('audios')">Audios</a>
+        <a routerLink="/dashboard/listas-publicas" class="nav-link" 
+           [class.active]="activeSection === 'listas'" 
+           (click)="handleNavSelect('listas')">Listas Públicas</a>
+        <button
+          type="button"
+          class="nav-link nav-button"
+          [class.active]="activeSection === 'favoritos'"
+          (click)="toggleFavoritosView()" 
+          [attr.aria-pressed]="mostrarFavoritos">
+          Mis favoritos
+        </button>
       </nav>
 
       <div class="user-section">
-        <button class="notification-btn">
-          <span class="notification-icon">🔔</span>
-          <span class="notification-badge">3</span>
+        <!-- Botón VIP -->
+        <button 
+          *ngIf="!isUserVIP()" 
+          class="vip-button" 
+          (click)="navigateToSubscription()"
+          [attr.aria-label]="'Actualizar a VIP'"
+          type="button">
+          <span class="vip-text">VIP</span>
         </button>
-        <div class="user-profile" (click)="toggleUserMenu()">
-          <div class="user-avatar">U</div>
-          <span class="user-name">Usuario</span>
+        <button 
+          *ngIf="isUserVIP()" 
+          class="vip-button vip-active" 
+          [attr.aria-label]="'Usuario VIP'"
+          type="button"
+          disabled>
+          <span class="vip-text">VIP</span>
+        </button>
+        
+        <button class="user-profile" 
+                (click)="toggleUserMenu()" 
+                (keydown)="onUserProfileKeydown($event)" 
+                [attr.aria-expanded]="showUserMenu"
+                [attr.aria-label]="'Menú de usuario de ' + userName">
+          <div class="user-avatar-container">
+            <div [class]="getAvatarClasses()">{{ userInitial }}</div>
+            <div class="avatar-indicator" *ngIf="mostrarListasPrivadas"></div>
+          </div>
+          <span class="user-name">{{ userName }}</span>
+          <div class="dropdown-arrow" [class.rotated]="showUserMenu">▼</div>
+        </button>
+        
+        <!-- Menú desplegable del usuario -->
+        <div class="user-dropdown" *ngIf="showUserMenu" role="menu">
+          <a routerLink="/perfil" class="dropdown-item" role="menuitem">
+            <span class="dropdown-text">Cuenta</span>
+          </a>
+          <button class="dropdown-item" (click)="toggleListasPrivadas()" role="menuitem">
+            <span class="dropdown-text">Ver mis listas privadas</span>
+            <span class="dropdown-badge" *ngIf="mostrarListasPrivadas">●</span>
+          </button>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item logout-item" (click)="logout()" role="menuitem">
+            <span class="dropdown-text">Cerrar sesión</span>
+          </button>
         </div>
       </div>
     </div>
@@ -31,49 +84,64 @@
 
   <!-- Main Content -->
   <main class="dashboard-main">
-    <div class="coming-soon-section">
-      <div class="stars-background">
-        <div class="star" *ngFor="let star of stars" [style.left.%]="star.left" [style.top.%]="star.top" [style.animation-delay.s]="star.delay"></div>
-      </div>
-
-      <div class="coming-soon-content">
-        <div class="icon-container">
-          <div class="rotating-icon">🚀</div>
+    <section class="dashboard-section">
+      <div class="section-header">
+        <div class="section-title-with-filter">
+          <h2 class="section-title">{{ mostrarListasPublicas ? 'Listas Públicas' : 'Contenido Multimedia' }}</h2>
+          <!-- Botón de filtro -->
+          <app-content-filter 
+            *ngIf="!mostrarListasPrivadas"
+            [contentType]="contentFilterType"
+            (filtersApplied)="onFiltersApplied($event)"
+            (filtersChanged)="onFiltersChanged($event)">
+          </app-content-filter>
         </div>
-
-        <h1 class="coming-soon-title">
-          Próximamente
-        </h1>
-
-        <p class="coming-soon-subtitle">
-          Estamos trabajando en algo increíble para ti
+      </div>
+      
+      <div *ngIf="mostrarFavoritos" class="favorites-section">
+        <div class="favorites-header">
+          <h3 class="favorites-title">Mis favoritos</h3>
+          <span *ngIf="favoritosLoading" class="favorites-loading">Cargando favoritos...</span>
+        </div>
+        <app-multimedia-list 
+          [showHeader]="false" 
+          [showTitle]="false" 
+          [tipoForzado]="filtroTipo"
+          [tagFilters]="currentTagFilters"
+          [filtersObject]="{ specialMode: 'favorites', specialPayload: { contents: favoritos } }">
+        </app-multimedia-list>
+        <p *ngIf="!favoritosLoading && favoritos.length === 0" class="favorites-empty">
+          Aún no has añadido ningún favorito. Marca contenido para tenerlo siempre a mano.
         </p>
-
-        <div class="features-preview">
-          <div class="feature-card">
-            <div class="feature-icon">🎵</div>
-            <h3 class="feature-title">Millones de canciones</h3>
-            <p class="feature-description">Acceso ilimitado a tu música favorita</p>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon">🎬</div>
-            <h3 class="feature-title">Películas y series</h3>
-            <p class="feature-description">El mejor catálogo de entretenimiento</p>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon">🎙️</div>
-            <h3 class="feature-title">Podcasts exclusivos</h3>
-            <p class="feature-description">Historias que te inspirarán</p>
-          </div>
+      </div>
+      <ng-container *ngIf="!mostrarFavoritos">
+        <div *ngIf="mostrarListasPublicas" class="listas-publicas-section">
+          <app-gestion-listas [modo]="'visualizador'" [forceReload]="forceReloadListasPublicas"></app-gestion-listas>
         </div>
-
-        <div class="info-message">
-          <p class="info-text">Estamos preparando una experiencia única para ti</p>
+        <div *ngIf="!mostrarListasPublicas">
+          <app-multimedia-list 
+            [showHeader]="false" 
+            [showTitle]="false" 
+            [tipoForzado]="filtroTipo"
+            [tagFilters]="currentTagFilters"
+            [filtersObject]="currentFiltersObject">
+          </app-multimedia-list>
+        </div>
+      </ng-container>
+    <!-- Panel lateral de listas privadas -->
+    <aside class="listas-privadas-panel" *ngIf="mostrarListasPrivadas">
+      <div class="panel-header">
+        <h2 class="panel-title">Mis Listas Privadas</h2>
+        <div class="panel-actions">
+          <button class="btn-cerrar-panel" (click)="toggleListasPrivadas()">✕</button>
         </div>
       </div>
-    </div>
+      <app-listas-privadas 
+        [forceReload]="forceReloadListas"
+        (abrirCrearModal)="openCrearListaModal()">
+      </app-listas-privadas>
+    </aside>
+    </section>
   </main>
 
   <!-- Footer -->
@@ -89,3 +157,14 @@
     </div>
   </footer>
 </div>
+
+<!-- Modal para crear lista -->
+<div class="modal-backdrop" *ngIf="showCrearModal" (click)="closeCrearListaModal()" (keydown)="$event.key === 'Escape' && closeCrearListaModal()"></div>
+<dialog class="modal-container" [attr.open]="showCrearModal ? true : null">
+  <crear-lista 
+    [modo]="'visualizador'"
+    [modal]="true"
+    (cerrar)="closeCrearListaModal()"
+    (creada)="closeCrearListaModal(true)">
+  </crear-lista>
+</dialog>

@@ -115,39 +115,6 @@
   margin-right: auto;
 }
 
-.code-inputs {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  margin-bottom: 35px;
-}
-
-.code-input {
-  width: 60px;
-  height: 70px;
-  background: rgba(75, 50, 120, 0.5);
-  border: 2px solid rgba(168, 85, 247, 0.3);
-  border-radius: 12px;
-  color: #ffffff;
-  font-size: 28px;
-  font-weight: 600;
-  text-align: center;
-  transition: all 0.3s ease;
-  outline: none;
-}
-
-.code-input:focus {
-  border-color: #a855f7;
-  background: rgba(75, 50, 120, 0.7);
-  box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
-  transform: scale(1.05);
-}
-
-.code-input:not(:placeholder-shown) {
-  border-color: #c084fc;
-  background: rgba(168, 85, 247, 0.2);
-}
-
 .verify-button {
   width: 100%;
   background: linear-gradient(135deg, #a855f7 0%, #d946ef 100%);
@@ -198,20 +165,6 @@
 @media (max-width: 640px) {
   .verification-card {
     padding: 40px 25px;
-  }
-
-  .code-inputs {
-    gap: 8px;
-  }
-
-  .code-input {
-    width: 48px;
-    height: 60px;
-    font-size: 24px;
-  }
-
-  .title {
-    font-size: 26px;
   }
 
   .subtitle {

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, throwError, timeout } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface Usuario {
   id?: string;
@@ -39,39 +40,9 @@ export interface PerfilDetalle {
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
-  private readonly apiUrl = 'http://localhost:8080';
+  private readonly apiUrl = environment.apiUrl;
 
   constructor(private readonly http: HttpClient) {}
-
-  // Obtener headers con token de autorización
-  private getAuthHeaders(): any {
-    let token = sessionStorage.getItem('authToken');
-    
-    if (!token) {
-      // Intentar obtener token de otras fuentes posibles
-      token = localStorage.getItem('authToken') || 
-              sessionStorage.getItem('token') || 
-              localStorage.getItem('token') ||
-              sessionStorage.getItem('userToken') ||
-              localStorage.getItem('userToken');
-      
-      if (!token) {
-        // Por ahora, continuar sin token para ver si algunos endpoints funcionan sin auth
-        return {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        };
-      }
-    }
-    
-    return {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    };
-  }
 
   getUsuarios(): Observable<Usuario[]> {
     return this.http.post<Usuario[]>(`${this.apiUrl}/users/listar`, {}).pipe(
@@ -137,7 +108,6 @@ export class AdminService {
 
   deleteUser(userId: string): Observable<any> {
     const url = `${this.apiUrl}/users/${userId}`;
-    console.log('AdminService: Eliminando usuario:', userId);
     // Usamos directamente el endpoint del backend que ya maneja la eliminación de contraseña
     return this.http.delete(url).pipe(
       timeout(5000),
@@ -153,11 +123,6 @@ export class AdminService {
    */
   obtenerPerfil(usuarioId: string, adminId?: string): Observable<PerfilDetalle> {
     const url = `${this.apiUrl}/perfiles/${usuarioId}`;
-    if (adminId) {
-      console.log('AdminService: Obteniendo perfil de usuario:', usuarioId, 'por admin:', adminId);
-    } else {
-      console.log('AdminService: Obteniendo perfil de usuario sin Admin-ID');
-    }
     const options = adminId ? { headers: { 'Admin-ID': adminId } } : {};
     return this.http.get<PerfilDetalle>(url, options).pipe(
       // Aumentamos timeout para evitar errores por lentitud del backend en entornos locales
@@ -172,7 +137,6 @@ export class AdminService {
   /** Bloquea un usuario */
   bloquearUsuario(usuarioId: string, adminId: string): Observable<any> {
     const url = `${this.apiUrl}/usuarios/${usuarioId}/bloquear`;
-    console.log('AdminService: Bloqueando usuario:', usuarioId);
     const headers = { 'Admin-ID': adminId };
     return this.http.put(url, {}, { headers }).pipe(
       timeout(5000),
@@ -185,9 +149,7 @@ export class AdminService {
   // ✅ MÉTODO CORREGIDO: Usar endpoints simples que funcionaban antes
   // Obtener cualquier usuario por ID (usando endpoint existente)
   getUserById(id: string): Observable<any> {
-    console.log('🔗 Obteniendo usuario por ID:', id);
     const url = `${this.apiUrl}/users/${id}`;
-    console.log('🌐 URL:', url);
     return this.http.get<any>(url)
       .pipe(
         timeout(10000),
@@ -199,15 +161,29 @@ export class AdminService {
   updateUser(id: string, userData: any, tipo: string): Observable<any> {
     const url = `${this.apiUrl}/users/${id}/profile`;
     
+    console.log('🔄 AdminService.updateUser llamado con:');
+    console.log('  📌 ID:', id, '(longitud:', id.length, ')');
+    console.log('  📌 URL completa:', url);
+    console.log('  📌 userData:', userData);
+    console.log('  📌 tipo:', tipo);
+    
+    // El backend espera el formato {userData, tipo}
+    const payload = { userData, tipo };
+    
     // IMPORTANTE: NO usar headers de autorización para estos endpoints
-    return this.http.put<any>(url, {userData, tipo});
-      
+    return this.http.put<any>(url, payload).pipe(
+      catchError((error) => {
+        console.error('❌ Error en AdminService.updateUser:', error);
+        console.error('  📌 ID usado:', id);
+        console.error('  📌 URL intentada:', url);
+        return this.handleError(error);
+      })
+    );
   }
 
   /** Desbloquea un usuario */
   desbloquearUsuario(usuarioId: string, adminId: string): Observable<any> {
     const url = `${this.apiUrl}/usuarios/${usuarioId}/desbloquear`;
-    console.log('AdminService: Desbloqueando usuario:', usuarioId);
     const headers = { 'Admin-ID': adminId };
     return this.http.put(url, {}, { headers }).pipe(
       timeout(5000),
@@ -255,27 +231,15 @@ export class AdminService {
   }
 
   getAdministradorById(id: string): Observable<any> {
-    console.log('🔗 Obteniendo administrador (usando endpoint genérico):', id);
     return this.getUserById(id);
   }
-  /*getUserById(id: string): Observable<any> {
-    console.log('🔗 Obteniendo usuario por ID:', id);
-    const url = `${this.apiUrl}/users/${id}`;
-    console.log('🌐 URL:', url);
-    return this.http.get<any>(url)
-      .pipe(
-        timeout(10000),
-        catchError(this.handleError)
-      );
-  }*/
+
 
   getGestorById(id: string): Observable<any> {
-    console.log('🔗 Obteniendo gestor (usando endpoint genérico):', id);
     return this.getUserById(id);
   }
 
    getVisualizadorById(id: string): Observable<any> {
-    console.log('🔗 Obteniendo visualizador (usando endpoint genérico):', id);
     return this.getUserById(id);
   }
 
@@ -285,13 +249,11 @@ export class AdminService {
     return this.http.get<Paginado<VisualizadorGestionDTO>>(`${this.apiUrl}/visualizadores`, { params: { page, size } as any });
   }
   updateGestor(id: string, gestor: GestorGestionDTO): Observable<any> {
-    console.log('🔗 Actualizando gestor (usando endpoint genérico):', id, gestor);
     return this.updateUser(id, gestor, "GestordeContenido");
   }
 
   // Actualizar administrador (compatibilidad con user-management)
   updateAdministrador(id: string, admin: AdministradorGestionDTO): Observable<any> {
-    console.log('🔗 Actualizando administrador (usando endpoint genérico):', id, admin);
     return this.updateUser(id, admin, "Administrador");
   }
 

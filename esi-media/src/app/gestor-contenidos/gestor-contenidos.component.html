@@ -1,0 +1,400 @@
+<div class="contenidos-container">
+  <header class="contenidos-header">
+    <!-- Cambiado para usar la misma estructura y clases que el dashboard -->
+    <div class="section-header">
+      <h2 class="section-title">Gestión de Contenidos</h2>
+      <p class="contenidos-subtitle">
+        Consulta y edita todos los contenidos multimedia de la plataforma.
+      </p>
+    </div>
+    <!-- Panel de filtrado reutilizado para gestores (componente compartido) -->
+    <div class="filter-wrapper">
+      <!-- Forzar 'all' para permitir elegir Vídeo / Audio / Especial en el gestor -->
+      <app-content-filter
+        [contentType]="'all'"
+        (filtersApplied)="onFiltersApplied($event)"
+        (filtersChanged)="onFiltersChanged($event)">
+      </app-content-filter>
+    </div>
+    <a routerLink="/gestor-dashboard" class="btn-volver-dashboard">
+      Volver al panel de gestor
+    </a>
+  </header>
+
+  <section class="contenidos-list-section">
+    <div *ngIf="errorMessage" class="alert-error">
+      {{ errorMessage }}
+    </div>
+
+    <div *ngIf="deleteError" class="alert-error mt-2">
+      {{ deleteError }}
+    </div>
+
+    <div *ngIf="loading" class="loading-row">
+      <span class="loading-dot"></span>
+      <span class="loading-dot"></span>
+      <span class="loading-dot"></span>
+      <span>Cargando contenidos...</span>
+    </div>
+
+    <!-- Overlay temporal mientras se aplican filtros para evitar mostrar la lista completa brevemente -->
+    <div *ngIf="applyingFilters" class="applying-filters-row">
+      <span class="loading-dot"></span>
+      <span>Aplicando filtros...</span>
+    </div>
+
+    <div *ngIf="!loading && !applyingFilters" class="contenidos-grid">
+      <div *ngFor="let c of contenidos" class="contenido-card">
+        <div class="contenido-header">
+          <div class="contenido-icon" [class.video]="c.tipo === 'VIDEO'" [class.audio]="c.tipo === 'AUDIO'">
+            <span *ngIf="c.tipo === 'VIDEO'">▶</span>
+            <span *ngIf="c.tipo === 'AUDIO'">♫</span>
+          </div>
+          <div class="contenido-info">
+            <h2 class="contenido-title">{{ c.titulo }}</h2>
+            <div class="contenido-badges">
+              <span class="badge tipo">{{ c.tipo === 'VIDEO' ? 'Vídeo' : 'Audio' }}</span>
+              <span class="badge vip" *ngIf="c.vip">VIP</span>
+              <span class="badge resolucion" *ngIf="c.resolucion">{{ c.resolucion }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="contenido-actions">
+          <button
+            type="button"
+            class="action-btn"
+            title="Estadísticas"
+            (click)="verEstadisticas(c)">
+            <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 3v18h18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="6" y="10" width="2" height="8" fill="currentColor"/>
+              <rect x="10" y="6" width="2" height="12" fill="currentColor"/>
+              <rect x="14" y="13" width="2" height="5" fill="currentColor"/>
+              <rect x="18" y="8" width="2" height="10" fill="currentColor"/>
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="action-btn"
+            title="Ver detalle"
+            (click)="verDetalle(c)">
+            <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M2 12c2.5-4 5.5-6 10-6s7.5 2 10 6c-2.5 4-5.5 6-10 6S4.5 16 2 12z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6" />
+              <circle
+                cx="12"
+                cy="12"
+                r="2.6"
+                fill="currentColor" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="action-btn"
+            title="Modificar"
+            (click)="editarDesdeLista(c)">
+            <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M15.5 4.5l4 4L9 19H5v-4z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linejoin="round" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="action-btn action-delete"
+            title="Eliminar"
+            (click)="eliminarDesdeLista(c)"
+            [disabled]="deletingId === c.id">
+            <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M5 7h14M10 11v6M14 11v6M9 7l1-2h4l1 2m-9 0v11a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="contenidos.length === 0 && !loading" class="empty-state">
+        No hay contenidos registrados todavía.
+      </div>
+    </div>
+  </section>
+
+  <!-- Capa de confirmación de eliminación (movida fuera del modal de detalle) -->
+  <div class="detalle-backdrop" *ngIf="showDeleteConfirmation"></div>
+  <div class="confirmation-modal" *ngIf="showDeleteConfirmation">
+    <div class="confirmation-box">
+      <p>¿Seguro que deseas eliminar "{{ deletingContent?.titulo }}"?</p>
+      <p class="confirmation-subtitle">Esta acción no se puede deshacer.</p>
+      <div class="confirmation-actions">
+        <button type="button" class="btn-cancelar" (click)="showDeleteConfirmation = false; deletingContent = null">
+          Cancelar
+        </button>
+        <button type="button" class="btn-confirmar-delete" (click)="proceedWithDelete()">
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de detalle -->
+  <div class="detalle-backdrop" *ngIf="mostrarDetalle" tabindex="-1" (click)="cerrarDetalle()" (keydown.escape)="cerrarDetalle()"></div>
+  <div class="detalle-modal" *ngIf="mostrarDetalle">
+    <div class="detalle-header">
+      <div class="detalle-title-group" tabindex="0" (keydown.escape)="cerrarDetalle()">
+        <h2 class="detalle-title">
+          {{ detalleSeleccionado?.titulo || 'Detalle de contenido' }}
+        </h2>
+        <div class="detalle-badges" *ngIf="detalleSeleccionado">
+          <span class="badge tipo">
+            {{ detalleSeleccionado.tipo === 'VIDEO' ? 'Vídeo' : 'Audio' }}
+          </span>
+          <span class="badge vip" *ngIf="detalleSeleccionado.vip">VIP</span>
+          <span class="badge resolucion" *ngIf="detalleSeleccionado.resolucion">
+            {{ detalleSeleccionado.resolucion }}
+          </span>
+          <span class="badge estado" [class.no-visible]="!detalleSeleccionado.estado">
+            {{ detalleSeleccionado.estado ? 'Visible' : 'No visible' }}
+          </span>
+        </div>
+      </div>
+      <button type="button" class="detalle-close-btn" (click)="cerrarDetalle()" aria-label="Cerrar detalle">
+        ✕
+      </button>
+    </div>
+
+    <div *ngIf="detalleLoading" class="detalle-loading">
+      <span class="loading-dot"></span>
+      <span class="loading-dot"></span>
+      <span class="loading-dot"></span>
+      <span>Cargando detalle...</span>
+    </div>
+
+    <div *ngIf="!detalleLoading && detalleError" class="alert-error mt-4">
+      {{ detalleError }}
+    </div>
+
+    <div *ngIf="!detalleLoading && detalleSeleccionado" class="detalle-body">
+      <!-- Capa de confirmación de guardado -->
+      <div *ngIf="showSaveConfirmation" class="confirmation-overlay">
+        <div class="confirmation-box">
+          <p>¿Estás seguro de que deseas guardar los cambios?</p>
+          <div class="confirmation-actions">
+            <button type="button" class="btn-cancelar" (click)="showSaveConfirmation = false">
+              Cancelar
+            </button>
+            <button type="button" class="btn-confirmar" (click)="proceedWithSave()">
+              Confirmar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <form (ngSubmit)="guardarCambios()" class="detalle-form">
+        <!-- Contenedor para la carátula y los detalles -->
+        <div class="detalle-content-wrapper">
+           <!-- Imagen de la carátula -->
+           <div class="detalle-caratula-container" *ngIf="detalleSeleccionado.caratula || editMode">
+             <!-- Vista previa de la nueva carátula o la actual -->
+             <img *ngIf="newCoverPreview || detalleSeleccionado.caratula"
+                  [src]="newCoverPreview || detalleSeleccionado.caratula || ''"
+                  alt="Carátula de {{ detalleSeleccionado.titulo }}"
+                  class="detalle-caratula-img" />
+ 
+             <!-- Botón para cambiar la carátula (siempre visible en modo edición) -->
+             <label *ngIf="editMode" for="caratula-input" class="btn-cambiar-caratula">
+               {{ detalleSeleccionado.caratula || newCoverPreview ? 'Cambiar' : 'Añadir carátula' }}
+             </label>
+             <input *ngIf="editMode" id="caratula-input"
+                    type="file"
+                    accept="image/png, image/jpeg, image/webp"
+                    (change)="onCoverFileSelected($event)"
+                    style="display: none;">
+           </div>
+ 
+           <!-- Contenido principal (descripción, grid, etc.) -->
+           <div class="detalle-main" [class.full-width]="!detalleSeleccionado.caratula && !editMode">
+             <div class="detalle-grid">
+               <!-- Título -->
+               <div class="detalle-item">
+                 <label class="detalle-label" for="titulo">Título</label>
+                 <span *ngIf="!editMode" class="detalle-value">{{ detalleSeleccionado.titulo }}</span>
+                 <input *ngIf="editMode" id="titulo" name="titulo" type="text" class="detalle-input" [(ngModel)]="editForm.titulo" required maxlength="100">
+               </div>
+ 
+               <!-- Descripción -->
+               <div class="detalle-item full-span">
+                 <label class="detalle-label" for="descripcion">Descripción</label>
+                 <span *ngIf="!editMode" class="detalle-value detalle-descripcion">{{ detalleSeleccionado.descripcion || '-' }}</span>
+                 <textarea *ngIf="editMode" id="descripcion" name="descripcion" class="detalle-input" rows="3" [(ngModel)]="editForm.descripcion" maxlength="500"></textarea>
+               </div>
+ 
+               <div class="detalle-item">
+                 <span class="detalle-label">Duración</span>
+                 <span class="detalle-value">{{ getDuracionFormateada(detalleSeleccionado.duracion) }}</span>
+               </div>
+               <div class="detalle-item">
+                 <label class="detalle-label" for="edadVisualizacion">Edad mínima</label>
+                 <span *ngIf="!editMode" class="detalle-value">{{ detalleSeleccionado.edadVisualizacion }} años</span>
+                 <select *ngIf="editMode"
+                         id="edadVisualizacion"
+                         name="edadVisualizacion"
+                         class="detalle-input"
+                         [(ngModel)]="editForm.edadVisualizacion">
+                   <option [ngValue]="0">0 años (Todo público)</option>
+                   <option [ngValue]="18">18 años (+18)</option>
+                 </select>
+               </div>
+               <div class="detalle-item">
+                 <label class="detalle-label" for="fechaDisponibleHasta">Fecha disponible hasta</label>
+                 <span *ngIf="!editMode" class="detalle-value">
+                   {{ detalleSeleccionado.fechaDisponibleHasta ? (detalleSeleccionado.fechaDisponibleHasta | date:'shortDate') : 'Sin límite' }}
+                 </span>
+                 <input *ngIf="editMode" id="fechaDisponibleHasta" name="fechaDisponibleHasta" type="date" class="detalle-input" [(ngModel)]="editForm.fechaDisponibleHasta">
+               </div>
+               <div class="detalle-item">
+                 <span class="detalle-label">Visualizaciones</span>
+                 <span class="detalle-value">{{ detalleSeleccionado.nvisualizaciones }}</span>
+               </div>
+               <div class="detalle-item">
+                 <span class="detalle-label">Fecha de creación</span>
+                 <span class="detalle-value">
+                   {{ detalleSeleccionado.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}
+                 </span>
+               </div>
+               <div class="detalle-item">
+                 <span class="detalle-label">Creador del contenido</span>
+                 <span class="detalle-value" *ngIf="detalleSeleccionado.creadorNombre; else sinCreador">
+                   {{ detalleSeleccionado.creadorNombre }} {{ detalleSeleccionado.creadorApellidos }}
+                 </span>
+                 <ng-template #sinCreador>
+                   <span class="detalle-value">-</span>
+                 </ng-template>
+               </div>
+ 
+               <!-- VIP -->
+               <div class="detalle-item">
+                 <span class="detalle-label">Contenido VIP</span>
+                 <span *ngIf="!editMode" class="detalle-value">{{ detalleSeleccionado.vip ? 'Sí' : 'No' }}</span>
+                 <label *ngIf="editMode" class="toggle-label" [attr.for]="vipToggleId">
+                   <input [id]="vipToggleId" type="checkbox" name="vip" [(ngModel)]="editForm.vip">
+                   <span>Marcar como VIP</span>
+                 </label>
+               </div>
+
+               <!-- Estado -->
+               <div class="detalle-item">
+                 <span class="detalle-label">Estado</span>
+                 <span *ngIf="!editMode" class="detalle-value">{{ detalleSeleccionado.estado ? 'Visible' : 'No visible' }}</span>
+                 <label *ngIf="editMode" class="toggle-label" [attr.for]="estadoToggleId">
+                   <input [id]="estadoToggleId" type="checkbox" name="estado" [(ngModel)]="editForm.estado">
+                   <span>{{ editForm.estado ? 'Visible' : 'No visible' }}</span>
+                 </label>
+               </div>
+ 
+               <!-- Tags -->
+               <div class="detalle-item full-span">
+                 <label class="detalle-label" for="tags">Tags</label>
+                 <div *ngIf="!editMode" class="detalle-tags-list">
+                   <span class="tag-pill" *ngFor="let tag of detalleSeleccionado.tags">{{ tag }}</span>
+                 </div>
+                 <!-- Nuevo selector de tags para modo edición -->
+                 <div *ngIf="editMode" class="detalle-tags-editor">
+                    <label *ngFor="let tag of allTags" class="tag-checkbox">
+                      <input type="checkbox"
+                             [checked]="editForm.tags.includes(tag)"
+                             (change)="onTagChange(tag, $any($event.target).checked)">
+                      <span>{{ tag }}</span>
+                    </label>
+                 </div>
+               </div>
+ 
+               <div class="detalle-item full-span" *ngIf="detalleSeleccionado.referenciaReproduccion">
+                 <span class="detalle-label">
+                   {{ detalleSeleccionado.tipo === 'VIDEO' ? 'URL de reproducción' : 'Endpoint de audio' }}
+                 </span>
+                 <a class="detalle-link" [href]="detalleSeleccionado.referenciaReproduccion" target="_blank" rel="noopener noreferrer">
+                   {{ detalleSeleccionado.referenciaReproduccion }}
+                 </a>
+               </div>
+             </div>
+ 
+             <div class="detalle-actions-row" *ngIf="editMode">
+               <button type="button" (click)="guardarCambios()" class="btn-guardar" [disabled]="saving">
+                 {{ saving ? 'Guardando...' : 'Guardar cambios' }}
+               </button>
+             </div>
+ 
+             <div *ngIf="saveSuccess" class="mensaje-exito">
+               {{ saveSuccess }}
+             </div>
+             <div *ngIf="saveError" class="mensaje-error">
+               {{ saveError }}
+             </div>
+           </div>
+         </div>
+       </form>
+    </div>
+  </div>
+
+  <!-- Modal de estadísticas -->
+  <div class="detalle-backdrop" *ngIf="mostrarEstadisticas" tabindex="-1" (click)="cerrarEstadisticas()" (keydown.escape)="cerrarEstadisticas()"></div>
+  <div class="detalle-modal estadisticas-modal" *ngIf="mostrarEstadisticas">
+    <div class="detalle-header">
+      <div class="detalle-title-group">
+        <h2 class="detalle-title">Estadísticas</h2>
+      </div>
+      <button type="button" class="detalle-close-btn" (click)="cerrarEstadisticas()" aria-label="Cerrar estadisticas">✕</button>
+    </div>
+
+    <div class="detalle-body stats-body">
+      <div *ngIf="estadisticasLoading" class="detalle-loading">
+        <span class="loading-dot"></span>
+        <span class="loading-dot"></span>
+        <span class="loading-dot"></span>
+        <span>Cargando estadísticas...</span>
+      </div>
+
+      <div *ngIf="!estadisticasLoading && estadisticasError" class="alert-error mt-4">{{ estadisticasError }}</div>
+
+      <div *ngIf="!estadisticasLoading && estadisticasData" class="stats-simple">
+
+        <div class="content-main-title">{{ estadisticasData.title }}</div>
+
+        <div class="stats-row">
+          <div class="stats-thumb">
+            <img *ngIf="estadisticasData.caratula; else noCoverSmall" [src]="estadisticasData.caratula" [alt]="estadisticasData.title" class="stats-caratula-large" />
+            <ng-template #noCoverSmall>
+              <div class="stats-caratula-large placeholder">{{ estadisticasData.title ? (estadisticasData.title | slice:0:1) : '–' }}</div>
+            </ng-template>
+          </div>
+
+          <div class="stats-info">
+            <ul class="stats-list">
+              <li><strong>👁️ Visualizaciones:</strong> {{ estadisticasData.nvisualizaciones ?? 0 }}</li>
+              <li>
+                <strong>⭐ Valoración promedio: </strong>
+                <ng-container *ngIf="estadisticasData.averageRating != null; else noAvg">
+                  <span class="rating-pill" [ngClass]="ratingClass(estadisticasData?.averageRating)">{{ estadisticasData.averageRating | number:'1.1-1' }}</span>
+                </ng-container>
+                <ng-template #noAvg>—</ng-template>
+                <span *ngIf="estadisticasData.ratingsCount"> • ({{ estadisticasData.ratingsCount }} valoraciones)</span>
+              </li>
+              <li><strong>⌚ Días disponible restantes: </strong> <span class="days-pill" [ngClass]="daysClass(estadisticasData?.daysRemaining)">{{ estadisticasData.daysRemaining === '-' ? 'Sin límite' : estadisticasData.daysRemaining }}</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

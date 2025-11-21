@@ -1,0 +1,51 @@
+<section class="privadas-wrapper">
+  <div class="toolbar">
+    <button class="btn-simple" (click)="emitAbrirCrearModal()"> Nueva lista</button>
+  </div>
+
+  <div *ngIf="loading" class="state">Cargando tus listas...</div>
+  <div *ngIf="!loading && listas.length === 0" class="state">Aún no tienes listas privadas</div>
+
+  <div class="grid" *ngIf="!loading && listas.length > 0">
+    <div class="playlist-card" *ngFor="let l of listas">
+      <!-- Contenido principal de la tarjeta -->
+      <button class="card-content" 
+              (click)="verListaCompleta(l)"
+              [attr.aria-label]="'Ver lista completa: ' + l.nombre">
+        <div class="thumb" 
+             [style.background-image]="obtenerCaratulaPrimerContenido(l) ? 'url(' + obtenerCaratulaPrimerContenido(l) + ')' : 'none'"
+             [class.thumb-placeholder]="!obtenerCaratulaPrimerContenido(l)">
+        </div>
+        <h3 class="title">{{ l.nombre }}</h3>
+        <p class="meta">Lista de reproducción</p>
+        <p class="description" *ngIf="l.descripcion">{{ l.descripcion }}</p>
+        <p class="link">Ver lista de reproducción completa</p>
+      </button>
+      
+      <!-- Información adicional -->
+      <div class="card-info">
+        <span class="content-count" *ngIf="l.contenidosIds && l.contenidosIds.length">
+          {{ l.contenidosIds.length }} contenido{{ l.contenidosIds.length !== 1 ? 's' : '' }}
+        </span>
+        <span class="visibility-badge" *ngIf="l.visible === true" title="Lista pública">🌐</span>
+        <span class="visibility-badge" *ngIf="l.visible === false" title="Lista privada">🔒</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Modal de edición -->
+<div class="modal-overlay" *ngIf="mostrarModalEdicion" 
+     (click)="onCancelarEdicion()"
+     (keydown.escape)="onCancelarEdicion()">
+  <div class="modal-container" 
+       (click)="$event.stopPropagation()"
+       (keydown)="$event.stopPropagation()">
+    <crear-lista
+      [modal]="true"
+      [listaParaEditar]="listaParaEditar"
+      (editada)="onListaEditada($event)"
+      (cerrar)="onCancelarEdicion()">
+    </crear-lista>
+  </div>
+</div>
